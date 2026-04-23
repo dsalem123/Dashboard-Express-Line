@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ExpressLine · Portfolios ONLINE</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--ev:#0D2924;--mint:#A8DABB;--gold:#C9A84C;--cream:#ECEDE3;--vg:#6B8578;--bg:#0a1f1b;--br:rgba(168,218,187,0.15);}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);font-family:'Inter',sans-serif;color:var(--cream);overflow-x:hidden;}
+.doc-header{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;border-bottom:1px solid var(--br);background:var(--ev);position:sticky;top:0;z-index:20;}
+.header-title{font-family:'Playfair Display',serif;font-size:18px;color:var(--cream);letter-spacing:1px;}
+.gold-line{width:32px;height:2px;background:var(--gold);margin:5px 0;}
+.header-sub{font-size:10px;color:var(--vg);letter-spacing:2px;text-transform:uppercase;}
+.btn{border:none;border-radius:6px;padding:8px 16px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:1px;text-transform:uppercase;transition:all .15s;display:inline-flex;align-items:center;gap:6px;}
+.btn-gold{background:var(--gold);color:var(--ev);}
+.btn-gold:hover{opacity:.85;}
+.btn-outline{background:none;border:1px solid var(--br);color:var(--vg);}
+.btn-outline:hover{border-color:var(--gold);color:var(--cream);}
+.btn-sm{padding:5px 12px;font-size:10px;}
+.btn-danger{background:none;border:1px solid rgba(192,57,43,.4);color:#e74c3c;font-size:11px;padding:3px 8px;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;}
+.btn-danger:hover{background:rgba(192,57,43,.1);}
+.bbg-bar{background:rgba(13,41,36,.9);border-bottom:1px solid var(--br);padding:7px 28px;display:flex;align-items:center;gap:16px;font-size:11px;color:var(--vg);}
+.bbg-dot{width:7px;height:7px;border-radius:50%;background:#e74c3c;display:inline-block;margin-right:6px;transition:background .3s;}
+.bbg-dot.active{background:#2ecc71;}
+.grid-container{padding:28px;max-width:1200px;margin:0 auto;}
+.grid-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;}
+.section-title{font-family:'Playfair Display',serif;font-size:20px;color:var(--cream);}
+.client-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;}
+.client-card{background:var(--ev);border:1px solid var(--br);border-radius:10px;padding:20px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;}
+.client-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--gold);}
+.client-card:hover{border-color:rgba(201,168,76,.5);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3);}
+.card-name{font-family:'Playfair Display',serif;font-size:15px;color:var(--cream);margin-bottom:3px;line-height:1.3;}
+.card-account{font-size:10px;color:var(--vg);letter-spacing:1px;text-transform:uppercase;margin-bottom:14px;}
+.card-value{font-family:'Playfair Display',serif;font-size:24px;color:var(--cream);}
+.card-label{font-size:10px;color:var(--vg);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;}
+.card-metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--br);}
+.metric-val{font-size:13px;font-weight:600;}
+.pos{color:#2ecc71;}.neg{color:#e74c3c;}.neutral{color:var(--mint);}
+.card-date{font-size:10px;color:var(--vg);margin-top:10px;letter-spacing:.3px;}
+.add-card{background:none;border:2px dashed rgba(168,218,187,.15);border-radius:10px;padding:20px;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:200px;color:var(--vg);font-family:'Inter',sans-serif;width:100%;}
+.add-card:hover{border-color:rgba(201,168,76,.5);color:var(--gold);}
+.detail-header{background:var(--ev);border-bottom:1px solid var(--br);padding:16px 28px;}
+.back-btn{background:none;border:1px solid var(--br);border-radius:5px;padding:6px 12px;font-size:11px;color:var(--vg);cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;}
+.back-btn:hover{border-color:var(--gold);color:var(--cream);}
+.detail-name{font-family:'Playfair Display',serif;font-size:22px;color:var(--cream);margin:8px 0 4px;}
+.d-metrics{display:flex;gap:0;flex-wrap:wrap;margin-top:14px;border:1px solid var(--br);border-radius:8px;overflow:hidden;}
+.d-metric{padding:12px 20px;flex:1;min-width:140px;border-right:1px solid var(--br);}
+.d-metric:last-child{border-right:none;}
+.d-metric-label{font-size:10px;color:var(--vg);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;}
+.d-metric-val{font-family:'Playfair Display',serif;font-size:18px;}
+.tabs-bar{display:flex;gap:0;padding:0 28px;border-bottom:1px solid var(--br);background:var(--ev);}
+.tab-btn{background:none;border:none;padding:12px 20px;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--vg);cursor:pointer;border-bottom:2px solid transparent;font-family:'Inter',sans-serif;transition:all .2s;margin-bottom:-1px;}
+.tab-btn:hover{color:var(--cream);}
+.tab-btn.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-content{display:none;padding:24px 28px;}
+.tab-content.active{display:block;}
+.actions-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+.perf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin-bottom:20px;}
+.perf-card{background:var(--ev);border:1px solid var(--br);border-radius:8px;padding:14px 16px;border-left:3px solid var(--gold);}
+.perf-label{font-size:10px;color:var(--vg);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:5px;}
+.perf-val{font-family:'Playfair Display',serif;font-size:19px;}
+.tbl-wrap{border:1px solid var(--br);border-radius:8px;overflow:auto;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+thead{background:var(--ev);position:sticky;top:0;z-index:5;}
+thead th{padding:10px 12px;color:var(--mint);font-weight:500;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;text-align:left;white-space:nowrap;}
+th.r,td.r{text-align:right;}
+tbody tr{border-bottom:1px solid rgba(168,218,187,.06);transition:background .1s;}
+tbody tr:hover{background:rgba(168,218,187,.03);}
+tbody tr:last-child{border-bottom:none;}
+tbody td{padding:10px 12px;color:var(--cream);vertical-align:middle;}
+td.mono{font-family:'Inter',monospace;font-size:11px;}
+.tbadge{display:inline-block;padding:2px 7px;border-radius:3px;font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;}
+.t-mm{background:rgba(201,168,76,.15);color:var(--gold);}
+.t-mf{background:rgba(168,218,187,.1);color:var(--mint);}
+.t-etf{background:rgba(41,128,185,.15);color:#5dade2;}
+.t-bond{background:rgba(155,89,182,.15);color:#bb8fce;}
+.t-eq{background:rgba(231,76,60,.12);color:#e74c3c;}
+.tbl-footer{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:1px solid var(--br);background:rgba(13,41,36,.6);}
+.tbl-footer-label{font-size:10px;color:var(--vg);letter-spacing:1px;text-transform:uppercase;}
+.tbl-footer-val{font-family:'Playfair Display',serif;font-size:16px;color:var(--cream);}
+.mov-layout{display:grid;grid-template-columns:280px 1fr;gap:20px;align-items:start;}
+.mov-form{background:var(--ev);border:1px solid var(--br);border-radius:8px;padding:20px;}
+.mov-form h3{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:14px;}
+.toggle-type{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--br);border-radius:6px;overflow:hidden;margin-bottom:14px;}
+.tog{padding:8px;font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;border:none;background:none;color:var(--vg);font-family:'Inter',sans-serif;transition:all .15s;}
+.tog.on-dep{background:rgba(46,204,113,.12);color:#2ecc71;}
+.tog.on-wit{background:rgba(231,76,60,.12);color:#e74c3c;}
+.ff{margin-bottom:10px;}
+.ff label{display:block;font-size:10px;color:var(--vg);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;}
+.ff input,.ff select{width:100%;background:rgba(0,0,0,.3);border:1px solid var(--br);border-radius:5px;padding:7px 10px;font-size:12px;color:var(--cream);font-family:'Inter',sans-serif;}
+.ff input:focus,.ff select:focus{outline:none;border-color:var(--gold);}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;align-items:center;justify-content:center;}
+.modal-bg.open{display:flex;}
+.modal{background:#0f2d28;border:1px solid var(--br);border-top:3px solid var(--gold);border-radius:10px;padding:24px;width:540px;max-width:95vw;max-height:90vh;overflow-y:auto;}
+.modal h2{font-family:'Playfair Display',serif;font-size:18px;color:var(--cream);margin-bottom:3px;}
+.modal-sub{font-size:10px;color:var(--vg);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:18px;}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.fg .full{grid-column:1/-1;}
+.modal .ff input,.modal .ff select{background:rgba(0,0,0,.4);}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;}
+.btn-cancel-d{background:none;border:1px solid var(--br);border-radius:5px;padding:8px 16px;font-size:11px;cursor:pointer;color:var(--vg);font-family:'Inter',sans-serif;}
+.toast{position:fixed;bottom:24px;right:24px;z-index:999;background:var(--ev);border:1px solid var(--gold);border-radius:8px;padding:12px 20px;font-size:12px;color:var(--cream);opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;max-width:360px;}
+.toast.show{opacity:1;transform:translateY(0);}
+.toast.err{border-color:#e74c3c;color:#f5a5a5;}
+@media(max-width:700px){.mov-layout{grid-template-columns:1fr;}.d-metrics{flex-direction:column;}}
+</style>
+</head>
+<body>
+<div id="toast" class="toast"></div>
+
+<!-- ═══════════════ MAIN VIEW ═══════════════ -->
+<div id="view-main">
+  <div class="doc-header">
+    <div>
+      <div class="header-title">Portfolios ONLINE</div>
+      <div class="gold-line"></div>
+      <div class="header-sub">ExpressLine · Gestión de carteras offshore</div>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <label class="btn btn-outline btn-sm" style="cursor:pointer;">
+        📊 Actualizar Bloomberg
+        <input type="file" id="bbg-upload" accept=".xlsx" style="display:none" onchange="loadBloomberg(this)">
+      </label>
+    </div>
+  </div>
+  <div class="bbg-bar">
+    <span><span class="bbg-dot" id="bbg-dot"></span><span id="bbg-status">Bloomberg: sin datos cargados</span></span>
+    <span id="bbg-updated" style="margin-left:auto;"></span>
+  </div>
+  <div class="grid-container">
+    <div class="grid-header">
+      <div>
+        <div class="section-title">Carteras de clientes</div>
+        <div style="font-size:11px;color:var(--vg);margin-top:4px;" id="grid-summary"></div>
+      </div>
+    </div>
+    <div class="client-grid" id="client-grid"></div>
+  </div>
+</div>
+
+<!-- ═══════════════ CLIENT DETAIL VIEW ═══════════════ -->
+<div id="view-client" style="display:none;">
+  <div class="detail-header">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
+      <button class="back-btn" onclick="showMain()">← Volver</button>
+      <span style="font-size:10px;color:var(--vg);letter-spacing:1.5px;text-transform:uppercase;">Portfolios ONLINE</span>
+    </div>
+    <div class="detail-name" id="detail-name"></div>
+    <div style="font-size:11px;color:var(--vg);" id="detail-account"></div>
+    <div class="d-metrics" id="detail-metrics"></div>
+  </div>
+  <div class="tabs-bar">
+    <button class="tab-btn active" onclick="showTab('holdings',this)">Tenencias</button>
+    <button class="tab-btn" onclick="showTab('movements',this)">Movimientos</button>
+    <button class="tab-btn" onclick="showTab('transactions',this)">Transacciones</button>
+  </div>
+
+  <!-- HOLDINGS -->
+  <div class="tab-content active" id="tab-holdings">
+    <div class="actions-bar">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-gold btn-sm" onclick="openModal('add-holding-modal')">+ Agregar posición</button>
+        <label class="btn btn-outline btn-sm" style="cursor:pointer;" title="Positions Report">
+          📥 Positions
+          <input type="file" id="pos-upload" accept=".xlsx" style="display:none" onchange="importPositions(this)">
+        </label>
+        <label class="btn btn-outline btn-sm" style="cursor:pointer;" title="Unrealized Gain/Loss Report">
+          📥 UGL
+          <input type="file" id="ugl-upload" accept=".xlsx" style="display:none" onchange="importUGL(this)">
+        </label>
+        <label class="btn btn-outline btn-sm" style="cursor:pointer;" title="Balances Report">
+          📥 Balances
+          <input type="file" id="bal-upload" accept=".xlsx" style="display:none" onchange="importBalances(this)">
+        </label>
+      </div>
+      <span style="font-size:11px;color:var(--vg);" id="holdings-asof"></span>
+    </div>
+    <div class="perf-grid" id="perf-grid"></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th>Descripción</th><th>Tipo</th>
+          <th class="r">Cantidad</th><th class="r">Costo unit.</th>
+          <th class="r">Precio actual</th><th class="r">Valor mercado</th>
+          <th class="r">G/P (USD)</th><th class="r">G/P (%)</th>
+          <th class="r">% cartera</th><th></th>
+        </tr></thead>
+        <tbody id="holdings-tbody"></tbody>
+      </table>
+      <div class="tbl-footer">
+        <span class="tbl-footer-label">Total cartera</span>
+        <span class="tbl-footer-val" id="holdings-total"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MOVEMENTS -->
+  <div class="tab-content" id="tab-movements">
+    <div class="mov-layout">
+      <div class="mov-form">
+        <h3>Registrar movimiento</h3>
+        <div class="toggle-type">
+          <button class="tog on-dep" id="tog-dep" onclick="setMovType('DEP')">↑ Depósito</button>
+          <button class="tog" id="tog-wit" onclick="setMovType('WIT')">↓ Retiro</button>
+        </div>
+        <div class="ff"><label>Fecha</label><input type="date" id="mov-date"></div>
+        <div class="ff"><label>Monto (USD)</label><input type="number" id="mov-amount" placeholder="0.00" min="0" step="0.01"></div>
+        <div class="ff" style="margin-bottom:16px;"><label>Descripción</label><input type="text" id="mov-desc" placeholder="Ej: Wire desde Santander"></div>
+        <button class="btn btn-gold" style="width:100%;" onclick="addMovement()">Registrar</button>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+          <span style="font-size:10px;color:var(--vg);letter-spacing:1px;text-transform:uppercase;">Historial</span>
+          <div style="display:flex;gap:16px;font-size:11px;color:var(--vg);">
+            <span>Depositado: <strong class="pos" id="total-dep">$0</strong></span>
+            <span>Retirado: <strong class="neg" id="total-wit">$0</strong></span>
+            <span>Neto: <strong id="total-net" style="color:var(--mint);">$0</strong></span>
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Fecha</th><th>Tipo</th><th>Descripción</th><th class="r">Monto</th><th></th></tr></thead>
+            <tbody id="movements-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRANSACTIONS -->
+  <div class="tab-content" id="tab-transactions">
+    <div class="actions-bar">
+      <label class="btn btn-outline btn-sm" style="cursor:pointer;">
+        📥 Importar Transactions Excel
+        <input type="file" id="txn-upload" accept=".xlsx" style="display:none" onchange="importTransactions(this)">
+      </label>
+      <span style="font-size:11px;color:var(--vg);" id="txn-count"></span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Fecha</th><th>Tipo</th><th>Descripción</th><th>Activo</th><th class="r">Monto</th></tr></thead>
+        <tbody id="transactions-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Add Holding -->
+<div class="modal-bg" id="add-holding-modal" onclick="if(event.target===this)closeModal('add-holding-modal')">
+  <div class="modal">
+    <h2>Agregar posición</h2>
+    <div class="modal-sub">Nueva tenencia en cartera</div>
+    <div class="fg">
+      <div class="ff full"><label>Descripción del activo</label><input type="text" id="ah-desc" placeholder="Ej: PIMCO INCOME FUND"></div>
+      <div class="ff"><label>ISIN</label><input type="text" id="ah-isin" placeholder="IE00B87KCF77"></div>
+      <div class="ff"><label>Tipo</label>
+        <select id="ah-type">
+          <option value="Open-end Mutual Funds">Mutual Fund</option>
+          <option value="Exchange-Traded Funds">ETF</option>
+          <option value="Money Market Funds">Money Market</option>
+          <option value="Corporate Bonds">Bono Corporativo</option>
+          <option value="Government Bonds">Bono Soberano</option>
+          <option value="Equities">Acción</option>
+          <option value="Other">Otro</option>
+        </select>
+      </div>
+      <div class="ff"><label>Cantidad</label><input type="number" id="ah-qty" placeholder="0" step="0.001"></div>
+      <div class="ff"><label>Precio de compra (unit.)</label><input type="number" id="ah-cost" placeholder="0.00" step="0.0001"></div>
+      <div class="ff"><label>Precio actual (opcional)</label><input type="number" id="ah-price" placeholder="0.00" step="0.0001"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel-d" onclick="closeModal('add-holding-modal')">Cancelar</button>
+      <button class="btn btn-gold btn-sm" onclick="saveHolding()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: New Client -->
+<div class="modal-bg" id="add-client-modal" onclick="if(event.target===this)closeModal('add-client-modal')">
+  <div class="modal">
+    <h2>Nuevo cliente</h2>
+    <div class="modal-sub">Agregar cartera al sistema</div>
+    <div class="fg">
+      <div class="ff full"><label>Nombre del cliente</label><input type="text" id="nc-name" placeholder="Ej: ARVE HOLDINGS LTD"></div>
+      <div class="ff"><label>N° cuenta (Pershing)</label><input type="text" id="nc-account" placeholder="RDS011109"></div>
+      <div class="ff"><label>Manager</label><input type="text" id="nc-mgr" placeholder="TB"></div>
+    </div>
+    <div style="margin-top:14px;padding:14px;background:rgba(168,218,187,.04);border:1px solid var(--br);border-radius:6px;">
+      <div style="font-size:10px;color:var(--vg);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;">Importar archivos Pershing (opcional)</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div>
+          <div style="font-size:10px;color:var(--vg);margin-bottom:5px;">Positions</div>
+          <label class="btn btn-outline btn-sm" style="cursor:pointer;width:100%;justify-content:center;">
+            📥 Cargar
+            <input type="file" id="nc-pos-upload" accept=".xlsx" style="display:none" onchange="ncLoadFile('pos',this)">
+          </label>
+          <div style="font-size:10px;color:var(--mint);margin-top:4px;min-height:14px;" id="nc-pos-status"></div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--vg);margin-bottom:5px;">Unrealized Gain/Loss</div>
+          <label class="btn btn-outline btn-sm" style="cursor:pointer;width:100%;justify-content:center;">
+            📥 Cargar
+            <input type="file" id="nc-ugl-upload" accept=".xlsx" style="display:none" onchange="ncLoadFile('ugl',this)">
+          </label>
+          <div style="font-size:10px;color:var(--mint);margin-top:4px;min-height:14px;" id="nc-ugl-status"></div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--vg);margin-bottom:5px;">Balances</div>
+          <label class="btn btn-outline btn-sm" style="cursor:pointer;width:100%;justify-content:center;">
+            📥 Cargar
+            <input type="file" id="nc-bal-upload" accept=".xlsx" style="display:none" onchange="ncLoadFile('bal',this)">
+          </label>
+          <div style="font-size:10px;color:var(--mint);margin-top:4px;min-height:14px;" id="nc-bal-status"></div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--vg);margin-bottom:5px;">Transactions</div>
+          <label class="btn btn-outline btn-sm" style="cursor:pointer;width:100%;justify-content:center;">
+            📥 Cargar
+            <input type="file" id="nc-txn-upload" accept=".xlsx" style="display:none" onchange="ncLoadFile('txn',this)">
+          </label>
+          <div style="font-size:10px;color:var(--mint);margin-top:4px;min-height:14px;" id="nc-txn-status"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel-d" onclick="closeModal('add-client-modal')">Cancelar</button>
+      <button class="btn btn-gold btn-sm" onclick="saveNewClient()">Crear cliente</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DEFAULT DATA: ARVE HOLDINGS LTD (Pershing Apr 23 2026) ──
+const ARVE_DEFAULT = {
+  id:'ARVE',name:'ARVE HOLDINGS LTD',accountNo:'RDS011109',manager:'TB',
+  lastUpdated:'23/04/2026',totalValue:1929083.86,cashAvailable:113160.52,unrealizedGain:45916.91,
+  holdings:[
+    {isin:null,cusip:'PER982086',symbol:'DUTG',type:'Money Market Funds',description:'BNY MELLON U.S. TREASURY FUND SERVICE SHARES',quantity:113160.52,unitCost:1,totalCost:113160.52,lastPrice:1,marketValue:113160.52,unrealizedGain:0,unrealizedGainPct:0},
+    {isin:'IE00BM9KYW45',cusip:'G6572K210',symbol:null,type:'Open-end Mutual Funds',description:'NOMURA U.S. HIGH YIELD BOND FUND CLASS C (USD)',quantity:539.281,unitCost:null,totalCost:null,lastPrice:123.6664,marketValue:62603.08,unrealizedGain:null,unrealizedGainPct:null},
+    {isin:'IE0004445015',cusip:'G50106346',symbol:null,type:'Open-end Mutual Funds',description:'JANUS HENDERSON BALANCED FUND CLASS A (ACC)(USD)',quantity:2422.97,unitCost:51.1185,totalCost:123858.51,lastPrice:51.75,marketValue:125388.70,unrealizedGain:1530.19,unrealizedGainPct:1.24},
+    {isin:'IE0033759436',cusip:'G6358E248',symbol:null,type:'Open-end Mutual Funds',description:'MUZINICH ENHANCED YIELD SHORT TERM FUND CLASS A (ACC)(USD)',quantity:383.907,unitCost:228.9024,totalCost:87877.23,lastPrice:230.97,marketValue:88671,unrealizedGain:793.77,unrealizedGainPct:0.90},
+    {isin:'IE00BD0PCH68',cusip:'G6430L368',symbol:null,type:'Open-end Mutual Funds',description:'NEUBERGER BERMAN CORPORATE HYBRID BOND FUND CLASS A (ACC)(USD)',quantity:9050.156,unitCost:14.5042,totalCost:131265,lastPrice:14.61,marketValue:132222.78,unrealizedGain:957.78,unrealizedGainPct:0.73},
+    {isin:'IE00BTL1FJ89',cusip:'G6567Y779',symbol:null,type:'Open-end Mutual Funds',description:'NOMURA GLOBAL DYNAMIC BOND FUND CLASS A (USD)',quantity:2192.693,unitCost:120.0391,totalCost:263209,lastPrice:120.6134,marketValue:264468.16,unrealizedGain:1259.16,unrealizedGainPct:0.48},
+    {isin:'IE00BDZRXR46',cusip:'G6S30D261',symbol:null,type:'Open-end Mutual Funds',description:'NEUBERGER BERMAN SHORT DURATION EMERGING MKT DEBT FUND CLASS A (ACC)(USD)',quantity:9264.217,unitCost:14.45,totalCost:133867.94,lastPrice:14.45,marketValue:133867.94,unrealizedGain:0,unrealizedGainPct:0},
+    {isin:'LU0188167505',cusip:'L0424F176',symbol:null,type:'Open-end Mutual Funds',description:'AXA IM FIIS U.S. SHORT DURATION HIGH YIELD FUND CLASS A',quantity:170.107,unitCost:null,totalCost:null,lastPrice:null,marketValue:44646.28,unrealizedGain:null,unrealizedGainPct:null},
+    {isin:'LU0292454872',cusip:'L57826601',symbol:null,type:'Open-end Mutual Funds',description:'JPMORGAN U.S. SELECT EQUITY PLUS FUND CLASS A (ACC)(USD)',quantity:1464.466,unitCost:null,totalCost:null,lastPrice:61.62,marketValue:90240.39,unrealizedGain:null,unrealizedGainPct:null},
+    {isin:'LU1058973592',cusip:'L7985W456',symbol:null,type:'Open-end Mutual Funds',description:'ROBECO BP GLOBAL PREMIUM EQUITIES FUND CLASS F (ACC)(USD)',quantity:514.827,unitCost:null,totalCost:null,lastPrice:297.36,marketValue:154025.94,unrealizedGain:null,unrealizedGainPct:null},
+    {isin:'IE00B87KCF77',cusip:'G7113P361',symbol:null,type:'Open-end Mutual Funds',description:'PIMCO INCOME FUND INSTITUTIONAL CLASS (ACC)(USD)',quantity:13223.365,unitCost:null,totalCost:null,lastPrice:20.16,marketValue:266583.04,unrealizedGain:null,unrealizedGainPct:null},
+    {isin:'LU1953148886',cusip:'L8146M106',symbol:null,type:'Open-end Mutual Funds',description:'SCHRODER ISF GLOBAL CREDIT INCOME FUND CLASS A1 (ACC)(USD)',quantity:1908.34,unitCost:null,totalCost:null,lastPrice:138.7583,marketValue:265051.63,unrealizedGain:null,unrealizedGainPct:null},
+    {isin:'US78463V1070',cusip:'78463V107',symbol:'GLD',type:'Exchange-Traded Funds',description:'SPDR GOLD TR GOLD SHS',quantity:232,unitCost:null,totalCost:null,lastPrice:433.49,marketValue:100815.60,unrealizedGain:null,unrealizedGainPct:null},
+    {isin:'CH0451798356',cusip:'G1657U118',symbol:null,type:'Corporate Bonds',description:'BST ISSUER LTD TRACKER CTF ON BLOCKCHAIN',quantity:40,unitCost:null,totalCost:null,lastPrice:null,marketValue:87350.40,unrealizedGain:null,unrealizedGainPct:null}
+  ],
+  cashMovements:[],
+  transactions:[
+    {date:'2026-04-02',type:'MONEY FUND REDEMPTION',description:'BNY MELLON US TREAS SERVICE SHS MMF',asset:'DUTG',amount:2},
+    {date:'2026-04-01',type:'FOREIGN CUSTODY FEE',description:'Fgn Safekeeping MAR 2026 - BST',asset:'BST',amount:-2},
+    {date:'2026-03-31',type:'MONEY FUND INCOME',description:'BNY MELLON US TREAS MMF DUTG',asset:'DUTG',amount:267.88},
+    {date:'2026-03-03',type:'MONEY FUND REDEMPTION',description:'BNY MELLON US TREAS SERVICE SHS MMF',asset:'DUTG',amount:2},
+    {date:'2026-03-02',type:'FOREIGN CUSTODY FEE',description:'Fgn Safekeeping FEB 2026 - BST',asset:'BST',amount:-2},
+    {date:'2026-02-27',type:'MONEY FUND INCOME',description:'BNY MELLON US TREAS MMF DUTG',asset:'DUTG',amount:244.43},
+    {date:'2026-02-17',type:'YEAR-END REPORT FEE',description:'Year End Account Report',asset:'—',amount:-3},
+    {date:'2026-01-21',type:'ADMINISTRATION FEE',description:'1ST SEMESTER MAINTENANCE FEE 2026',asset:'—',amount:-187.50},
+    {date:'2026-01-30',type:'MONEY FUND INCOME',description:'BNY MELLON US TREAS MMF DUTG',asset:'DUTG',amount:272.81},
+    {date:'2025-12-31',type:'MONEY FUND INCOME',description:'BNY MELLON US TREAS MMF DUTG',asset:'DUTG',amount:116.73},
+    {date:'2025-12-22',type:'CASH DEBIT INTEREST',description:'Cash due interest 19 debit days AVBAL $161,222',asset:'—',amount:-967.85},
+    {date:'2025-12-22',type:'CASH DEBIT INTEREST',description:'Cash due interest 4 debit days AVBAL $39,276',asset:'—',amount:-48.56}
+  ]
+};
+
+// ── STATE ──
+let S = {clients:[], bbgPrices:{}, bbgDate:null};
+let cid = null; // current client id
+let movType = 'DEP';
+let pendingImport = null;
+
+// ── STORAGE ──
+function save(){try{localStorage.setItem('pfol_v1',JSON.stringify(S));}catch(e){toast('Error al guardar: '+e.message,1);}}
+function load(){
+  try{
+    const d=localStorage.getItem('pfol_v1');
+    if(d){S=JSON.parse(d);}
+    else{S.clients=[JSON.parse(JSON.stringify(ARVE_DEFAULT))];save();}
+  }catch(e){S.clients=[JSON.parse(JSON.stringify(ARVE_DEFAULT))];}
+}
+
+// ── BLOOMBERG ──
+function loadBloomberg(input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const wsName=wb.SheetNames.includes('PEGADO')?'PEGADO':wb.SheetNames[0];
+      const rows=XLSX.utils.sheet_to_json(wb.Sheets[wsName],{header:1,defval:null});
+      const prices={};
+      const isISIN=v=>typeof v==='string'&&/^[A-Z]{2}[A-Z0-9]{10}$/.test(v.trim());
+      rows.forEach(r=>{
+        if(!r) return;
+        let isin=null,price=null,chg=null,ytd=null,name=String(r[0]||'');
+        if(isISIN(r[2]) && typeof r[4]==='number'){isin=r[2].trim();price=r[4];chg=typeof r[5]==='number'?r[5]:null;ytd=typeof r[6]==='number'?r[6]:null;}
+        else if(isISIN(r[3]) && typeof r[5]==='number'){isin=r[3].trim();price=r[5];chg=typeof r[6]==='number'?r[6]:null;ytd=typeof r[7]==='number'?r[7]:null;}
+        if(isin&&price!=null){
+          const entry={price,chg,ytd,name};
+          prices[isin]=entry;
+          // También indexar por CUSIP (chars 2-10 del ISIN para acciones US)
+          if(isin.startsWith('US')&&isin.length===12) prices['_C_'+isin.slice(2,11)]=entry;
+          // También indexar por ticker (primer word del col1, ej "QBTS" de "QBTS US Equity")
+          if(r[1]&&typeof r[1]==='string'){const tk=r[1].trim().split(' ')[0];if(tk) prices['_T_'+tk]=entry;}
+        }
+      });
+      S.bbgPrices=prices; S.bbgDate=new Date().toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+      let upd=0;
+      S.clients.forEach(c=>{
+        c.holdings.forEach(h=>{
+          const entry=(h.isin&&prices[h.isin])||(h.cusip&&prices['_C_'+h.cusip])||(h.symbol&&prices['_T_'+h.symbol]);
+          if(entry){
+            h.lastPrice=entry.price;
+            h.marketValue=h.quantity*h.lastPrice;
+            if(h.totalCost){h.unrealizedGain=h.marketValue-h.totalCost;h.unrealizedGainPct=(h.unrealizedGain/h.totalCost)*100;}
+            upd++;
+          }
+        });
+        recalc(c);
+      });
+      save(); bbgBar(); if(cid) renderDetail(cid); else renderGrid();
+      toast(`Bloomberg actualizado — ${Object.keys(prices).length} precios, ${upd} posiciones`);
+    }catch(err){toast('Error Bloomberg: '+err.message,1);}
+  };
+  reader.readAsArrayBuffer(file); input.value='';
+}
+
+function bbgBar(){
+  const n=Object.keys(S.bbgPrices).length;
+  document.getElementById('bbg-dot').classList.toggle('active',n>0);
+  document.getElementById('bbg-status').textContent=n>0?`Bloomberg activo — ${n} instrumentos`:'Bloomberg: sin datos cargados';
+  document.getElementById('bbg-updated').textContent=S.bbgDate?`Actualizado: ${S.bbgDate}`:'';
+}
+
+// ── NAV ──
+function showMain(){
+  document.getElementById('view-main').style.display='';
+  document.getElementById('view-client').style.display='none';
+  cid=null; renderGrid();
+}
+function showClientDetail(id){
+  cid=id;
+  document.getElementById('view-main').style.display='none';
+  document.getElementById('view-client').style.display='';
+  renderDetail(id);
+}
+function showTab(tab,el){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-'+tab).classList.add('active');
+  if(tab==='holdings') renderHoldings(cid);
+  else if(tab==='movements') renderMovements(cid);
+  else if(tab==='transactions') renderTransactions(cid);
+}
+
+// ── GRID ──
+function renderGrid(){
+  const aum=S.clients.reduce((s,c)=>s+c.totalValue,0);
+  document.getElementById('grid-summary').textContent=`${S.clients.length} cliente${S.clients.length!==1?'s':''} · AUM: ${fmt(aum)}`;
+  document.getElementById('client-grid').innerHTML=
+    S.clients.map(c=>{
+      const gp=c.unrealizedGain||0, gpPct=c.totalValue>0?(gp/c.totalValue*100).toFixed(2):'0.00';
+      const cls=gp>=0?'pos':'neg', sign=gp>=0?'+':'';
+      return `<div class="client-card" onclick="showClientDetail('${c.id}')">
+        <div class="card-name">${c.name}</div>
+        <div class="card-account">${c.accountNo||'—'} · ${c.manager||'—'}</div>
+        <div class="card-label">Valor total</div>
+        <div class="card-value">${fmt(c.totalValue)}</div>
+        <div class="card-metrics">
+          <div><div class="card-label">Cash</div><div class="metric-val neutral">${fmt(c.cashAvailable)}</div></div>
+          <div><div class="card-label">G/P</div><div class="metric-val ${cls}">${sign}${fmt(gp)}<br><span style="font-size:11px;">${sign}${gpPct}%</span></div></div>
+        </div>
+        <div class="card-date">Actualizado: ${c.lastUpdated||'—'} · ${c.holdings.length} posiciones</div>
+      </div>`;
+    }).join('')+
+    `<button class="add-card" onclick="openModal('add-client-modal')">
+      <div style="font-size:32px;margin-bottom:8px;">+</div>
+      <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;">Nuevo cliente</div>
+    </button>`;
+}
+
+// ── DETAIL ──
+function renderDetail(id){
+  const c=S.clients.find(x=>x.id===id); if(!c) return;
+  document.getElementById('detail-name').textContent=c.name;
+  document.getElementById('detail-account').textContent=`Cuenta: ${c.accountNo||'—'} · Manager: ${c.manager||'—'}`;
+  const gp=c.unrealizedGain||0, cls=gp>=0?'pos':'neg', sign=gp>=0?'+':'';
+  const knownCost=c.holdings.filter(h=>h.totalCost!=null).reduce((s,h)=>s+h.totalCost,0);
+  const knownGain=c.holdings.filter(h=>h.unrealizedGain!=null).reduce((s,h)=>s+h.unrealizedGain,0);
+  const gpPct=knownCost>0?(knownGain/knownCost*100).toFixed(2):'—';
+  document.getElementById('detail-metrics').innerHTML=`
+    <div class="d-metric"><div class="d-metric-label">Valor total</div><div class="d-metric-val">${fmt(c.totalValue)}</div></div>
+    <div class="d-metric"><div class="d-metric-label">Cash disponible</div><div class="d-metric-val neutral">${fmt(c.cashAvailable)}</div></div>
+    <div class="d-metric"><div class="d-metric-label">G/P no realizada</div><div class="d-metric-val ${cls}">${sign}${fmt(gp)}</div></div>
+    <div class="d-metric"><div class="d-metric-label">Retorno s/costo</div><div class="d-metric-val ${cls}">${gpPct!=='—'?(gp>=0?'+':'')+gpPct+'%':'—'}</div></div>
+    <div class="d-metric"><div class="d-metric-label">Posiciones</div><div class="d-metric-val">${c.holdings.length}</div></div>`;
+  renderHoldings(id);
+}
+
+// ── HOLDINGS ──
+function renderHoldings(id){
+  const c=S.clients.find(x=>x.id===id); if(!c) return;
+  const total=c.holdings.reduce((s,h)=>s+(h.marketValue||0),0);
+  const knownGain=c.holdings.filter(h=>h.unrealizedGain!=null).reduce((s,h)=>s+h.unrealizedGain,0);
+  const knownCost=c.holdings.filter(h=>h.totalCost!=null).reduce((s,h)=>s+h.totalCost,0);
+  const gpPct=knownCost>0?(knownGain/knownCost*100):0;
+  document.getElementById('perf-grid').innerHTML=`
+    <div class="perf-card"><div class="perf-label">Valor cartera</div><div class="perf-val">${fmt(total)}</div></div>
+    <div class="perf-card"><div class="perf-label">G/P total (USD)</div><div class="perf-val ${knownGain>=0?'pos':'neg'}">${knownGain>=0?'+':''}${fmt(knownGain)}</div></div>
+    <div class="perf-card"><div class="perf-label">Retorno s/costo</div><div class="perf-val ${gpPct>=0?'pos':'neg'}">${gpPct>=0?'+':''}${gpPct.toFixed(2)}%</div></div>
+    <div class="perf-card"><div class="perf-label">Cash / Total</div><div class="perf-val">${total>0?(c.cashAvailable/total*100).toFixed(1)+'%':'—'}</div></div>`;
+  document.getElementById('holdings-asof').textContent=c.lastUpdated?`Datos al: ${c.lastUpdated}`:'';
+  const tbadge={
+    'Money Market Funds':['t-mm','MM'],
+    'Open-end Mutual Funds':['t-mf','Fund'],
+    'Exchange-Traded Funds':['t-etf','ETF'],
+    'Corporate Bonds':['t-bond','Bond'],
+    'Government Bonds':['t-bond','Sov'],
+    'Equities':['t-eq','Eq']
+  };
+  document.getElementById('holdings-tbody').innerHTML=c.holdings.map((h,i)=>{
+    const pct=total>0?(h.marketValue/total*100).toFixed(1):'—';
+    const [bcls,blbl]=tbadge[h.type]||['t-mf',h.type.substring(0,4)];
+    const gpU=h.unrealizedGain!=null?`<span class="${h.unrealizedGain>=0?'pos':'neg'}">${h.unrealizedGain>=0?'+':''}${fmtN(h.unrealizedGain)}</span>`:'<span style="color:var(--vg)">—</span>';
+    const gpP=h.unrealizedGainPct!=null?`<span class="${h.unrealizedGainPct>=0?'pos':'neg'}">${h.unrealizedGainPct>=0?'+':''}${h.unrealizedGainPct.toFixed(2)}%</span>`:'<span style="color:var(--vg)">—</span>';
+    return `<tr>
+      <td><div style="font-size:12px;font-weight:500;max-width:260px;line-height:1.3;">${h.description}</div><div style="font-size:10px;color:var(--vg);margin-top:2px;">${h.isin||h.cusip||'—'}</div></td>
+      <td><span class="tbadge ${bcls}">${blbl}</span></td>
+      <td class="r mono">${fmtQ(h.quantity)}</td>
+      <td class="r mono">${h.unitCost!=null?'$'+h.unitCost.toFixed(4):'<span style="color:var(--vg)">—</span>'}</td>
+      <td class="r mono">${h.lastPrice!=null?'$'+h.lastPrice.toFixed(4):'<span style="color:var(--vg)">—</span>'}</td>
+      <td class="r mono" style="font-weight:500;">${fmt(h.marketValue)}</td>
+      <td class="r">${gpU}</td>
+      <td class="r">${gpP}</td>
+      <td class="r mono" style="color:var(--vg);">${pct}%</td>
+      <td><button class="btn-danger" onclick="removeHolding('${id}',${i})">✕</button></td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="10" style="text-align:center;padding:2rem;color:var(--vg);">Sin posiciones</td></tr>';
+  document.getElementById('holdings-total').textContent=fmt(total);
+}
+
+function recalc(c){
+  c.totalValue=c.holdings.reduce((s,h)=>s+(h.marketValue||0),0);
+  const mm=c.holdings.find(h=>h.type==='Money Market Funds');
+  if(mm) c.cashAvailable=mm.marketValue;
+  // Usar total del UGL si está disponible (incluye posiciones sin costo individual)
+  if(c.uglTotalGain!=null) c.unrealizedGain=c.uglTotalGain;
+  else c.unrealizedGain=c.holdings.filter(h=>h.unrealizedGain!=null).reduce((s,h)=>s+h.unrealizedGain,0);
+}
+
+function saveHolding(){
+  const desc=document.getElementById('ah-desc').value.trim();
+  if(!desc){toast('Ingresá una descripción',1);return;}
+  const qty=parseFloat(document.getElementById('ah-qty').value)||0;
+  const cost=parseFloat(document.getElementById('ah-cost').value)||null;
+  const price=parseFloat(document.getElementById('ah-price').value)||null;
+  const isin=document.getElementById('ah-isin').value.trim()||null;
+  const type=document.getElementById('ah-type').value;
+  const mktVal=price&&qty?price*qty:(cost&&qty?cost*qty:0);
+  const tc=cost&&qty?cost*qty:null;
+  const gain=mktVal&&tc?mktVal-tc:null;
+  const gainPct=gain!=null&&tc?(gain/tc*100):null;
+  const c=S.clients.find(x=>x.id===cid);
+  c.holdings.push({isin,cusip:null,symbol:null,type,description:desc,quantity:qty,unitCost:cost,totalCost:tc,lastPrice:price,marketValue:mktVal,unrealizedGain:gain,unrealizedGainPct:gainPct});
+  recalc(c); save(); closeModal('add-holding-modal'); renderDetail(cid); toast('Posición agregada ✓');
+}
+
+function removeHolding(clientId,idx){
+  if(!confirm('¿Eliminar esta posición?')) return;
+  const c=S.clients.find(x=>x.id===clientId);
+  c.holdings.splice(idx,1); recalc(c); save(); renderHoldings(clientId); renderDetail(clientId); toast('Posición eliminada');
+}
+
+// ── IMPORT POSITIONS ──
+function importPositions(input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:null});
+      const holdings=parsePositions(rows);
+      if(!holdings.length){toast('No se encontraron posiciones',1);return;}
+      const c=S.clients.find(x=>x.id===cid);
+      c.holdings=holdings; c.lastUpdated=new Date().toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+      if(Object.keys(S.bbgPrices).length){
+        c.holdings.forEach(h=>{
+          if(h.isin&&S.bbgPrices[h.isin]){h.lastPrice=S.bbgPrices[h.isin].price;h.marketValue=h.quantity*h.lastPrice;if(h.totalCost){h.unrealizedGain=h.marketValue-h.totalCost;h.unrealizedGainPct=(h.unrealizedGain/h.totalCost)*100;}}
+        });
+      }
+      recalc(c); save(); renderDetail(cid); toast(`${holdings.length} posiciones importadas ✓`);
+    }catch(err){toast('Error al importar: '+err.message,1);}
+  };
+  reader.readAsArrayBuffer(file); input.value='';
+}
+
+function importUGL(input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:null});
+      const {items:uglData, totalGain}=parseUGL(rows);
+      if(!uglData.length&&totalGain==null){toast('No se encontraron datos en el UGL',1);return;}
+      const c=S.clients.find(x=>x.id===cid);
+      c.holdings=mergeUGLIntoHoldings(c.holdings, uglData);
+      if(totalGain!=null) c.uglTotalGain=totalGain;
+      recalc(c); save(); renderDetail(cid); toast(`UGL importado — G/P total: ${totalGain!=null?fmtN(totalGain):'—'} ✓`);
+    }catch(err){toast('Error UGL: '+err.message,1);}
+  };
+  reader.readAsArrayBuffer(file); input.value='';
+}
+
+function importBalances(input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:null});
+      const bal=parseBalances(rows);
+      if(!bal){toast('No se encontraron datos de balance',1);return;}
+      const c=S.clients.find(x=>x.id===cid);
+      if(bal.totalValue) c.totalValue=bal.totalValue;
+      if(bal.cashAvailable!=null) c.cashAvailable=bal.cashAvailable;
+      save(); renderDetail(cid); toast(`Balances actualizados ✓`);
+    }catch(err){toast('Error Balances: '+err.message,1);}
+  };
+  reader.readAsArrayBuffer(file); input.value='';
+}
+
+function parsePositions(rows){
+  let hi=-1;
+  for(let i=0;i<rows.length;i++){if(rows[i]&&rows[i].includes('Security Description')){hi=i;break;}}
+  if(hi<0) return [];
+  const hdr=rows[hi], col=k=>hdr.indexOf(k), out=[];
+  for(let i=hi+1;i<rows.length;i++){
+    const r=rows[i]; if(!r) continue;
+    const desc=String(r[col('Security Description')]||'').trim();
+    if(!desc||desc.startsWith('Disclaimer')||desc.startsWith('All Market')) continue;
+    const qty=parseFloat(r[col('Total Quantity')])||0;
+    const mv=parseFloat(r[col('Market Value (USDE)')])||0;
+    out.push({isin:r[col('ISIN')]||null,cusip:r[col('CUSIP')]||null,symbol:r[col('Symbol')]||null,type:r[col('Security Type')]||'Other',description:desc,quantity:qty,unitCost:null,totalCost:null,lastPrice:mv&&qty?mv/qty:null,marketValue:mv,unrealizedGain:null,unrealizedGainPct:null});
+  }
+  return out;
+}
+
+// ── IMPORT TRANSACTIONS ──
+function importTransactions(input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:null});
+      let hi=-1;
+      for(let i=0;i<rows.length;i++){if(rows[i]&&rows[i].includes('Transaction Type')){hi=i;break;}}
+      if(hi<0){toast('No se encontraron transacciones',1);return;}
+      const hdr=rows[hi], col=k=>hdr.indexOf(k), txns=[];
+      for(let i=hi+1;i<rows.length;i++){
+        const r=rows[i]; if(!r||!r[col('Transaction Type')]) continue;
+        const d=r[col('Process Date')];
+        let date=d instanceof Date?d.toISOString().split('T')[0]:(typeof d==='number'?new Date((d-25569)*86400000).toISOString().split('T')[0]:String(d||''));
+        txns.push({date,type:String(r[col('Transaction Type')]||'').trim(),description:String(r[col('Transaction Description')]||'').trim().substring(0,80),asset:String(r[col('Security Description')]||'—').trim().substring(0,30),amount:parseFloat(r[col('Net Amount (Base Currency)')])||0});
+      }
+      const c=S.clients.find(x=>x.id===cid);
+      c.transactions=txns; save(); renderTransactions(cid); toast(`${txns.length} transacciones importadas ✓`);
+    }catch(err){toast('Error: '+err.message,1);}
+  };
+  reader.readAsArrayBuffer(file); input.value='';
+}
+
+function renderTransactions(id){
+  const c=S.clients.find(x=>x.id===id); if(!c) return;
+  document.getElementById('txn-count').textContent=`${c.transactions.length} registros`;
+  document.getElementById('transactions-tbody').innerHTML=c.transactions.map(t=>{
+    const cls=t.amount>=0?'pos':'neg', sign=t.amount>=0?'+':'';
+    return `<tr>
+      <td class="mono" style="color:var(--vg);white-space:nowrap;">${t.date}</td>
+      <td><span style="font-size:10px;background:rgba(168,218,187,.06);border:1px solid var(--br);padding:2px 6px;border-radius:3px;color:var(--vg);white-space:nowrap;">${t.type}</span></td>
+      <td style="font-size:11px;max-width:300px;">${t.description}</td>
+      <td style="font-size:11px;color:var(--vg);">${t.asset}</td>
+      <td class="r"><span class="${cls}">${sign}${fmtN(t.amount)}</span></td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--vg);">Importá el archivo de Pershing para ver transacciones</td></tr>';
+}
+
+// ── CASH MOVEMENTS ──
+function setMovType(t){
+  movType=t;
+  document.getElementById('tog-dep').className='tog'+(t==='DEP'?' on-dep':'');
+  document.getElementById('tog-wit').className='tog'+(t==='WIT'?' on-wit':'');
+}
+function addMovement(){
+  const date=document.getElementById('mov-date').value;
+  const amount=parseFloat(document.getElementById('mov-amount').value);
+  const desc=document.getElementById('mov-desc').value.trim();
+  if(!date||!amount){toast('Completá fecha y monto',1);return;}
+  const c=S.clients.find(x=>x.id===cid);
+  c.cashMovements.push({id:'M'+Date.now(),date,type:movType,amount,description:desc});
+  c.cashMovements.sort((a,b)=>b.date.localeCompare(a.date));
+  save(); renderMovements(cid);
+  document.getElementById('mov-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('mov-amount').value='';
+  document.getElementById('mov-desc').value='';
+  toast('Movimiento registrado ✓');
+}
+function removeMovement(clientId,mid){
+  const c=S.clients.find(x=>x.id===clientId);
+  c.cashMovements=c.cashMovements.filter(m=>m.id!==mid);
+  save(); renderMovements(clientId);
+}
+function renderMovements(id){
+  const c=S.clients.find(x=>x.id===id); if(!c) return;
+  const deps=c.cashMovements.filter(m=>m.type==='DEP').reduce((s,m)=>s+m.amount,0);
+  const wits=c.cashMovements.filter(m=>m.type==='WIT').reduce((s,m)=>s+m.amount,0);
+  document.getElementById('total-dep').textContent=fmt(deps);
+  document.getElementById('total-wit').textContent=fmt(wits);
+  const net=deps-wits;
+  document.getElementById('total-net').textContent=fmt(net);
+  document.getElementById('total-net').className=net>=0?'pos':'neg';
+  document.getElementById('movements-tbody').innerHTML=c.cashMovements.map(m=>{
+    const isDep=m.type==='DEP';
+    return `<tr>
+      <td class="mono" style="color:var(--vg);white-space:nowrap;">${m.date}</td>
+      <td><span style="background:${isDep?'rgba(46,204,113,.1)':'rgba(231,76,60,.1)'};color:${isDep?'#2ecc71':'#e74c3c'};border:1px solid ${isDep?'rgba(46,204,113,.3)':'rgba(231,76,60,.3)'};padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;">${isDep?'↑ DEPÓSITO':'↓ RETIRO'}</span></td>
+      <td style="font-size:12px;">${m.description||'—'}</td>
+      <td class="r"><span class="${isDep?'pos':'neg'}">${isDep?'+':'-'}${fmt(m.amount)}</span></td>
+      <td><button class="btn-danger" onclick="removeMovement('${id}','${m.id}')">✕</button></td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--vg);">Sin movimientos registrados</td></tr>';
+}
+
+// ── NEW CLIENT ──
+const ncData = {pos:null, ugl:null, bal:null, txn:null};
+
+function ncLoadFile(type, input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:null});
+      if(type==='pos'){
+        ncData.pos=parsePositions(rows);
+        document.getElementById('nc-pos-status').textContent=`✓ ${ncData.pos.length} posiciones`;
+      } else if(type==='ugl'){
+        ncData.ugl=parseUGL(rows);
+        document.getElementById('nc-ugl-status').textContent=`✓ ${ncData.ugl.items.length} lotes`;
+      } else if(type==='bal'){
+        ncData.bal=parseBalances(rows);
+        document.getElementById('nc-bal-status').textContent=ncData.bal?`✓ Total: ${fmt(ncData.bal.totalValue)}`:'✓ Cargado';
+      } else if(type==='txn'){
+        ncData.txn=parseTransactionsRows(rows);
+        document.getElementById('nc-txn-status').textContent=`✓ ${ncData.txn.length} transacciones`;
+      }
+    }catch(err){document.getElementById('nc-'+type+'-status').textContent='Error al leer';}
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function parseUGL(rows){
+  // Extraer total del encabezado ("Net Unrealized Gain/loss: 45,916.91")
+  let totalGain=null;
+  for(let i=0;i<20;i++){
+    const r=rows[i]; if(!r) continue;
+    const cell=String(r[0]||'');
+    const m=cell.match(/Net Unrealized Gain\/loss:\s*([-\d,\.]+)/i);
+    if(m){totalGain=parseFloat(m[1].replace(/,/g,''));break;}
+  }
+  let hi=-1;
+  for(let i=0;i<rows.length;i++){if(rows[i]&&rows[i].includes('Security Description')&&rows[i].includes('Security Identifier')){hi=i;break;}}
+  if(hi<0) return {items:[],totalGain};
+  const hdr=rows[hi], col=k=>hdr.indexOf(k), out=[];
+  for(let i=hi+1;i<rows.length;i++){
+    const r=rows[i]; if(!r) continue;
+    const id=String(r[col('Security Identifier')]||'').trim();
+    const desc=String(r[col('Security Description')]||'').trim();
+    if(!id||id==='TOTAL'||!desc||desc.startsWith('Disclaimer')) continue;
+    const unitCost=col('Unit Cost')>=0?parseFloat(r[col('Unit Cost')])||null:null;
+    const totalCost=parseFloat(r[col('Current Total Cost')])||null;
+    const mv=parseFloat(r[col('Market Value')])||null;
+    const gain=parseFloat(r[col('Gain/Loss')])||null;
+    const gainPct=parseFloat(r[col('Gain/Loss %')])||null;
+    if(totalCost!=null||gain!=null) out.push({cusip:id, unitCost, totalCost, marketValue:mv, unrealizedGain:gain, unrealizedGainPct:gainPct});
+  }
+  return {items:out, totalGain};
+}
+
+function parseBalances(rows){
+  for(let i=0;i<rows.length;i++){
+    const r=rows[i]; if(!r) continue;
+    if(typeof r[0]==='string'&&r[0].startsWith('Total Accounts Value:')){
+      const val=parseFloat(String(r[0]).replace(/[^0-9.]/g,''))||null;
+      return {totalValue:val};
+    }
+    if(r[2]&&typeof r[2]==='number'&&r[2]>1000){
+      return {totalValue:r[2], cashAvailable:parseFloat(r[3])||0};
+    }
+  }
+  return null;
+}
+
+function parseTransactionsRows(rows){
+  let hi=-1;
+  for(let i=0;i<rows.length;i++){if(rows[i]&&rows[i].includes('Transaction Type')){hi=i;break;}}
+  if(hi<0) return [];
+  const hdr=rows[hi], col=k=>hdr.indexOf(k), out=[];
+  for(let i=hi+1;i<rows.length;i++){
+    const r=rows[i]; if(!r||!r[col('Transaction Type')]) continue;
+    const d=r[col('Process Date')];
+    let date=d instanceof Date?d.toISOString().split('T')[0]:(typeof d==='number'?new Date((d-25569)*86400000).toISOString().split('T')[0]:String(d||''));
+    out.push({date,type:String(r[col('Transaction Type')]||'').trim(),description:String(r[col('Transaction Description')]||'').trim().substring(0,80),asset:String(r[col('Security Description')]||'—').trim().substring(0,30),amount:parseFloat(r[col('Net Amount (Base Currency)')])||0});
+  }
+  return out;
+}
+
+function mergeUGLIntoHoldings(holdings, uglData){
+  if(!uglData||!uglData.length) return holdings;
+  const map={};
+  uglData.forEach(u=>{
+    if(!map[u.cusip]) map[u.cusip]={totalCost:0,unrealizedGain:0,unitCost:u.unitCost,count:0};
+    if(u.totalCost) map[u.cusip].totalCost+=u.totalCost;
+    if(u.unrealizedGain!=null) map[u.cusip].unrealizedGain+=u.unrealizedGain;
+    if(!map[u.cusip].unitCost&&u.unitCost) map[u.cusip].unitCost=u.unitCost;
+    map[u.cusip].count++;
+  });
+  return holdings.map(h=>{
+    // Match by cusip, then symbol, then ticker portion of ISIN
+    const key=h.cusip&&map[h.cusip]?h.cusip:h.symbol&&map[h.symbol]?h.symbol:null;
+    const u=key?map[key]:null;
+    if(u){
+      if(u.totalCost) h.totalCost=u.totalCost;
+      if(u.unrealizedGain!=null) h.unrealizedGain=u.unrealizedGain;
+      // Derive unitCost from totalCost/quantity if not directly available
+      if(u.unitCost) h.unitCost=u.unitCost;
+      else if(h.totalCost&&h.quantity) h.unitCost=h.totalCost/h.quantity;
+      if(h.totalCost&&h.unrealizedGain!=null) h.unrealizedGainPct=(h.unrealizedGain/h.totalCost)*100;
+    }
+    return h;
+  });
+}
+
+function saveNewClient(){
+  const name=document.getElementById('nc-name').value.trim();
+  if(!name){toast('Ingresá el nombre',1);return;}
+  const account=document.getElementById('nc-account').value.trim();
+  const mgr=document.getElementById('nc-mgr').value.trim();
+  const id=name.replace(/[^A-Z0-9]/gi,'').toUpperCase().substring(0,8)+Date.now().toString().slice(-4);
+  let holdings=ncData.pos||[];
+  if(ncData.ugl) holdings=mergeUGLIntoHoldings(holdings, ncData.ugl.items);
+  const bal=ncData.bal||null;
+  const nc={
+    id,name,accountNo:account,manager:mgr,
+    lastUpdated:new Date().toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}),
+    totalValue:bal?.totalValue||0,
+    cashAvailable:bal?.cashAvailable||0,
+    unrealizedGain:0,
+    uglTotalGain:ncData.ugl?.totalGain??null,
+    holdings,
+    cashMovements:[],
+    transactions:ncData.txn||[]
+  };
+  recalc(nc); S.clients.push(nc); save();
+  closeModal('add-client-modal');
+  ncData.pos=null; ncData.ugl=null; ncData.bal=null; ncData.txn=null;
+  ['nc-name','nc-account','nc-mgr'].forEach(id=>document.getElementById(id).value='');
+  ['nc-pos-status','nc-ugl-status','nc-bal-status','nc-txn-status'].forEach(id=>document.getElementById(id).textContent='');
+  renderGrid(); toast(`Cliente ${name} creado ✓`);
+}
+
+// ── MODALS ──
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+// ── TOAST ──
+function toast(msg,isErr){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast'+(isErr?' err':'');
+  void t.offsetWidth; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+// ── FORMAT ──
+function fmt(n){if(n==null||isNaN(n))return'—';return'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtN(n){if(n==null||isNaN(n))return'—';return'$'+Math.abs(Number(n)).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtQ(n){if(n==null||isNaN(n))return'—';return Number(n).toLocaleString('en-US',{minimumFractionDigits:3,maximumFractionDigits:3});}
+
+// ── INIT ──
+document.addEventListener('DOMContentLoaded',function(){
+  document.getElementById('mov-date').value=new Date().toISOString().split('T')[0];
+  load(); bbgBar(); renderGrid();
+});
+</script>
+</body>
+</html>

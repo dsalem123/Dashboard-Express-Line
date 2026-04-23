@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Documentación de Apertura</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  :root{
+    --ev:#0D2924;--mint:#A8DABB;--gold:#C9A84C;--cream:#ECEDE3;--vg:#6B8578;
+    --bg:#0a1f1b;--sf:#112920;--br:rgba(168,218,187,0.15);
+  }
+
+  html,body{
+    height:100%;
+    background:var(--bg);
+    font-family:'Inter',sans-serif;
+    color:var(--cream);
+    overflow-x:hidden;
+  }
+
+  /* Header full-width */
+  .doc-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:20px 24px;
+    border-bottom:1px solid var(--br);
+    position:sticky;
+    top:0;
+    background:var(--ev);
+    z-index:10;
+  }
+  .badge{
+    font-size:10px;
+    letter-spacing:3px;
+    text-transform:uppercase;
+    color:var(--vg);
+    border:1px solid var(--br);
+    padding:6px 14px;
+    border-radius:20px;
+  }
+
+  .doc-wrapper{
+    padding:20px 24px 32px;
+  }
+
+  /* Tabs */
+  .doc-tabs{
+    display:flex;
+    gap:4px;
+    margin:0 0 14px;
+    border-bottom:1px solid var(--br);
+  }
+  .doc-tab{
+    background:none;
+    border:none;
+    padding:10px 22px;
+    font-size:11px;
+    font-weight:600;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:var(--vg);
+    cursor:pointer;
+    border-bottom:2px solid transparent;
+    font-family:'Inter',sans-serif;
+    transition:all .2s;
+    margin-bottom:-1px;
+  }
+  .doc-tab:hover{color:var(--cream);}
+  .doc-tab.active{color:var(--gold);border-bottom-color:var(--gold);}
+
+  /* Sections */
+  .doc-section{display:none;}
+  .doc-section.active{display:block;}
+
+  .doc-section-title{
+    font-size:10px;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    color:var(--vg);
+    margin:20px 0 10px;
+    font-weight:600;
+  }
+
+  /* Cards */
+  .doc-card-full{
+    background:var(--sf);
+    border:1px solid var(--br);
+    border-radius:8px;
+    padding:18px 20px;
+    margin-bottom:16px;
+    overflow:hidden;
+    box-sizing:border-box;
+  }
+  .doc-card{
+    background:var(--sf);
+    border:1px solid var(--br);
+    border-radius:8px;
+    padding:18px 20px;
+    min-width:0;
+    overflow:hidden;
+    box-sizing:border-box;
+  }
+  .doc-card-title{
+    font-size:11px;
+    font-weight:600;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    color:var(--gold);
+    margin-bottom:14px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .doc-card-title span.line{
+    width:20px;height:1px;
+    background:rgba(201,168,76,.4);
+    display:inline-block;
+    flex-shrink:0;
+  }
+
+  /* Grid */
+  .doc-grid{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    gap:16px;
+    margin-bottom:20px;
+  }
+
+  /* Items */
+  .doc-item{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    padding:9px 0;
+    border-bottom:1px solid rgba(168,218,187,.08);
+    min-width:0;
+  }
+  .doc-item:last-child{border-bottom:none;padding-bottom:0;}
+  .doc-dot{
+    width:6px;height:6px;
+    border-radius:50%;
+    background:var(--mint);
+    flex-shrink:0;
+    margin-top:5px;
+  }
+  .doc-dot-warn{background:var(--gold);}
+  .doc-item-body{flex:1;min-width:0;overflow:hidden;}
+  .doc-item-name{
+    font-size:13px;
+    color:var(--cream);
+    font-weight:500;
+    line-height:1.4;
+    word-wrap:break-word;
+    overflow-wrap:break-word;
+  }
+  .doc-item-desc{
+    font-size:11px;
+    color:var(--vg);
+    margin-top:3px;
+    line-height:1.5;
+    word-wrap:break-word;
+    overflow-wrap:break-word;
+  }
+
+  /* Badges */
+  .doc-badge-warn{
+    display:inline-flex;
+    align-items:center;
+    font-size:9px;
+    font-weight:600;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    background:rgba(201,168,76,.15);
+    color:var(--gold);
+    border:1px solid rgba(201,168,76,.3);
+    padding:2px 7px;
+    border-radius:10px;
+    margin-left:6px;
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+  .internal-badge{
+    display:inline-flex;
+    align-items:center;
+    font-size:9px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    background:rgba(107,133,120,.2);
+    color:#9ab5ab;
+    border:1px solid rgba(107,133,120,.3);
+    padding:2px 7px;
+    border-radius:10px;
+    margin-left:6px;
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+
+  /* Note */
+  .doc-note{
+    font-size:11px;
+    color:var(--vg);
+    background:rgba(168,218,187,.04);
+    border-left:2px solid rgba(168,218,187,.2);
+    padding:8px 12px;
+    border-radius:0 4px 4px 0;
+    margin-top:12px;
+    line-height:1.6;
+  }
+
+  /* Form preview */
+  .form-preview{
+    background:rgba(10,31,27,.9);
+    border:1px solid var(--br);
+    border-radius:6px;
+    padding:14px 16px;
+    margin-top:10px;
+  }
+  .form-preview-title{
+    font-size:10px;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    color:var(--mint);
+    margin-bottom:10px;
+    font-weight:600;
+  }
+  .form-field-group{margin-bottom:8px;}
+  .form-field-group-name{
+    font-size:10px;
+    color:var(--vg);
+    letter-spacing:1px;
+    text-transform:uppercase;
+    margin-bottom:4px;
+  }
+  .form-fields{display:flex;flex-wrap:wrap;gap:5px;overflow:hidden;}
+  .form-field{
+    font-size:11px;
+    color:rgba(236,237,227,.7);
+    background:rgba(168,218,187,.06);
+    border:1px solid rgba(168,218,187,.1);
+    border-radius:4px;
+    padding:3px 8px;
+  }
+</style>
+</head>
+<body>
+
+<!-- Header full-width -->
+<div class="doc-header">
+  <span class="doc-logo-placeholder">ExpressLine</span>
+  <span class="badge">Documentaci&oacute;n de Apertura &middot; Offshore</span>
+</div>
+
+<div class="doc-wrapper">
+
+  <!-- Tabs -->
+  <div class="doc-tabs">
+    <button type="button" class="doc-tab active" onclick="showTab('nevis',this)">Sociedad en Nevis</button>
+    <button type="button" class="doc-tab" onclick="showTab('pershing',this)">Apertura cuenta Pershing</button>
+  </div>
+
+  <!-- ══ NEVIS ══ -->
+  <div id="doc-nevis" class="doc-section active">
+
+    <div class="doc-card-full">
+      <div class="doc-card-title"><span class="line"></span>Documentación requerida &mdash; Incorporación Nevis</div>
+
+      <div class="doc-item">
+        <div class="doc-dot"></div>
+        <div class="doc-item-body">
+          <div class="doc-item-name">Cuestionario de incorporación<span class="doc-badge-warn">Formulario</span></div>
+          <div class="doc-item-desc">Business Services Nevis Ltd &mdash; Incorporation and Information Questionnaire. Incluye datos de la sociedad, accionistas, directores y actividades comerciales.</div>
+        </div>
+      </div>
+
+      <div class="doc-item">
+        <div class="doc-dot doc-dot-warn"></div>
+        <div class="doc-item-body">
+          <div class="doc-item-name">Copia de pasaporte o DNI<span class="doc-badge-warn">Notariado</span></div>
+          <div class="doc-item-desc">De cada titular. Debe ser notariada o certificada como fiel y verdadera copia del original.</div>
+        </div>
+      </div>
+
+      <div class="doc-item">
+        <div class="doc-dot doc-dot-warn"></div>
+        <div class="doc-item-body">
+          <div class="doc-item-name">Comprobante de domicilio</div>
+          <div class="doc-item-desc">Debe figurar nombre y dirección del titular. No puede estar emitido con más de 3 meses de antigüedad.</div>
+        </div>
+      </div>
+
+      <div class="doc-item">
+        <div class="doc-dot doc-dot-warn"></div>
+        <div class="doc-item-body">
+          <div class="doc-item-name">Carta de referencia &mdash; Abogado o Contador</div>
+          <div class="doc-item-desc">Emitida por un abogado o contador matriculado. No puede tener más de 3 meses de emisión.</div>
+        </div>
+      </div>
+
+      <div class="doc-item">
+        <div class="doc-dot doc-dot-warn"></div>
+        <div class="doc-item-body">
+          <div class="doc-item-name">Carta de referencia &mdash; Institución financiera</div>
+          <div class="doc-item-desc">Emitida por un banco u otra institución financiera. No puede tener más de 3 meses de emisión.</div>
+        </div>
+      </div>
+
+      <div class="doc-note">⚠️ Las cartas de referencia y el comprobante de domicilio tienen vencimiento de <strong>90 días</strong> desde su emisión. Verificar fechas antes de enviar.</div>
+    </div>
+
+  </div>
+
+  <!-- ══ PERSHING ══ -->
+  <div id="doc-pershing" class="doc-section">
+
+    <div class="doc-section-title">Documentación de la sociedad</div>
+    <div class="doc-card-full">
+      <div class="doc-card-title"><span class="line"></span>Documentos societarios</div>
+
+      <div class="doc-grid" style="margin-bottom:0;">
+        <div>
+          <div class="doc-item">
+            <div class="doc-dot"></div>
+            <div class="doc-item-body"><div class="doc-item-name">Bylaws</div><div class="doc-item-desc">Estatutos sociales de la empresa</div></div>
+          </div>
+          <div class="doc-item">
+            <div class="doc-dot"></div>
+            <div class="doc-item-body"><div class="doc-item-name">Articles of Incorporation</div><div class="doc-item-desc">Acta constitutiva</div></div>
+          </div>
+          <div class="doc-item">
+            <div class="doc-dot"></div>
+            <div class="doc-item-body"><div class="doc-item-name">Certificate of Incorporation</div><div class="doc-item-desc">Certificado de incorporación emitido por el registro</div></div>
+          </div>
+          <div class="doc-item">
+            <div class="doc-dot"></div>
+            <div class="doc-item-body"><div class="doc-item-name">Endorsement Certificate</div><div class="doc-item-desc">Certificado de endoso</div></div>
+          </div>
+        </div>
+        <div>
+          <div class="doc-item">
+            <div class="doc-dot"></div>
+            <div class="doc-item-body"><div class="doc-item-name">Register of Directors</div><div class="doc-item-desc">Registro de directores vigente</div></div>
+          </div>
+          <div class="doc-item">
+            <div class="doc-dot"></div>
+            <div class="doc-item-body"><div class="doc-item-name">Shares Register</div><div class="doc-item-desc">Registro de acciones</div></div>
+          </div>
+          <div class="doc-item">
+            <div class="doc-dot"></div>
+            <div class="doc-item-body"><div class="doc-item-name">Shares Certificate</div><div class="doc-item-desc">Certificado de acciones</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="doc-section-title">Documentación de titulares, BOs y directores</div>
+    <div class="doc-note" style="margin-bottom:16px;">Aplica a <strong>toda persona</strong> que figure o actúe en la cuenta: titulares, beneficiarios finales (BO) y directores.</div>
+
+    <div class="doc-card-full">
+      <div class="doc-card-title"><span class="line"></span>Documentos personales</div>
+
+      <div class="doc-item">
+        <div class="doc-dot"></div>
+        <div class="doc-item-body">
+          <div class="doc-item-name">DNI / Pasaporte vigente</div>
+          <div class="doc-item-desc">Frente y dorso. Debe estar vigente al momento de la presentación.</div>
+        </div>
+      </div>
+
+      <div class="doc-item">
+        <div class="doc-dot doc-dot-warn"></div>
+        <div class="doc-item-body">
+          <div class="doc-item-name">Constancia de domicilio<span class="doc-badge-warn">Vence 90 días</span></div>
+          <div class="doc-item-desc">Una por cada titular/BO/director. No puede tener más de 90 días de emitida. Válidas: facturas de teléfono fijo, celular, gas, electricidad, etc.</div>
+        </div>
+      </div>
+
+      <div class="doc-item">
+        <div class="doc-dot"></div>
+        <div class="doc-item-body">
+          <div class="doc-item-name">Poder de firma<span class="doc-badge-warn">Obligatorio</span></div>
+          <div class="doc-item-desc">Indicar qué personas tienen poder de firma sobre la cuenta.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="doc-section-title">Formularios a completar</div>
+
+    <div class="doc-grid">
+
+      <div class="doc-card">
+        <div class="doc-card-title"><span class="line"></span>Formulario de Datos<span class="doc-badge-warn">Cliente</span></div>
+        <div class="doc-item-desc" style="margin-bottom:10px;">Uno por cada BO / Titular / Director. Clave para perfilar la cuenta y generar el documento de apertura para firma por DocuSign.</div>
+        <div class="form-preview">
+          <div class="form-preview-title">Contenido del formulario</div>
+          <div class="form-field-group">
+            <div class="form-field-group-name">Datos personales</div>
+            <div class="form-fields">
+              <span class="form-field">Nombre completo</span>
+              <span class="form-field">Estado civil</span>
+              <span class="form-field">Cónyuge / hijos</span>
+              <span class="form-field">Contacto</span>
+            </div>
+          </div>
+          <div class="form-field-group">
+            <div class="form-field-group-name">Domicilios</div>
+            <div class="form-fields">
+              <span class="form-field">Residencia</span>
+              <span class="form-field">Correspondencia</span>
+              <span class="form-field">Laboral</span>
+            </div>
+          </div>
+          <div class="form-field-group">
+            <div class="form-field-group-name">Actividad e ingresos</div>
+            <div class="form-fields">
+              <span class="form-field">Actividad</span>
+              <span class="form-field">Historia laboral</span>
+              <span class="form-field">Título universitario</span>
+              <span class="form-field">Otras fuentes</span>
+            </div>
+          </div>
+          <div class="form-field-group">
+            <div class="form-field-group-name">Información patrimonial</div>
+            <div class="form-fields">
+              <span class="form-field">Ingreso anual</span>
+              <span class="form-field">Patrimonio neto</span>
+              <span class="form-field">Patrimonio líquido</span>
+              <span class="form-field">Activos inmobiliarios</span>
+              <span class="form-field">Inversiones bursátiles</span>
+              <span class="form-field">Otras cuentas</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="doc-card">
+        <div class="doc-card-title"><span class="line"></span>Info KYC<span class="internal-badge">Uso interno</span></div>
+        <div class="doc-item-desc" style="margin-bottom:10px;">Completado por el equipo de ExpressLine. Información necesaria para el proceso de KYC ante Pershing.</div>
+        <div class="form-preview">
+          <div class="form-preview-title">Contenido del formulario</div>
+          <div class="form-field-group">
+            <div class="form-field-group-name">Relación con el cliente</div>
+            <div class="form-fields">
+              <span class="form-field">Cómo lo conocimos</span>
+              <span class="form-field">Año de conocimiento</span>
+            </div>
+          </div>
+          <div class="form-field-group">
+            <div class="form-field-group-name">Origen del patrimonio</div>
+            <div class="form-fields">
+              <span class="form-field">Descripción</span>
+              <span class="form-field">Venta prop./negocio</span>
+              <span class="form-field">Herencia</span>
+            </div>
+          </div>
+          <div class="form-field-group">
+            <div class="form-field-group-name">Fondeo inicial</div>
+            <div class="form-fields">
+              <span class="form-field">Institución origen</span>
+              <span class="form-field">Cash</span>
+              <span class="form-field">Mutual Funds</span>
+              <span class="form-field">Renta fija</span>
+              <span class="form-field">Acciones</span>
+              <span class="form-field">Monto objetivo</span>
+            </div>
+          </div>
+          <div class="form-field-group">
+            <div class="form-field-group-name">Perfil operativo</div>
+            <div class="form-fields">
+              <span class="form-field">Conocimiento financiero</span>
+              <span class="form-field">Ops. por trimestre</span>
+              <span class="form-field">Frec. transferencias</span>
+              <span class="form-field">Montos estimados</span>
+              <span class="form-field">Comisión advisory</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+function showTab(id, el) {
+  document.querySelectorAll('.doc-section').forEach(function(s){ s.classList.remove('active'); });
+  document.querySelectorAll('.doc-tab').forEach(function(t){ t.classList.remove('active'); });
+  document.getElementById('doc-' + id).classList.add('active');
+  el.classList.add('active');
+}
+</script>
+</body>
+</html>
