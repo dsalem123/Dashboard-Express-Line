@@ -198,8 +198,9 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
 <button class="nav-item" onclick="showPage('documentacion',this)">Documentación de apertura</button>
 <button class="nav-item" onclick="showPage('links',this)">Links útiles</button>
   </nav>
-  <div style="padding:12px 10px 14px;border-top:1px solid rgba(168,218,187,.1);">
+  <div style="padding:12px 10px 14px;border-top:1px solid rgba(168,218,187,.1);display:flex;flex-direction:column;gap:6px;">
     <button onclick="congelarSnapshot()" style="width:100%;padding:8px 6px;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.25);color:#C9A84C;border-radius:6px;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;font-family:Inter,sans-serif;">&#128248; Guardar snapshot</button>
+    <button onclick="triggerHedgeyeUpdate(this)" style="width:100%;padding:8px 6px;background:rgba(168,218,187,.07);border:1px solid rgba(168,218,187,.2);color:#A8DABB;border-radius:6px;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;font-family:Inter,sans-serif;">&#x1F504; Actualizar Hedgeye</button>
   </div>
 </div>
 <div class="content-area">
@@ -528,6 +529,30 @@ function saveToStorage(){
 })();
 // ─────────────────────────────────────────────────────────────────────────────
 
+
+function triggerHedgeyeUpdate(btn){
+  var original=btn.innerHTML;
+  btn.disabled=true;
+  btn.innerHTML='&#x23F3; Enviando...';
+  fetch('https://ntfy.sh/crm-hg-dsalem123-offshore',{
+    method:'POST',
+    body:'update',
+    headers:{'Title':'Actualizar Hedgeye','Priority':'high','Tags':'hedgeye'}
+  }).then(function(r){
+    if(r.ok){
+      btn.innerHTML='&#x2705; Enviado!';
+      showToast('Señal enviada — el scraper va a correr en tu PC y Vercel se actualiza en ~1 min');
+    } else {
+      btn.innerHTML='&#x274C; Error';
+      showToast('Error al enviar señal ('+r.status+')');
+    }
+  }).catch(function(e){
+    btn.innerHTML='&#x274C; Sin conexion';
+    showToast('Error: '+e.message);
+  }).finally(function(){
+    setTimeout(function(){ btn.disabled=false; btn.innerHTML=original; },4000);
+  });
+}
 
 function congelarSnapshot(){
   var state={
