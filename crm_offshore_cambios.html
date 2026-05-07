@@ -17,6 +17,8 @@ body{font-family:'Inter',sans-serif;background:#0a1f1b;min-height:100vh;display:
 .sidebar-gold{width:28px;height:1px;background:var(--gold);margin:6px 0 0 0;}
 .sidebar-toggle{background:none;border:none;cursor:pointer;padding:8px 14px;display:flex;align-items:center;justify-content:flex-end;width:100%;}
 .sidebar-toggle svg{stroke:var(--vg);transition:transform .2s;}
+@keyframes crm-spin{to{transform:rotate(360deg)}}
+.crm-spinner{display:inline-block;width:11px;height:11px;border:2px solid rgba(201,168,76,.3);border-top-color:#C9A84C;border-radius:50%;animation:crm-spin .7s linear infinite;vertical-align:middle;margin-right:5px;}
 .sidebar.collapsed .sidebar-toggle svg{transform:rotate(180deg);}
 .sidebar-nav{display:flex;flex-direction:column;padding:16px 0;gap:2px;}
 .nav-item{background:none;border:none;text-align:left;padding:10px 20px;font-size:12px;color:#8aada0;font-family:'Inter',sans-serif;cursor:pointer;letter-spacing:.5px;transition:all .15s;border-left:3px solid transparent;white-space:nowrap;}
@@ -200,7 +202,7 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
 <button class="nav-item" onclick="showPage('links',this)">Links útiles</button>
   </nav>
   <div class="sidebar-actions" style="padding:12px 10px 14px;border-top:1px solid rgba(168,218,187,.1);display:flex;flex-direction:column;gap:6px;">
-    <button onclick="congelarSnapshot()" style="width:100%;padding:8px 6px;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.25);color:#C9A84C;border-radius:6px;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;font-family:Inter,sans-serif;">&#9729;&#65039; Sync con Vercel</button>
+    <button onclick="congelarSnapshot(this)" style="width:100%;padding:8px 6px;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.25);color:#C9A84C;border-radius:6px;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;font-family:Inter,sans-serif;">&#9729;&#65039; Sync con Vercel</button>
     <button onclick="triggerHedgeyeUpdate(this)" style="width:100%;padding:8px 6px;background:rgba(168,218,187,.07);border:1px solid rgba(168,218,187,.2);color:#A8DABB;border-radius:6px;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;font-family:Inter,sans-serif;">&#x1F504; Actualizar Hedgeye</button>
   </div>
 </div>
@@ -559,7 +561,18 @@ function triggerHedgeyeUpdate(btn){
   });
 }
 
-function congelarSnapshot(){
+function congelarSnapshot(btn){
+  var orig=btn?btn.innerHTML:null;
+  function setBtnState(icon,txt){
+    if(!btn) return;
+    btn.disabled=true;
+    btn.innerHTML=(icon==='spin'?'<span class="crm-spinner"></span>':icon+' ')+txt;
+  }
+  function restoreBtn(icon,txt){
+    if(!btn) return;
+    btn.innerHTML=icon+' '+txt;
+    setTimeout(function(){ btn.disabled=false; btn.innerHTML=orig; },3000);
+  }
   var state={
     crm_clients:localStorage.getItem('crm_clients'),
     crm_leads:localStorage.getItem('crm_leads'),
@@ -576,32 +589,30 @@ function congelarSnapshot(){
     (typeof HG_STATIC_DATA!=='undefined'&&HG_STATIC_DATA?HG_STATIC_DATA:null)||
     (function(){try{var x=localStorage.getItem('hg_data');return x?JSON.parse(x):null;}catch(e){return null;}}());
   if(hgData) state._hgData=hgData;
-  // 1. /api/sync serverless (funciona desde cualquier PC sin listener)
-  // 2. fallback listener local
-  // 3. fallback descarga
+  setBtnState('spin','Sincronizando...');
   fetch('/api/sync',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify(state),
     signal:AbortSignal.timeout(15000)
   }).then(function(r){
-    if(r.ok){ showToast('Sincronizado — Vercel se actualiza en ~30 segundos'); }
-    else{ _syncLocalhost(state,hgData); }
+    if(r.ok){ restoreBtn('✓','Sincronizado!'); showToast('Sincronizado — Vercel se actualiza en ~30 segundos'); }
+    else{ _syncLocalhost(state,hgData,btn,restoreBtn); }
   }).catch(function(){
-    _syncLocalhost(state,hgData);
+    _syncLocalhost(state,hgData,btn,restoreBtn);
   });
 }
-function _syncLocalhost(state,hgData){
+function _syncLocalhost(state,hgData,btn,restoreBtn){
   fetch('http://localhost:5055/snapshot',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify(state),
     signal:AbortSignal.timeout(3000)
   }).then(function(r){
-    if(r.ok){ showToast('Sincronizado via listener local'); }
-    else{ _snapshotDescarga(state,hgData); }
+    if(r.ok){ if(restoreBtn)restoreBtn('✓','Sincronizado!'); showToast('Sincronizado via listener local'); }
+    else{ if(restoreBtn)restoreBtn('↓','Descargado'); _snapshotDescarga(state,hgData); }
   }).catch(function(){
-    _snapshotDescarga(state,hgData);
+    if(restoreBtn)restoreBtn('↓','Descargado'); _snapshotDescarga(state,hgData);
   });
 }
 function _snapshotDescarga(state,hgData){
