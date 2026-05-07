@@ -173,6 +173,7 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script type="application/json" id="crm-snapshot"></script>
 </head>
 <body>
 <div id="toast" class="toast"></div>
@@ -197,6 +198,10 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
 <button class="nav-item" onclick="showPage('documentacion',this)">Documentación de apertura</button>
 <button class="nav-item" onclick="showPage('links',this)">Links útiles</button>
   </nav>
+  <div style="padding:12px 10px 14px;border-top:1px solid rgba(168,218,187,.1);display:flex;flex-direction:column;gap:6px;">
+    <button onclick="congelarSnapshot()" style="width:100%;padding:8px 6px;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.25);color:#C9A84C;border-radius:6px;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;font-family:Inter,sans-serif;">&#128248; Guardar snapshot</button>
+    <button onclick="triggerHedgeyeUpdate(this)" style="width:100%;padding:8px 6px;background:rgba(168,218,187,.07);border:1px solid rgba(168,218,187,.2);color:#A8DABB;border-radius:6px;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;font-family:Inter,sans-serif;">&#x1F504; Actualizar Hedgeye</button>
+  </div>
 </div>
 <div class="content-area">
 
@@ -507,6 +512,77 @@ function saveToStorage(){
     localStorage.setItem('crm_nextId',nextId);
     localStorage.setItem('crm_nextLead',nextLead);
   }catch(e){showToast('Error al guardar: '+e.message,true);}
+}
+
+// ── SNAPSHOT READER ─────────────────────────────────────────────────────────
+(function(){
+  var el=document.getElementById('crm-snapshot');
+  if(!el||!el.textContent.trim()) return;
+  try{
+    var d=JSON.parse(el.textContent);
+    var ks=['crm_clients','crm_leads','crm_nextId','crm_nextLead','pfol_v1'];
+    ks.forEach(function(k){ if(d[k]&&!localStorage.getItem(k)) localStorage.setItem(k,d[k]); });
+    if(d.kpi) Object.keys(d.kpi).forEach(function(k){
+      if(d.kpi[k]&&!localStorage.getItem(k)) localStorage.setItem(k,d.kpi[k]);
+    });
+  }catch(e){}
+})();
+// ─────────────────────────────────────────────────────────────────────────────
+
+
+function triggerHedgeyeUpdate(btn){
+  var original=btn.innerHTML;
+  btn.disabled=true;
+  btn.innerHTML='&#x23F3; Enviando...';
+  fetch('https://ntfy.sh/crm-hg-dsalem123-offshore',{
+    method:'POST',
+    body:'update',
+    headers:{'Title':'Actualizar Hedgeye','Priority':'high','Tags':'hedgeye'}
+  }).then(function(r){
+    if(r.ok){
+      btn.innerHTML='&#x2705; Enviado!';
+      showToast('Señal enviada — el scraper va a correr en tu PC y Vercel se actualiza en ~1 min');
+    } else {
+      btn.innerHTML='&#x274C; Error';
+      showToast('Error al enviar señal ('+r.status+')');
+    }
+  }).catch(function(e){
+    btn.innerHTML='&#x274C; Sin conexion';
+    showToast('Error: '+e.message);
+  }).finally(function(){
+    setTimeout(function(){ btn.disabled=false; btn.innerHTML=original; },4000);
+  });
+}
+
+function congelarSnapshot(){
+  var state={
+    crm_clients:localStorage.getItem('crm_clients'),
+    crm_leads:localStorage.getItem('crm_leads'),
+    crm_nextId:localStorage.getItem('crm_nextId'),
+    crm_nextLead:localStorage.getItem('crm_nextLead'),
+    pfol_v1:localStorage.getItem('pfol_v1'),
+    kpi:{}
+  };
+  ['kpi-duracion','kpi-aum','kpi-objetivo','kpi-tiempo'].forEach(function(k){
+    state.kpi[k]=localStorage.getItem(k);
+  });
+  var hgData=window._hedgeyeData||
+    (typeof HG_STATIC_DATA!=='undefined'&&HG_STATIC_DATA?HG_STATIC_DATA:null)||
+    (function(){try{var x=localStorage.getItem('hg_data');return x?JSON.parse(x):null;}catch(e){return null;}}());
+  var html='<!DOCTYPE html>'+String.fromCharCode(10)+document.documentElement.outerHTML;
+  html=html.replace(
+    /<script type="application\/json" id="crm-snapshot">[\s\S]*?<\/script>/,
+    '<script type="application\/json" id="crm-snapshot">'+JSON.stringify(state)+'<\/script>');
+  if(hgData) html=html.replace(
+    /const HG_STATIC_DATA = [^\n]+/,
+    'const HG_STATIC_DATA = '+JSON.stringify(hgData)+';');
+  var blob=new Blob([html],{type:'text/html'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  var d=new Date();
+  a.download='CRM_OFFSHORE_'+d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+'.html';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  showToast('Snapshot descargado con todos los datos');
 }
 function loadFromStorage(){
   try{
