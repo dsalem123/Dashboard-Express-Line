@@ -21,51 +21,59 @@
     font-family: 'Inter', sans-serif;
     background: #0a1f1b;
     min-height: 100vh;
-    padding: 36px 28px 56px;
+    padding: 0;
     color: var(--cream);
-    overflow-x: auto;
+    overflow-x: hidden;
   }
 
   /* ── HEADER ── */
-  .header {
+  .doc-header {
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     justify-content: space-between;
-    margin-bottom: 32px;
-    padding-bottom: 20px;
+    padding: 20px 28px;
     border-bottom: 1px solid rgba(168,218,187,0.15);
+    background: var(--ev);
+    position: sticky;
+    top: 0;
+    z-index: 20;
     flex-wrap: wrap;
     gap: 12px;
   }
 
   .logo-wordmark {
     font-size: 10px;
-    font-weight: 500;
+    font-weight: 600;
     letter-spacing: 3px;
     text-transform: uppercase;
     color: var(--gold);
-    margin-bottom: 8px;
-    display: block;
+    margin-bottom: 4px;
   }
 
   .header-title {
     font-family: 'Playfair Display', serif;
-    font-size: 26px;
-    font-weight: 500;
+    font-size: 18px;
     color: var(--cream);
-    line-height: 1.2;
+    letter-spacing: 1px;
   }
 
-  .header-title em {
-    font-style: normal;
-    color: var(--mint);
-  }
+  .gold-line { width: 32px; height: 2px; background: var(--gold); margin: 5px 0; }
 
-  .header-meta {
-    font-size: 11px;
+  .header-sub {
+    font-size: 10px;
     color: var(--vg);
-    line-height: 1.8;
-    text-align: right;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .badge {
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--vg);
+    border: 1px solid rgba(168,218,187,0.15);
+    padding: 6px 14px;
+    border-radius: 20px;
   }
 
   /* ── BOARD ── */
@@ -73,6 +81,9 @@
     display: flex;
     gap: 9px;
     align-items: flex-start;
+    padding: 28px 28px 56px;
+    overflow-x: auto;
+    min-width: 100%;
   }
 
   /* ── COLUMN ── */
@@ -285,16 +296,17 @@
 </head>
 <body>
 
-<div class="header">
+<div class="doc-header">
   <div>
-    <span class="logo-wordmark">ExpressLine · Offshore</span>
-    <h1 class="header-title">Proceso de Apertura de<br><em>Cuentas Offshore</em></h1>
+    <div class="logo-wordmark">ExpressLine</div>
+    <div class="header-title">Proceso de Apertura</div>
+    <div class="gold-line"></div>
+    <div class="header-sub">Offshore · Apertura de cuentas</div>
   </div>
-  <div class="header-meta">
-    Flujo operativo interno<br>
-    Uso exclusivo del equipo comercial
-  </div>
+  <span class="badge">Flujo operativo interno</span>
 </div>
+
+<div style="padding:28px 0 12px;"></div>
 
 <div class="board">
 
