@@ -521,11 +521,15 @@ function saveToStorage(){
   if(!el||!el.textContent.trim()) return;
   try{
     var d=JSON.parse(el.textContent);
+    var storedTs=parseInt(localStorage.getItem('_sync_ts')||'0');
+    var snapTs=d._sync_ts||0;
+    var newer=snapTs>storedTs;
     var ks=['crm_clients','crm_leads','crm_nextId','crm_nextLead','pfol_v1'];
-    ks.forEach(function(k){ if(d[k]&&!localStorage.getItem(k)) localStorage.setItem(k,d[k]); });
+    ks.forEach(function(k){ if(d[k]&&(newer||!localStorage.getItem(k))) localStorage.setItem(k,d[k]); });
     if(d.kpi) Object.keys(d.kpi).forEach(function(k){
-      if(d.kpi[k]&&!localStorage.getItem(k)) localStorage.setItem(k,d.kpi[k]);
+      if(d.kpi[k]&&(newer||!localStorage.getItem(k))) localStorage.setItem(k,d.kpi[k]);
     });
+    if(newer) localStorage.setItem('_sync_ts',snapTs);
   }catch(e){}
 })();
 // ─────────────────────────────────────────────────────────────────────────────
@@ -567,6 +571,7 @@ function congelarSnapshot(){
   ['kpi-duracion','kpi-aum','kpi-objetivo','kpi-tiempo'].forEach(function(k){
     state.kpi[k]=localStorage.getItem(k);
   });
+  state._sync_ts=Date.now();
   var hgData=window._hedgeyeData||
     (typeof HG_STATIC_DATA!=='undefined'&&HG_STATIC_DATA?HG_STATIC_DATA:null)||
     (function(){try{var x=localStorage.getItem('hg_data');return x?JSON.parse(x):null;}catch(e){return null;}}());
