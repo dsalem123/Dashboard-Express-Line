@@ -234,6 +234,12 @@
   .col-rep .card { background: rgba(236,237,227,0.05); }
   .col-rep .card-tag { background: rgba(236,237,227,0.12); color: var(--cream); }
 
+  /* ── LEAD PIPELINE ── */
+  .lead-card{background:rgba(201,168,76,.12);border:1.5px dashed rgba(201,168,76,.45);border-radius:6px;padding:8px 12px;font-size:12px;font-weight:500;color:var(--gold);cursor:grab;transition:transform .15s,opacity .15s;user-select:none;}
+  .lead-card:hover{transform:translateY(-2px);border-color:rgba(201,168,76,.7);}
+  .lead-card.dragging{opacity:.35;cursor:grabbing;}
+  .col-body.drag-over{outline:1.5px dashed rgba(201,168,76,.4);outline-offset:-2px;background-color:rgba(201,168,76,.04);}
+
   /* ── LEGEND ── */
   .legend {
     display: flex;
