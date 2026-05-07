@@ -152,7 +152,7 @@ tbody td{padding:10px 12px;color:var(--cream);vertical-align:middle;}
 .field input:focus,.field select:focus{outline:none;border-color:var(--mint);}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;}
-.btn-cancel{background:none;border:1px solid #d4d4c8;border-radius:5px;padding:8px 16px;font-size:12px;cursor:pointer;color:var(--vg);font-family:'Inter',sans-serif;}
+.btn-cancel{background:none;border:1px solid rgba(168,218,187,.2);border-radius:5px;padding:8px 16px;font-size:12px;cursor:pointer;color:var(--vg);font-family:'Inter',sans-serif;}
 .btn-save{background:var(--ev);color:var(--cream);border:none;border-radius:5px;padding:8px 18px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;}
 .btn-save:hover{background:#0f3530;}
 .footer{margin-top:14px;display:flex;align-items:center;}
@@ -410,7 +410,7 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'â
   <div class="modal" style="max-width:480px;">
     <h2 id="detalle-nombre" style="margin-bottom:4px;"></h2>
     <div class="modal-sub">Comentarios / Detalles</div>
-    <textarea id="detalle-texto" rows="6" style="width:100%;border:1px solid #d4d4c8;border-radius:5px;padding:10px 12px;font-size:13px;font-family:'Inter',sans-serif;color:var(--ev);resize:vertical;line-height:1.6;"></textarea>
+    <textarea id="detalle-texto" rows="6" style="width:100%;border:1px solid rgba(168,218,187,.2);border-radius:5px;padding:10px 12px;font-size:13px;font-family:'Inter',sans-serif;color:var(--cream);background:rgba(0,0,0,.25);resize:vertical;line-height:1.6;"></textarea>
     <div class="modal-actions" style="margin-top:16px;">
       <button class="btn-cancel" onclick="closeDetalleModal()">Cancelar</button>
       <button class="btn-save" onclick="saveDetalle()">Guardar âœ“</button>
@@ -457,7 +457,7 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'â
       <div class="field"><label>TelÃ©fono</label><input type="text" id="f-telefono" placeholder="+54 11 ..." /></div>
     </div>
     <div class="field"><label>Ãšltimo contacto</label><input type="date" id="f-ultimocontacto" /></div>
-    <div class="field"><label>Detalles</label><textarea id="f-detalles" rows="3" style="width:100%;border:1px solid #d4d4c8;border-radius:5px;padding:8px 10px;font-size:13px;font-family:'Inter',sans-serif;color:var(--ev);resize:vertical;"></textarea></div>
+    <div class="field"><label>Detalles</label><textarea id="f-detalles" rows="3" style="width:100%;border:1px solid rgba(168,218,187,.2);border-radius:5px;padding:8px 10px;font-size:13px;font-family:'Inter',sans-serif;color:var(--cream);background:rgba(0,0,0,.25);resize:vertical;"></textarea></div>
   </div>
   <div id="form-lead" style="display:none;">
     <div class="field"><label>Nombre del lead</label><input type="text" id="f-lead-nombre" placeholder="Ej. GARCIA JUAN" /></div>
