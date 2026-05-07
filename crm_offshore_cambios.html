@@ -202,8 +202,7 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
 <button class="nav-item" onclick="showPage('links',this)">Links útiles</button>
   </nav>
   <div class="sidebar-actions" style="padding:12px 10px 14px;border-top:1px solid rgba(168,218,187,.1);display:flex;flex-direction:column;gap:6px;">
-    <button onclick="congelarSnapshot(this)" style="width:100%;padding:8px 6px;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.25);color:#C9A84C;border-radius:6px;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;font-family:Inter,sans-serif;">&#9729;&#65039; Sync con Vercel</button>
-    <button onclick="triggerHedgeyeUpdate(this)" style="width:100%;padding:8px 6px;background:rgba(168,218,187,.07);border:1px solid rgba(168,218,187,.2);color:#A8DABB;border-radius:6px;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;font-family:Inter,sans-serif;">&#x1F504; Actualizar Hedgeye</button>
+    <button onclick="congelarSnapshot(this)" style="width:100%;padding:8px 6px;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.25);color:#C9A84C;border-radius:6px;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;font-family:Inter,sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>Sync con Vercel</button>
   </div>
 </div>
 <div class="content-area">
@@ -351,7 +350,7 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
   <div class="hg-status">
     <span class="hg-dot" id="hg-dot"></span>
     <span id="hg-updated" class="hg-updated">—</span>
-    <button class="hg-btn" id="hg-refresh-btn" onclick="hedgeyeRefresh()">↻ Actualizar</button>
+    <button class="hg-btn" id="hg-refresh-btn" onclick="hedgeyeActualizar()">↻ Actualizar</button>
     <button class="hg-btn" id="hg-save-btn" onclick="hgGuardarEnArchivo()" style="display:none;">💾 Guardar en archivo</button>
   </div>
 </div>
@@ -904,6 +903,13 @@ function hedgeyeRefresh(){
       btn.disabled=false; btn.textContent='↻ Actualizar';
       document.getElementById('hg-updated').textContent='Error de conexión';
     });
+}
+
+function hedgeyeActualizar(){
+  fetch('https://ntfy.sh/crm-hg-dsalem123-offshore',{method:'POST',body:'update',headers:{'Title':'Actualizar Hedgeye','Priority':'high','Tags':'hedgeye'}})
+    .then(r=>{ if(r.ok) showToast('Señal enviada — el scraper va a correr en tu PC'); })
+    .catch(()=>{});
+  hedgeyeRefresh();
 }
 
 async function descargarHedgeyePDF(){
