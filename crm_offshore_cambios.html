@@ -1472,6 +1472,21 @@ function updateSyncStatus(){
 renderMgr();render();
 updateSyncStatus();
 setInterval(updateSyncStatus,60000);
+
+(function(){
+  var AUTO_INTERVAL=15*60*1000;
+  var lastAuto=Date.now();
+  function autoSync(){
+    if(document.visibilityState==='hidden') return;
+    if(!localStorage.getItem('crm_clients')) return;
+    congelarSnapshot(null);
+    lastAuto=Date.now();
+  }
+  setInterval(autoSync, AUTO_INTERVAL);
+  document.addEventListener('visibilitychange',function(){
+    if(document.visibilityState==='visible' && Date.now()-lastAuto>=AUTO_INTERVAL) autoSync();
+  });
+})();
 </script>
 <script>
 (function(){
