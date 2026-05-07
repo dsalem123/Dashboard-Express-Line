@@ -25,13 +25,17 @@
     display:flex;
     align-items:center;
     justify-content:space-between;
-    padding:20px 24px;
+    padding:20px 28px;
     border-bottom:1px solid var(--br);
     position:sticky;
     top:0;
     background:var(--ev);
-    z-index:10;
+    z-index:20;
   }
+  .logo-wordmark{font-size:10px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:4px;}
+  .header-title{font-family:'Playfair Display',serif;font-size:18px;color:var(--cream);letter-spacing:1px;}
+  .gold-line{width:32px;height:2px;background:var(--gold);margin:5px 0;}
+  .header-sub{font-size:10px;color:var(--vg);letter-spacing:2px;text-transform:uppercase;}
   .badge{
     font-size:10px;
     letter-spacing:3px;
@@ -250,8 +254,13 @@
 
 <!-- Header full-width -->
 <div class="doc-header">
-  <span class="doc-logo-placeholder">ExpressLine</span>
-  <span class="badge">Documentaci&oacute;n de Apertura &middot; Offshore</span>
+  <div>
+    <div class="logo-wordmark">ExpressLine</div>
+    <div class="header-title">Documentación de Apertura</div>
+    <div class="gold-line"></div>
+    <div class="header-sub">Offshore · Requisitos y formularios</div>
+  </div>
+  <span class="badge">Documentación de Apertura · Offshore</span>
 </div>
 
 <div class="doc-wrapper">
