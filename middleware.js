@@ -1,4 +1,4 @@
-export const config = { matcher: ['/((?!_next).*)'] }
+export const config = { matcher: ['/((?!_next|api/).*)'] }
 
 export default function middleware(request) {
   const auth = request.headers.get('authorization')
