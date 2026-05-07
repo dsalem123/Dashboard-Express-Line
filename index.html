@@ -576,15 +576,30 @@ function congelarSnapshot(){
     (typeof HG_STATIC_DATA!=='undefined'&&HG_STATIC_DATA?HG_STATIC_DATA:null)||
     (function(){try{var x=localStorage.getItem('hg_data');return x?JSON.parse(x):null;}catch(e){return null;}}());
   if(hgData) state._hgData=hgData;
-  // Intentar sync con listener local; si no está activo, descargar
+  // 1. /api/sync serverless (funciona desde cualquier PC sin listener)
+  // 2. fallback listener local
+  // 3. fallback descarga
+  fetch('/api/sync',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(state),
+    signal:AbortSignal.timeout(15000)
+  }).then(function(r){
+    if(r.ok){ showToast('Sincronizado — Vercel se actualiza en ~30 segundos'); }
+    else{ _syncLocalhost(state,hgData); }
+  }).catch(function(){
+    _syncLocalhost(state,hgData);
+  });
+}
+function _syncLocalhost(state,hgData){
   fetch('http://localhost:5055/snapshot',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify(state),
     signal:AbortSignal.timeout(3000)
   }).then(function(r){
-    if(r.ok){ showToast('Sincronizado — Vercel se actualiza en ~30 segundos'); }
-    else { _snapshotDescarga(state,hgData); }
+    if(r.ok){ showToast('Sincronizado via listener local'); }
+    else{ _snapshotDescarga(state,hgData); }
   }).catch(function(){
     _snapshotDescarga(state,hgData);
   });
@@ -604,7 +619,7 @@ function _snapshotDescarga(state,hgData){
   var d=new Date();
   a.download='CRM_OFFSHORE_'+d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+'.html';
   document.body.appendChild(a);a.click();document.body.removeChild(a);
-  showToast('Listener no activo — snapshot descargado localmente');
+  showToast('Sin conexión al servidor — snapshot descargado localmente');
 }
 function loadFromStorage(){
   try{
