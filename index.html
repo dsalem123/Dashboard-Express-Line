@@ -110,6 +110,12 @@ tbody tr:hover td:last-child{background:rgba(168,218,187,.06);}
 table{width:100%;border-collapse:collapse;font-size:13px;}
 thead{background:rgba(0,0,0,.25);}
 thead th{padding:10px 12px;color:var(--cream);font-weight:500;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;text-align:left;}
+thead th.sortable{cursor:pointer;user-select:none;}
+thead th.sortable:hover{color:var(--gold);}
+thead th.sort-asc::after{content:' ▲';font-size:8px;color:var(--gold);}
+thead th.sort-desc::after{content:' ▼';font-size:8px;color:var(--gold);}
+#sync-status{font-size:10px;letter-spacing:.5px;display:flex;align-items:center;gap:5px;}
+.sync-dot{width:6px;height:6px;border-radius:50%;display:inline-block;flex-shrink:0;}
 tbody tr{border-bottom:1px solid rgba(168,218,187,.08);transition:background .1s;}
 tbody tr:hover{background:rgba(168,218,187,.06);}
 tbody tr:last-child{border-bottom:none;}
@@ -215,7 +221,8 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
     <div class="gold-line"></div>
     <div class="header-sub">Offshore &middot; Gesti&oacute;n de clientes</div>
   </div>
-  <div style="display:flex;align-items:center;gap:12px;">
+  <div style="display:flex;align-items:center;gap:14px;">
+    <span id="sync-status"></span>
     <span class="badge">Clientes / Leads &middot; Offshore</span>
   </div>
 </div>
@@ -265,7 +272,26 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
     <div id="view-clientes">
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Cliente</th><th>N° comitente</th><th>Broker</th><th>Custodio</th><th>Manager</th><th>Nombre</th><th>Comercial</th><th>Sociedad/Estructura</th><th>Tipo de Fee</th><th>% Fee</th><th>AUM</th><th>Riesgo</th><th>Plazo</th><th>Seguimiento</th><th>Último contacto</th><th>Mail</th><th>Teléfono</th><th>Detalles</th><th></th></tr></thead>
+          <thead><tr>
+            <th class="sortable" data-sort="nombre" onclick="sortBy('nombre')">Cliente</th>
+            <th class="sortable" data-sort="comitente" onclick="sortBy('comitente')">N° comitente</th>
+            <th class="sortable" data-sort="broker" onclick="sortBy('broker')">Broker</th>
+            <th class="sortable" data-sort="custodio" onclick="sortBy('custodio')">Custodio</th>
+            <th class="sortable" data-sort="mgrNum" onclick="sortBy('mgrNum')">Manager</th>
+            <th class="sortable" data-sort="nombreContacto" onclick="sortBy('nombreContacto')">Nombre</th>
+            <th class="sortable" data-sort="comercial" onclick="sortBy('comercial')">Comercial</th>
+            <th class="sortable" data-sort="sociedad" onclick="sortBy('sociedad')">Sociedad/Estructura</th>
+            <th class="sortable" data-sort="tipoFee" onclick="sortBy('tipoFee')">Tipo de Fee</th>
+            <th class="sortable" data-sort="pctFee" onclick="sortBy('pctFee')">% Fee</th>
+            <th class="sortable" data-sort="aum" onclick="sortBy('aum')">AUM</th>
+            <th class="sortable" data-sort="riesgo" onclick="sortBy('riesgo')">Riesgo</th>
+            <th class="sortable" data-sort="plazo" onclick="sortBy('plazo')">Plazo</th>
+            <th class="sortable" data-sort="seguimiento" onclick="sortBy('seguimiento')">Seguimiento</th>
+            <th class="sortable" data-sort="ultimoContacto" onclick="sortBy('ultimoContacto')">Último contacto</th>
+            <th class="sortable" data-sort="mail" onclick="sortBy('mail')">Mail</th>
+            <th class="sortable" data-sort="telefono" onclick="sortBy('telefono')">Teléfono</th>
+            <th></th><th></th>
+          </tr></thead>
           <tbody id="tbody-clients"></tbody>
         </table>
       </div>
@@ -273,7 +299,12 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
     <div id="view-leads" style="display:none;">
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Nombre</th><th>Estado</th><th>Notas</th><th></th></tr></thead>
+          <thead><tr>
+            <th class="sortable" data-sort-lead="nombre" onclick="sortByLead('nombre')">Nombre</th>
+            <th class="sortable" data-sort-lead="estado" onclick="sortByLead('estado')">Estado</th>
+            <th>Notas</th>
+            <th></th>
+          </tr></thead>
           <tbody id="tbody-leads"></tbody>
         </table>
       </div>
@@ -595,7 +626,7 @@ function congelarSnapshot(btn){
     body:JSON.stringify(state),
     signal:AbortSignal.timeout(15000)
   }).then(function(r){
-    if(r.ok){ restoreBtn('✓','Sincronizado!'); showToast('Sincronizado — Vercel se actualiza en ~30 segundos'); }
+    if(r.ok){ localStorage.setItem('_sync_ts',state._sync_ts); updateSyncStatus(); restoreBtn('✓','Sincronizado!'); showToast('Sincronizado — Vercel se actualiza en ~30 segundos'); }
     else{ _syncLocalhost(state,hgData,btn,restoreBtn); }
   }).catch(function(){
     _syncLocalhost(state,hgData,btn,restoreBtn);
@@ -608,7 +639,7 @@ function _syncLocalhost(state,hgData,btn,restoreBtn){
     body:JSON.stringify(state),
     signal:AbortSignal.timeout(3000)
   }).then(function(r){
-    if(r.ok){ if(restoreBtn)restoreBtn('✓','Sincronizado!'); showToast('Sincronizado via listener local'); }
+    if(r.ok){ localStorage.setItem('_sync_ts',state._sync_ts); updateSyncStatus(); if(restoreBtn)restoreBtn('✓','Sincronizado!'); showToast('Sincronizado via listener local'); }
     else{ if(restoreBtn)restoreBtn('↓','Descargado'); _snapshotDescarga(state,hgData); }
   }).catch(function(){
     if(restoreBtn)restoreBtn('↓','Descargado'); _snapshotDescarga(state,hgData);
@@ -691,9 +722,31 @@ function switchTab(tab,el){
 
 function statusClass(s){return s==='Nuevo'?'s-nuevo':s==='Contactado'?'s-contactado':s==='En Proceso'?'s-proceso':'s-interesado';}
 
+var sortCol=null,sortDir=1,sortColL=null,sortDirL=1;
+function sortBy(col){
+  if(sortCol===col){sortDir*=-1;}else{sortCol=col;sortDir=1;}
+  render();
+}
+function sortByLead(col){
+  if(sortColL===col){sortDirL*=-1;}else{sortColL=col;sortDirL=1;}
+  render();
+}
+
 function render(){
   const q=document.getElementById('search').value.toLowerCase();
-  const fc=clients.filter(c=>c.nombre.toLowerCase().includes(q)||String(c.comitente).includes(q)||c.broker.toLowerCase().includes(q)||String(c.mgrNum).includes(q));
+  var fc=clients.filter(c=>c.nombre.toLowerCase().includes(q)||String(c.comitente).includes(q)||c.broker.toLowerCase().includes(q)||String(c.mgrNum).includes(q));
+  if(sortCol){
+    fc.sort(function(a,b){
+      var av=String(a[sortCol]||'').toLowerCase(), bv=String(b[sortCol]||'').toLowerCase();
+      var an=parseFloat(av), bn=parseFloat(bv);
+      if(!isNaN(an)&&!isNaN(bn)) return (an-bn)*sortDir;
+      return av<bv?-sortDir:av>bv?sortDir:0;
+    });
+  }
+  document.querySelectorAll('#view-clientes thead th[data-sort]').forEach(function(th){
+    th.classList.remove('sort-asc','sort-desc');
+    if(th.dataset.sort===sortCol) th.classList.add(sortDir===1?'sort-asc':'sort-desc');
+  });
   document.getElementById('tbody-clients').innerHTML=fc.length?fc.map(c=>`<tr>
     <td class="client-name" contenteditable="true" data-key="c-${c.id}-nombre">${c.nombre}</td>
     <td class="mono" contenteditable="true" data-key="c-${c.id}-comitente">${c.comitente}</td>
@@ -717,7 +770,17 @@ function render(){
       <button class="btn-act btn-save-row" onclick="saveRow(${c.id})" title="Guardar cambios">✓</button>
       <button class="btn-act btn-del" onclick="delClient(${c.id})">Eliminar</button>
     </div></td></tr>`).join(''):'<tr><td colspan="18" class="empty">Sin resultados</td></tr>';
-  const fl=leads.filter(l=>l.nombre.toLowerCase().includes(q)||l.estado.toLowerCase().includes(q));
+  var fl=leads.filter(l=>l.nombre.toLowerCase().includes(q)||l.estado.toLowerCase().includes(q));
+  if(sortColL){
+    fl.sort(function(a,b){
+      var av=String(a[sortColL]||'').toLowerCase(), bv=String(b[sortColL]||'').toLowerCase();
+      return av<bv?-sortDirL:av>bv?sortDirL:0;
+    });
+  }
+  document.querySelectorAll('#view-leads thead th[data-sort-lead]').forEach(function(th){
+    th.classList.remove('sort-asc','sort-desc');
+    if(th.dataset.sortLead===sortColL) th.classList.add(sortDirL===1?'sort-asc':'sort-desc');
+  });
   document.getElementById('tbody-leads').innerHTML=fl.length?fl.map(l=>`<tr>
     <td class="client-name" contenteditable="true" data-key="l-${l.id}-nombre">${l.nombre}</td>
     <td><span class="badge-status ${statusClass(l.estado)}" contenteditable="true" data-key="l-${l.id}-estado">${l.estado}</span></td>
@@ -1395,7 +1458,20 @@ function saveLeadRow(id){
 
 
 
+function updateSyncStatus(){
+  var el=document.getElementById('sync-status');
+  if(!el) return;
+  var ts=parseInt(localStorage.getItem('_sync_ts')||'0');
+  if(!ts){el.innerHTML='';return;}
+  var mins=Math.floor((Date.now()-ts)/60000);
+  var color=mins<10?'#A8DABB':mins<60?'#C9A84C':'#6B8578';
+  var txt=mins<1?'Sincronizado ahora':mins<60?'Sync hace '+mins+'min':'Sync hace '+Math.floor(mins/60)+'h';
+  el.innerHTML='<span class="sync-dot" style="background:'+color+'"></span><span style="color:'+color+'">'+txt+'</span>';
+}
+
 renderMgr();render();
+updateSyncStatus();
+setInterval(updateSyncStatus,60000);
 </script>
 <script>
 (function(){
