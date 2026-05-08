@@ -25,9 +25,12 @@ body{font-family:'Inter',sans-serif;background:#0a1f1b;min-height:100vh;display:
 .nav-item:hover{color:var(--cream);background:rgba(255,255,255,.05);}
 .nav-item.active{color:var(--cream);border-left-color:var(--gold);background:rgba(255,255,255,.07);}
 .sidebar.collapsed .sidebar-brand-name,.sidebar.collapsed .sidebar-brand-sub,.sidebar.collapsed .sidebar-gold,.sidebar.collapsed .nav-item-text{display:none;}
-.sidebar.collapsed .nav-item{display:none;}
+.sidebar.collapsed .nav-item{display:flex;justify-content:center;align-items:center;padding:8px 0;border-left-color:transparent;}
+.sidebar.collapsed .nav-item.active{border-left-color:var(--gold);}
 .sidebar.collapsed .sidebar-actions{display:none!important;}
-.nav-item-icon{display:none;}
+.nav-item-icon{display:none;font-size:15px;line-height:1;}
+.sidebar.collapsed .nav-item-icon{display:block;}
+.sidebar.collapsed .nav-item-text{display:none;}
 .content-area{flex:1;padding:0;min-width:0;transition:padding .2s;overflow-x:auto;}
 .wrap{max-width:1400px;margin:0;padding:20px 2rem 20px 18px;}
 .page{display:none;}
@@ -78,9 +81,9 @@ body{font-family:'Inter',sans-serif;background:#0a1f1b;min-height:100vh;display:
 .badge{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--vg);border:1px solid rgba(168,218,187,.15);padding:6px 14px;border-radius:20px;}
 .main-layout{display:grid;grid-template-columns:1fr;gap:16px;align-items:start;}
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
-.stat{background:var(--cream);border-radius:8px;padding:6px 13px;border-left:3px solid var(--gold);}
+.stat{background:rgba(168,218,187,.06);border-radius:8px;padding:6px 13px;border-left:3px solid var(--gold);}
 .stat-label{font-size:10px;color:var(--vg);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:1px;}
-.stat-value{font-family:'Playfair Display',serif;font-size:14px;color:var(--ev);font-weight:600;}
+.stat-value{font-family:'Playfair Display',serif;font-size:14px;color:var(--cream);font-weight:600;}
 .kpi-bar{display:flex;align-items:stretch;border-bottom:1px solid var(--br);background:var(--ev);}
 .kpi-item{flex:1;padding:14px 10px 12px;text-align:center;border-right:1px solid var(--br);transition:background .15s;}
 .kpi-item:last-child{border-right:none;}
@@ -92,7 +95,7 @@ body{font-family:'Inter',sans-serif;background:#0a1f1b;min-height:100vh;display:
 .kpi-pencil{font-size:9px;color:var(--br);margin-left:4px;opacity:0;transition:opacity .15s;vertical-align:middle;}
 .kpi-item.editable:hover .kpi-pencil{opacity:1;}
 .kpi-input{background:transparent;border:none;border-bottom:1px solid var(--gold);color:var(--cream);font-size:18px;font-weight:700;font-family:'Playfair Display',serif;text-align:center;width:90%;outline:none;padding:1px 0;}
-.leads-stat{background:#fdf7e3;}
+.leads-stat{background:rgba(201,168,76,.08);border-left-color:var(--gold);}
 .search-row{margin-bottom:12px;}
 .search-row input{width:100%;border:1px solid rgba(168,218,187,.2);border-radius:6px;padding:8px 12px;font-size:13px;font-family:'Inter',sans-serif;background:rgba(0,0,0,.25);color:var(--cream);}
 .search-row input:focus{outline:none;border-color:var(--mint);}
@@ -130,7 +133,7 @@ tbody td{padding:10px 12px;color:var(--cream);vertical-align:middle;}
 .s-interesado{background:rgba(201,168,76,.18);color:var(--gold);}
 .s-proceso{background:rgba(168,218,187,.28);color:#7ecba0;}
 .actions{display:flex;gap:5px;}
-.btn-act{background:none;border:1px solid #d4d4c8;border-radius:5px;padding:3px 9px;font-size:11px;cursor:pointer;color:var(--vg);font-family:'Inter',sans-serif;transition:all .12s;}
+.btn-act{background:none;border:1px solid rgba(168,218,187,.2);border-radius:5px;padding:3px 9px;font-size:11px;cursor:pointer;color:var(--vg);font-family:'Inter',sans-serif;transition:all .12s;}
 .btn-act:hover{border-color:var(--gold);color:var(--ev);}
 .btn-del:hover{border-color:#c0392b!important;color:#c0392b!important;}
 .btn-move{padding:2px 6px!important;font-size:9px!important;opacity:.45;}
@@ -145,7 +148,7 @@ tbody td{padding:10px 12px;color:var(--cream);vertical-align:middle;}
 .mgr-side-panel.open{display:block;}
 .mgr-side-header{background:var(--ev);padding:10px 14px;text-align:center;}
 .mgr-side-header p{font-size:10px;color:var(--mint);letter-spacing:1.5px;text-transform:uppercase;font-weight:600;}
-.mgr-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 14px;border-bottom:1px solid #e8e8e0;}
+.mgr-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 14px;border-bottom:1px solid rgba(168,218,187,.1);}
 .mgr-row:last-child{border-bottom:none;}
 .mgr-abbr{font-family:'Inter',monospace;font-size:13px;font-weight:600;color:var(--ev);background:var(--cream);border:1px solid var(--gold);border-radius:5px;padding:4px 10px;min-width:48px;text-align:center;}
 .mgr-num{font-family:'Inter',monospace;font-size:11px;color:var(--vg);}
@@ -160,7 +163,8 @@ tbody td{padding:10px 12px;color:var(--cream);vertical-align:middle;}
 .field input:focus,.field select:focus{outline:none;border-color:var(--mint);}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;}
-.btn-cancel{background:none;border:1px solid rgba(168,218,187,.2);border-radius:5px;padding:8px 16px;font-size:12px;cursor:pointer;color:var(--vg);font-family:'Inter',sans-serif;}
+.btn-cancel{background:none;border:1px solid rgba(168,218,187,.2);border-radius:5px;padding:8px 16px;font-size:12px;cursor:pointer;color:var(--vg);font-family:'Inter',sans-serif;transition:all .15s;}
+.btn-cancel:hover{border-color:var(--gold);color:var(--cream);}
 .btn-save{background:var(--ev);color:var(--cream);border:none;border-radius:5px;padding:8px 18px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;}
 .btn-save:hover{background:#0f3530;}
 .footer{margin-top:14px;display:flex;align-items:center;}
@@ -245,14 +249,14 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
     </svg>
   </button>
   <nav class="sidebar-nav">
-    <button class="nav-item active" onclick="showPage('clientes-leads',this)">Clientes / Leads</button>
-    <button class="nav-item" onclick="showPage('portfolios',this)">Portfolios ONLINE</button>
-    <button class="nav-item" onclick="showPage('cartera',this)">Cartera modelo</button>
-    <button class="nav-item" onclick="showPage('calcular',this)">Generador de reportes</button>
-    <button class="nav-item" onclick="showPage('hedgeye',this);loadHedgeye()">Hedgeye</button>
-    <button class="nav-item" onclick="showPage('apertura',this)">Proceso de apertura</button>
-<button class="nav-item" onclick="showPage('documentacion',this)">Documentación de apertura</button>
-<button class="nav-item" onclick="showPage('links',this)">Links útiles</button>
+    <button class="nav-item active" onclick="showPage('clientes-leads',this)"><span class="nav-item-icon">◎</span><span class="nav-item-text">Clientes / Leads</span></button>
+    <button class="nav-item" onclick="showPage('portfolios',this)"><span class="nav-item-icon">▤</span><span class="nav-item-text">Portfolios ONLINE</span></button>
+    <button class="nav-item" onclick="showPage('cartera',this)"><span class="nav-item-icon">◈</span><span class="nav-item-text">Cartera modelo</span></button>
+    <button class="nav-item" onclick="showPage('calcular',this)"><span class="nav-item-icon">▦</span><span class="nav-item-text">Generador de reportes</span></button>
+    <button class="nav-item" onclick="showPage('hedgeye',this);loadHedgeye()"><span class="nav-item-icon">◉</span><span class="nav-item-text">Hedgeye</span></button>
+    <button class="nav-item" onclick="showPage('apertura',this)"><span class="nav-item-icon">◫</span><span class="nav-item-text">Proceso de apertura</span></button>
+    <button class="nav-item" onclick="showPage('documentacion',this)"><span class="nav-item-icon">▣</span><span class="nav-item-text">Documentación de apertura</span></button>
+    <button class="nav-item" onclick="showPage('links',this)"><span class="nav-item-icon">◌</span><span class="nav-item-text">Links útiles</span></button>
   </nav>
   <div class="sidebar-actions" style="padding:12px 10px 14px;border-top:1px solid rgba(168,218,187,.1);display:flex;flex-direction:column;gap:6px;">
     <button onclick="congelarSnapshot(this)" style="width:100%;padding:8px 6px;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.25);color:#C9A84C;border-radius:6px;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;font-family:Inter,sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>Sync con Vercel</button>
