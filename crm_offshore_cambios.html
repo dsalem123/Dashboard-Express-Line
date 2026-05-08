@@ -122,13 +122,13 @@ tbody tr:last-child{border-bottom:none;}
 tbody td{padding:10px 12px;color:var(--cream);vertical-align:middle;}
 .client-name{font-weight:500;font-size:13px;}
 .mono{font-family:'Inter',monospace;font-size:12px;color:var(--vg);}
-.badge-broker{display:inline-block;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:500;background:#EDF4FF;color:#1a4a8a;}
+.badge-broker{display:inline-block;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:500;background:rgba(168,218,187,.12);color:var(--mint);border:1px solid rgba(168,218,187,.2);}
 .badge-mgr{display:inline-block;padding:3px 9px;border-radius:4px;font-size:12px;font-weight:600;background:var(--cream);color:var(--ev);border:1px solid var(--gold);font-family:'Inter',monospace;}
 .badge-status{display:inline-block;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:500;}
-.s-nuevo{background:#e8f4fd;color:#1a5a8a;}
-.s-contactado{background:#fff3cd;color:#7a5c00;}
-.s-interesado{background:#d4edda;color:#155724;}
-.s-proceso{background:#ede8fd;color:#4a1a8a;}
+.s-nuevo{background:rgba(107,133,120,.2);color:var(--vg);}
+.s-contactado{background:rgba(168,218,187,.15);color:var(--mint);}
+.s-interesado{background:rgba(201,168,76,.18);color:var(--gold);}
+.s-proceso{background:rgba(168,218,187,.28);color:#7ecba0;}
 .actions{display:flex;gap:5px;}
 .btn-act{background:none;border:1px solid #d4d4c8;border-radius:5px;padding:3px 9px;font-size:11px;cursor:pointer;color:var(--vg);font-family:'Inter',sans-serif;transition:all .12s;}
 .btn-act:hover{border-color:var(--gold);color:var(--ev);}
@@ -801,6 +801,7 @@ function render(){
     </div></td></tr>`).join(''):'<tr><td colspan="4" class="empty">Sin resultados</td></tr>';
   if(!localStorage.getItem('st-total')) document.getElementById('st-total').textContent=clients.length;
   if(!localStorage.getItem('st-leads')) document.getElementById('st-leads').textContent=leads.length;
+  updateAutoAUM();
 }
 
 function renderMgr(){
@@ -1460,10 +1461,25 @@ function saveLeadRow(id){
     if(el){const v=el.textContent.trim();l[f]=v==='—'?'':v;}
   });
   saveToStorage();
+  updateAutoAUM();
   showToast('Guardado ✓');
 }
 
-
+function parseAUM(s){
+  if(!s||s==='—') return 0;
+  s=s.toString().replace(/[$,\s]/g,'').toUpperCase();
+  var n=parseFloat(s);
+  if(isNaN(n)) return 0;
+  if(s.endsWith('M')) n*=1e6;
+  else if(s.endsWith('K')) n*=1e3;
+  return n;
+}
+function updateAutoAUM(){
+  var total=clients.reduce(function(sum,c){return sum+parseAUM(c.aum);},0);
+  if(!total) return;
+  var fmt=total>=1e6?'$'+(total/1e6).toFixed(1)+'M':total>=1e3?'$'+Math.round(total/1e3)+'k':'$'+Math.round(total);
+  document.getElementById('kpi-aum').textContent=fmt;
+}
 
 function updateSyncStatus(){
   var el=document.getElementById('sync-status');
