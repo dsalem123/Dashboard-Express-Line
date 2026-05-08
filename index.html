@@ -569,9 +569,8 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
     </div>
     <div class="perfil-grid">
       <div class="perfil-panel">
-        <div class="perfil-metrics">
+        <div class="perfil-metrics" style="grid-template-columns:repeat(2,1fr);">
           <div class="perfil-metric"><div class="pm-val" id="pf-aum">—</div><div class="pm-label">AUM</div></div>
-          <div class="perfil-metric"><div class="pm-val pm-gold" id="pf-fee-anual">—</div><div class="pm-label">Fee anual</div></div>
           <div class="perfil-metric"><div class="pm-val" id="pf-riesgo-m">—</div><div class="pm-label">Riesgo</div></div>
         </div>
         <div class="perfil-section">
@@ -1636,9 +1635,6 @@ function openPerfil(id){
   var aumRaw=parseAUM(c.aum);
   var aumFmt=aumRaw>=1e6?'$'+(aumRaw/1e6).toFixed(1)+'M':aumRaw>=1e3?'$'+Math.round(aumRaw/1e3)+'k':aumRaw>0?'$'+aumRaw:(c.aum||'—');
   document.getElementById('pf-aum').textContent=aumFmt;
-  var feeP=parseFloat((c.pctFee||'').replace(/[%,\s]/g,''))||0;
-  var feeAnual=aumRaw*feeP/100;
-  document.getElementById('pf-fee-anual').textContent=feeAnual>=1e3?'$'+(feeAnual/1e3).toFixed(1)+'k':feeAnual>0?'$'+Math.round(feeAnual):'—';
   document.getElementById('pf-riesgo-m').textContent=c.riesgo||'—';
   function row(label,val){return val?'<span style="color:var(--vg)">'+label+':</span> <span>'+val+'</span>':'';}
   document.getElementById('pf-mail-row').innerHTML=row('Mail',c.mail);
