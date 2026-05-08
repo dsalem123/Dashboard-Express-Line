@@ -179,6 +179,46 @@ tbody td{padding:10px 12px;color:var(--cream);vertical-align:middle;}
 td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'—';color:#bbb;}
 .btn-save-row{background:var(--ev)!important;color:var(--mint)!important;border-color:var(--ev)!important;font-weight:700!important;font-size:14px!important;padding:3px 10px!important;}
 .btn-save-row:hover{background:#0f3530!important;}
+/* ── PERFIL 360 ── */
+.perfil-overlay{position:fixed;inset:0;z-index:500;background:rgba(10,31,27,.94);display:none;align-items:flex-start;justify-content:center;overflow-y:auto;padding:28px 16px;}
+.perfil-overlay.open{display:flex;}
+.perfil-inner{width:100%;max-width:1060px;background:var(--ev);border:1px solid rgba(168,218,187,.15);border-radius:14px;overflow:hidden;margin:auto;}
+.perfil-header{display:flex;align-items:center;justify-content:space-between;padding:18px 28px;border-bottom:1px solid rgba(168,218,187,.12);background:rgba(0,0,0,.2);}
+.perfil-nombre{font-family:'Playfair Display',serif;font-size:20px;color:var(--cream);letter-spacing:.5px;}
+.perfil-sub{font-size:11px;color:var(--vg);letter-spacing:1.5px;text-transform:uppercase;margin-top:4px;}
+.perfil-close{background:none;border:1px solid rgba(168,218,187,.2);border-radius:6px;color:var(--vg);font-size:12px;cursor:pointer;padding:7px 14px;font-family:'Inter',sans-serif;letter-spacing:.5px;transition:all .15s;}
+.perfil-close:hover{border-color:var(--gold);color:var(--cream);}
+.perfil-grid{display:grid;grid-template-columns:320px 1fr;min-height:500px;}
+.perfil-panel{padding:22px 26px;}
+.perfil-panel+.perfil-panel{border-left:1px solid rgba(168,218,187,.1);display:flex;flex-direction:column;}
+.perfil-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:22px;}
+.perfil-metric{background:rgba(168,218,187,.05);border:1px solid rgba(168,218,187,.1);border-radius:8px;padding:11px 10px;text-align:center;}
+.pm-val{font-size:17px;font-weight:600;color:var(--cream);font-family:'Inter',sans-serif;}
+.pm-val.pm-gold{color:var(--gold);}
+.pm-label{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:var(--vg);margin-top:4px;}
+.perfil-section{margin-bottom:18px;}
+.ps-label{font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:9px;padding-bottom:5px;border-bottom:1px solid rgba(201,168,76,.2);}
+.ps-row{font-size:12px;color:var(--vg);padding:2px 0;line-height:1.6;}
+.ps-row span{color:var(--cream);}
+.pf-date-input{background:rgba(0,0,0,.25);border:1px solid rgba(168,218,187,.2);border-radius:6px;padding:6px 10px;color:var(--cream);font-family:'Inter',sans-serif;font-size:12px;outline:none;color-scheme:dark;}
+.pf-date-input:focus{border-color:var(--mint);}
+.btn-registrar-contacto{width:100%;background:rgba(168,218,187,.08);border:1px solid rgba(168,218,187,.25);border-radius:8px;color:var(--mint);font-family:'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:11px;cursor:pointer;transition:all .2s;margin-bottom:18px;flex-shrink:0;}
+.btn-registrar-contacto:hover{background:rgba(168,218,187,.15);border-color:var(--mint);}
+.pf-timeline{flex:1;overflow-y:auto;max-height:280px;margin-bottom:14px;display:flex;flex-direction:column;}
+.act-entry{display:flex;gap:11px;padding:9px 0;border-bottom:1px solid rgba(168,218,187,.07);}
+.act-entry:last-child{border-bottom:none;}
+.act-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.act-meta{font-size:10px;color:var(--vg);letter-spacing:.3px;margin-bottom:2px;}
+.act-time{opacity:.55;}
+.act-nota{font-size:12px;color:var(--cream);line-height:1.45;}
+.pf-nota-area{display:flex;flex-direction:column;gap:8px;margin-top:auto;}
+.pf-nota-textarea{background:rgba(0,0,0,.25);border:1px solid rgba(168,218,187,.2);border-radius:7px;padding:9px 12px;color:var(--cream);font-family:'Inter',sans-serif;font-size:12px;outline:none;resize:none;min-height:64px;}
+.pf-nota-textarea:focus{border-color:var(--mint);}
+.pf-nota-textarea::placeholder{color:var(--vg);opacity:.5;}
+.btn-add-nota{align-self:flex-end;background:var(--gold);color:var(--ev);border:none;border-radius:6px;padding:8px 18px;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:opacity .15s;}
+.btn-add-nota:hover{opacity:.85;}
+.btn-perfil{border-color:rgba(168,218,187,.25)!important;color:var(--mint)!important;font-size:12px!important;}
+.btn-perfil:hover{background:rgba(168,218,187,.08)!important;border-color:var(--mint)!important;}
 @media(max-width:900px){
   .sidebar{width:48px!important;min-width:48px!important;}
   .sidebar .sidebar-brand-name,.sidebar .sidebar-brand-sub,.sidebar .sidebar-gold,.sidebar .nav-item-text{display:none!important;}
@@ -517,6 +557,63 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
 </div>
 </div>
 
+<!-- ── PERFIL 360 ── -->
+<div class="perfil-overlay" id="perfil-modal" onclick="if(event.target===this)closePerfil()">
+  <div class="perfil-inner">
+    <div class="perfil-header">
+      <div>
+        <div class="perfil-nombre" id="pf-nombre"></div>
+        <div class="perfil-sub" id="pf-sub"></div>
+      </div>
+      <button class="perfil-close" onclick="closePerfil()">✕ Cerrar</button>
+    </div>
+    <div class="perfil-grid">
+      <div class="perfil-panel">
+        <div class="perfil-metrics">
+          <div class="perfil-metric"><div class="pm-val" id="pf-aum">—</div><div class="pm-label">AUM</div></div>
+          <div class="perfil-metric"><div class="pm-val pm-gold" id="pf-fee-anual">—</div><div class="pm-label">Fee anual</div></div>
+          <div class="perfil-metric"><div class="pm-val" id="pf-riesgo-m">—</div><div class="pm-label">Riesgo</div></div>
+        </div>
+        <div class="perfil-section">
+          <div class="ps-label">Contacto</div>
+          <div class="ps-row" id="pf-mail-row"></div>
+          <div class="ps-row" id="pf-tel-row"></div>
+          <div class="ps-row" id="pf-nc-row"></div>
+        </div>
+        <div class="perfil-section">
+          <div class="ps-label">Estructura</div>
+          <div class="ps-row" id="pf-broker-row"></div>
+          <div class="ps-row" id="pf-custodio-row"></div>
+          <div class="ps-row" id="pf-sociedad-row"></div>
+          <div class="ps-row" id="pf-comercial-row"></div>
+        </div>
+        <div class="perfil-section">
+          <div class="ps-label">Fee &amp; Inversión</div>
+          <div class="ps-row" id="pf-fee-row"></div>
+          <div class="ps-row" id="pf-plazo-row"></div>
+          <div class="ps-row" id="pf-seg-row"></div>
+          <div class="ps-row" id="pf-ult-row"></div>
+        </div>
+        <div class="perfil-section">
+          <div class="ps-label">Próximo contacto</div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <input type="date" id="pf-proximo" class="pf-date-input" onchange="guardarProximoContacto()">
+            <span id="pf-proximo-status" style="font-size:11px;"></span>
+          </div>
+        </div>
+      </div>
+      <div class="perfil-panel">
+        <button class="btn-registrar-contacto" onclick="registrarContactoHoy()">↻ &nbsp;Registrar contacto hoy</button>
+        <div id="pf-timeline" class="pf-timeline"></div>
+        <div class="pf-nota-area">
+          <textarea id="pf-nota-input" class="pf-nota-textarea" placeholder="Agregar nota..."></textarea>
+          <button class="btn-add-nota" onclick="guardarNota()">Agregar nota</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 const MANAGERS={1001:{abbr:'TB',full:'Tomi Bein'},1002:{abbr:'IPR',full:'IPR'},1003:{abbr:'JG',full:'John'},1004:{abbr:'FJ',full:'Fede Jabbaz'}};
 const EMPTY_EXTRA={comercial:'',sociedad:'',tipoFee:'',pctFee:'',aum:'',seguimiento:'',ultimoContacto:'',riesgo:'',plazo:'',mail:'',telefono:'',detalles:''};
@@ -567,6 +664,9 @@ function saveToStorage(){
     ks.forEach(function(k){ if(d[k]&&(newer||!localStorage.getItem(k))) localStorage.setItem(k,d[k]); });
     if(d.kpi) Object.keys(d.kpi).forEach(function(k){
       if(d.kpi[k]&&(newer||!localStorage.getItem(k))) localStorage.setItem(k,d.kpi[k]);
+    });
+    Object.keys(d).forEach(function(k){
+      if(k.startsWith('crm_act_')&&d[k]&&(newer||!localStorage.getItem(k))) localStorage.setItem(k,d[k]);
     });
     if(newer) localStorage.setItem('_sync_ts',snapTs);
   }catch(e){}
@@ -620,6 +720,9 @@ function congelarSnapshot(btn){
   };
   ['kpi-duracion','kpi-aum','kpi-objetivo','kpi-tiempo'].forEach(function(k){
     state.kpi[k]=localStorage.getItem(k);
+  });
+  Object.keys(localStorage).forEach(function(k){
+    if(k.startsWith('crm_act_')) state[k]=localStorage.getItem(k);
   });
   state._sync_ts=Date.now();
   var hgData=window._hedgeyeData||
@@ -774,6 +877,7 @@ function render(){
     <td class="mono" contenteditable="true" data-key="c-${c.id}-telefono">${c.telefono||''}</td>
     <td style="text-align:center;"><button class="btn-act" onclick="verDetalle(${c.id})" title="${c.detalles?'Ver comentario':'Agregar comentario'}" style="font-size:15px;border:none;background:none;cursor:pointer;padding:2px 6px;opacity:${c.detalles?'1':'.35'};">💬</button></td>
     <td><div class="actions">
+      <button class="btn-act btn-perfil" onclick="openPerfil(${c.id})" title="Perfil 360">Perfil</button>
       <button class="btn-act btn-save-row" onclick="saveRow(${c.id})" title="Guardar cambios">✓</button>
       <button class="btn-act btn-del" onclick="delClient(${c.id})">Eliminar</button>
     </div></td></tr>`).join(''):'<tr><td colspan="18" class="empty">Sin resultados</td></tr>';
@@ -1490,6 +1594,105 @@ function updateSyncStatus(){
   var color=mins<10?'#A8DABB':mins<60?'#C9A84C':'#6B8578';
   var txt=mins<1?'Sincronizado ahora':mins<60?'Sync hace '+mins+'min':'Sync hace '+Math.floor(mins/60)+'h';
   el.innerHTML='<span class="sync-dot" style="background:'+color+'"></span><span style="color:'+color+'">'+txt+'</span>';
+}
+
+// ── PERFIL 360 ──────────────────────────────────────────────────────────────
+var perfilClientId=null;
+function getActividad(id){try{return JSON.parse(localStorage.getItem('crm_act_'+id)||'[]');}catch(e){return [];}}
+function saveActividad(id,arr){localStorage.setItem('crm_act_'+id,JSON.stringify(arr));}
+function addActividad(id,nota,tipo){
+  var arr=getActividad(id);
+  arr.unshift({ts:Date.now(),nota:nota,tipo:tipo||'nota'});
+  saveActividad(id,arr);
+  if(perfilClientId===id) renderTimeline(id);
+}
+function renderTimeline(id){
+  var arr=getActividad(id);
+  var el=document.getElementById('pf-timeline');
+  if(!arr.length){el.innerHTML='<div style="color:var(--vg);font-size:12px;text-align:center;padding:28px 0;opacity:.55;">Sin actividad registrada</div>';return;}
+  var cols={contacto:'var(--mint)',nota:'var(--gold)',sistema:'var(--vg)'};
+  el.innerHTML=arr.map(function(e){
+    var d=new Date(e.ts);
+    var ds=d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'});
+    var ts=d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+    var col=cols[e.tipo]||'var(--gold)';
+    return '<div class="act-entry"><div class="act-dot" style="background:'+col+'"></div><div><div class="act-meta">'+ds+' <span class="act-time">'+ts+'</span></div><div class="act-nota">'+e.nota+'</div></div></div>';
+  }).join('');
+}
+function renderProximoStatus(c){
+  var el=document.getElementById('pf-proximo-status');
+  if(!el||!c.proximoContacto){if(el)el.textContent='';return;}
+  var diff=Math.floor((new Date(c.proximoContacto)-new Date())/86400000);
+  if(diff<0) el.innerHTML='<span style="color:#f87171">Vencido hace '+Math.abs(diff)+(Math.abs(diff)===1?' día':' días')+'</span>';
+  else if(diff===0) el.innerHTML='<span style="color:var(--gold)">Hoy</span>';
+  else el.innerHTML='<span style="color:var(--vg)">En '+diff+(diff===1?' día':' días')+'</span>';
+}
+function openPerfil(id){
+  var c=clients.find(function(x){return x.id===id;});
+  if(!c) return;
+  perfilClientId=id;
+  document.getElementById('pf-nombre').textContent=c.nombre;
+  document.getElementById('pf-sub').textContent='#'+c.comitente+(c.broker?' · '+c.broker:'')+(c.custodio?' · '+c.custodio:'');
+  var aumRaw=parseAUM(c.aum);
+  var aumFmt=aumRaw>=1e6?'$'+(aumRaw/1e6).toFixed(1)+'M':aumRaw>=1e3?'$'+Math.round(aumRaw/1e3)+'k':aumRaw>0?'$'+aumRaw:(c.aum||'—');
+  document.getElementById('pf-aum').textContent=aumFmt;
+  var feeP=parseFloat((c.pctFee||'').replace(/[%,\s]/g,''))||0;
+  var feeAnual=aumRaw*feeP/100;
+  document.getElementById('pf-fee-anual').textContent=feeAnual>=1e3?'$'+(feeAnual/1e3).toFixed(1)+'k':feeAnual>0?'$'+Math.round(feeAnual):'—';
+  document.getElementById('pf-riesgo-m').textContent=c.riesgo||'—';
+  function row(label,val){return val?'<span style="color:var(--vg)">'+label+':</span> <span>'+val+'</span>':'';}
+  document.getElementById('pf-mail-row').innerHTML=row('Mail',c.mail);
+  document.getElementById('pf-tel-row').innerHTML=row('Tel',c.telefono);
+  document.getElementById('pf-nc-row').innerHTML=row('Contacto',c.nombreContacto);
+  document.getElementById('pf-broker-row').innerHTML=row('Broker',c.broker);
+  document.getElementById('pf-custodio-row').innerHTML=row('Custodio',c.custodio);
+  document.getElementById('pf-sociedad-row').innerHTML=row('Sociedad',c.sociedad);
+  document.getElementById('pf-comercial-row').innerHTML=row('Comercial',c.comercial);
+  var feeLabel=(c.tipoFee||'')+(c.pctFee?' · '+c.pctFee:'');
+  document.getElementById('pf-fee-row').innerHTML=row('Fee',feeLabel||null);
+  document.getElementById('pf-plazo-row').innerHTML=row('Plazo',c.plazo);
+  document.getElementById('pf-seg-row').innerHTML=row('Seguimiento',c.seguimiento);
+  document.getElementById('pf-ult-row').innerHTML=row('Último contacto',c.ultimoContacto);
+  document.getElementById('pf-proximo').value=c.proximoContacto||'';
+  renderProximoStatus(c);
+  renderTimeline(id);
+  document.getElementById('pf-nota-input').value='';
+  document.getElementById('perfil-modal').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closePerfil(){
+  document.getElementById('perfil-modal').classList.remove('open');
+  document.body.style.overflow='';
+  perfilClientId=null;
+}
+function registrarContactoHoy(){
+  if(!perfilClientId) return;
+  var c=clients.find(function(x){return x.id===perfilClientId;});
+  if(!c) return;
+  var d=new Date();
+  var fmt=String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getFullYear()).slice(2);
+  c.ultimoContacto=fmt;
+  document.getElementById('pf-ult-row').innerHTML='<span style="color:var(--vg)">Último contacto:</span> <span>'+fmt+'</span>';
+  addActividad(perfilClientId,'Contacto registrado','contacto');
+  saveToStorage();render();
+  showToast('Contacto registrado ✓');
+}
+function guardarNota(){
+  if(!perfilClientId) return;
+  var ta=document.getElementById('pf-nota-input');
+  var nota=ta.value.trim();
+  if(!nota) return;
+  addActividad(perfilClientId,nota,'nota');
+  ta.value='';
+  showToast('Nota guardada ✓');
+}
+function guardarProximoContacto(){
+  if(!perfilClientId) return;
+  var c=clients.find(function(x){return x.id===perfilClientId;});
+  if(!c) return;
+  c.proximoContacto=document.getElementById('pf-proximo').value||'';
+  saveToStorage();
+  renderProximoStatus(c);
 }
 
 renderMgr();render();
