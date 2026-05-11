@@ -1195,8 +1195,8 @@ function _buildPdfEl(macro, d, subtitle, maxBullets) {
           '<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#C9A84C;margin-top:5px;font-weight:600;">'+subtitle+'</div>' +
         '</div>' +
         '<div style="text-align:right;">' +
-          '<div style="font-size:13px;color:#A8DABB;font-weight:700;">'+(d.updated||macro.date||'')+'</div>' +
-          '<div style="font-size:8px;color:#6B8578;margin-top:2px;">'+(macro.date ? 'Episodio: '+macro.date : '')+'</div>' +
+          '<div style="font-size:13px;color:#A8DABB;font-weight:700;">'+(d.updated||'')+'</div>' +
+          '<div style="font-size:8px;color:#6B8578;margin-top:2px;">Hedgeye Risk Management</div>' +
         '</div>' +
       '</div>' +
       '<div style="height:2px;background:linear-gradient(90deg,#C9A84C,rgba(201,168,76,.3));margin-top:10px;"></div>' +
@@ -1403,7 +1403,7 @@ function renderHedgeyeData(d){
     <div class="hg-macro">
       <div class="hg-macro-head">
         <div class="hg-macro-title-label">The Macro Show</div>
-        <div class="hg-macro-date">${macro.date||''}</div>
+        <div class="hg-macro-date">${d.updated||macro.date||''}</div>
       </div>
       <div class="hg-macro-body">${macroContent}</div>
     </div>`;
