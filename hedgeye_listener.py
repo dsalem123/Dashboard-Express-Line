@@ -59,11 +59,26 @@ def git_push(msg):
     if 'nothing to commit' in r.stdout:
         print(f'[{ts()}] Sin cambios nuevos')
         return
-    r2 = subprocess.run(['git', 'push'])
+    r2 = subprocess.run(['git', 'push'], capture_output=True, text=True)
     if r2.returncode == 0:
         print(f'[{ts()}] Push OK — Vercel actualiza en ~30 segundos')
+        return
+    # Push rechazado — el remoto está adelante, hacer fetch + merge + re-push
+    print(f'[{ts()}] Push rechazado, haciendo merge con remoto...')
+    subprocess.run(['git', 'fetch'])
+    merge = subprocess.run(['git', 'merge', 'origin/master', '--no-edit'], capture_output=True, text=True)
+    if merge.returncode != 0:
+        # Conflicto en merge — usar crm_offshore_cambios.html como fuente de verdad
+        print(f'[{ts()}] Conflicto en merge — resolviendo con crm_offshore_cambios.html')
+        import shutil
+        shutil.copy('crm_offshore_cambios.html', 'index.html')
+        subprocess.run(['git', 'add', 'crm_offshore_cambios.html', 'index.html'])
+        subprocess.run(['git', 'commit', '-m', f'{msg} (merge conflict resolved)'])
+    r3 = subprocess.run(['git', 'push'])
+    if r3.returncode == 0:
+        print(f'[{ts()}] Push OK (tras merge) — Vercel actualiza en ~30 segundos')
     else:
-        print(f'[{ts()}] Error en git push')
+        print(f'[{ts()}] Error en git push tras merge')
 
 # ── Hedgeye scraper ───────────────────────────────────────────────────────────
 
