@@ -131,6 +131,7 @@ td.mono{font-family:'Inter',monospace;font-size:11px;}
   <div class="bbg-bar">
     <span><span class="bbg-dot" id="bbg-dot"></span><span id="bbg-status">Bloomberg: sin datos cargados</span></span>
     <span id="bbg-updated" style="margin-left:auto;"></span>
+    <button class="btn-danger" onclick="resetCurrentClient()">↺ Reset cliente</button>
   </div>
   <div class="grid-container">
     <div class="grid-header">
@@ -150,8 +151,18 @@ td.mono{font-family:'Inter',monospace;font-size:11px;}
       <button class="back-btn" onclick="showMain()">← Volver</button>
       <span style="font-size:10px;color:var(--vg);letter-spacing:1.5px;text-transform:uppercase;">Portfolios ONLINE</span>
     </div>
-    <div class="detail-name" id="detail-name"></div>
-    <div style="font-size:11px;color:var(--vg);" id="detail-account"></div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="detail-name" id="detail-name"></div>
+      <button id="edit-client-btn" onclick="toggleClientEdit(true)" title="Editar" style="background:none;border:none;color:var(--vg);cursor:pointer;font-size:14px;padding:2px 4px;transition:color .15s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--vg)'">✏️</button>
+    </div>
+    <div id="detail-account-view" style="font-size:11px;color:var(--vg);"></div>
+    <div id="detail-account-edit" style="display:none;margin-top:6px;display:none;gap:8px;align-items:center;flex-wrap:wrap;">
+      <input id="edit-name" type="text" placeholder="Nombre" style="background:rgba(168,218,187,.06);border:1px solid var(--br);border-radius:5px;padding:5px 10px;color:var(--cream);font-size:12px;font-family:'Inter',sans-serif;width:200px;">
+      <input id="edit-account" type="text" placeholder="N° cuenta" style="background:rgba(168,218,187,.06);border:1px solid var(--br);border-radius:5px;padding:5px 10px;color:var(--cream);font-size:12px;font-family:'Inter',sans-serif;width:130px;">
+      <input id="edit-mgr" type="text" placeholder="Manager" style="background:rgba(168,218,187,.06);border:1px solid var(--br);border-radius:5px;padding:5px 10px;color:var(--cream);font-size:12px;font-family:'Inter',sans-serif;width:100px;">
+      <button onclick="saveClientEdit()" style="background:var(--gold);border:none;border-radius:5px;padding:5px 12px;color:var(--ev);font-weight:600;cursor:pointer;font-size:12px;">✓</button>
+      <button onclick="toggleClientEdit(false)" style="background:none;border:1px solid var(--br);border-radius:5px;padding:5px 10px;color:var(--vg);cursor:pointer;font-size:12px;">✕</button>
+    </div>
     <div class="d-metrics" id="detail-metrics"></div>
   </div>
   <div class="tabs-bar">
@@ -338,7 +349,7 @@ td.mono{font-family:'Inter',monospace;font-size:11px;}
 // ── DEFAULT DATA: ARVE HOLDINGS LTD (Pershing Apr 23 2026) ──
 const ARVE_DEFAULT = {
   id:'ARVE',name:'ARVE HOLDINGS LTD',accountNo:'RDS011109',manager:'TB',
-  lastUpdated:'23/04/2026',totalValue:1929083.86,cashAvailable:113160.52,unrealizedGain:45916.91,
+  lastUpdated:'23/04/2026',totalValue:1929083.86,cashAvailable:113160.52,unrealizedGain:45916.91,uglTotalGain:45916.91,balTotalValue:null,balCashAvailable:null,
   holdings:[
     {isin:null,cusip:'PER982086',symbol:'DUTG',type:'Money Market Funds',description:'BNY MELLON U.S. TREASURY FUND SERVICE SHARES',quantity:113160.52,unitCost:1,totalCost:113160.52,lastPrice:1,marketValue:113160.52,unrealizedGain:0,unrealizedGainPct:0},
     {isin:'IE00BM9KYW45',cusip:'G6572K210',symbol:null,type:'Open-end Mutual Funds',description:'NOMURA U.S. HIGH YIELD BOND FUND CLASS C (USD)',quantity:539.281,unitCost:null,totalCost:null,lastPrice:123.6664,marketValue:62603.08,unrealizedGain:null,unrealizedGainPct:null},
@@ -376,7 +387,6 @@ const ARVE_DEFAULT = {
 let S = {clients:[], bbgPrices:{}, bbgDate:null};
 let cid = null; // current client id
 let movType = 'DEP';
-let pendingImport = null;
 
 // ── STORAGE ──
 function save(){try{localStorage.setItem('pfol_v1',JSON.stringify(S));}catch(e){toast('Error al guardar: '+e.message,1);}}
@@ -387,6 +397,23 @@ function load(){
     else{S.clients=[JSON.parse(JSON.stringify(ARVE_DEFAULT))];save();}
   }catch(e){S.clients=[JSON.parse(JSON.stringify(ARVE_DEFAULT))];}
 }
+function resetCurrentClient(){
+  if(!cid) return;
+  const c=S.clients.find(x=>x.id===cid);
+  if(!c) return;
+  const name=c.name||cid;
+  if(!confirm(`¿Resetear "${name}" al estado inicial?\nSe borrarán holdings, UGL y movimientos. Los demás clientes NO se tocan.`)) return;
+  if(c.id==='arve'){
+    const fresh=JSON.parse(JSON.stringify(ARVE_DEFAULT));
+    const idx=S.clients.findIndex(x=>x.id===cid);
+    S.clients[idx]=fresh;
+    cid='arve';
+  } else {
+    c.holdings=[]; c.movements=[]; c.uglData=null; c.uglTotalGain=null; c.balance=null;
+    recalc(c);
+  }
+  save(); renderList(); renderDetail(cid); toast(`"${name}" reseteado ✓`);
+}
 
 // ── BLOOMBERG ──
 function loadBloomberg(input){
@@ -395,16 +422,24 @@ function loadBloomberg(input){
   reader.onload=function(e){
     try{
       const wb=XLSX.read(e.target.result,{type:'array'});
-      const wsName=wb.SheetNames.includes('PEGADO')?'PEGADO':wb.SheetNames[0];
+      const wsName=wb.SheetNames.includes('Bloomberg Data')?'Bloomberg Data':wb.SheetNames.includes('PEGADO')?'PEGADO':wb.SheetNames[0];
       const rows=XLSX.utils.sheet_to_json(wb.Sheets[wsName],{header:1,defval:null});
       const prices={};
       const isISIN=v=>typeof v==='string'&&/^[A-Z]{2}[A-Z0-9]{10}$/.test(v.trim());
+      let isBonds=false;
       rows.forEach(r=>{
         if(!r) return;
-        let isin=null,price=null,chg=null,ytd=null,name=String(r[0]||'');
-        if(isISIN(r[2]) && typeof r[4]==='number'){isin=r[2].trim();price=r[4];chg=typeof r[5]==='number'?r[5]:null;ytd=typeof r[6]==='number'?r[6]:null;}
-        else if(isISIN(r[3]) && typeof r[5]==='number'){isin=r[3].trim();price=r[5];chg=typeof r[6]==='number'?r[6]:null;ytd=typeof r[7]==='number'?r[7]:null;}
-        if(isin&&price!=null){
+        const a=String(r[0]||'');
+        if(a.includes('FONDOS')||a.includes('NDICES')||a.includes('PANEL')||a.includes('ACCIONES')) isBonds=false;
+        if(a.includes('BONOS')) isBonds=true;
+        let isin=null,price=null,chg=null,ytd=null,name=a;
+        if(isISIN(r[2])&&typeof r[4]==='number'){
+          isin=r[2].trim();price=r[4];chg=typeof r[5]==='number'?r[5]:null;
+          ytd=isBonds?(typeof r[9]==='number'?r[9]:null):(typeof r[6]==='number'?r[6]:null);
+        } else if(isISIN(r[3])&&typeof r[5]==='number'){
+          isin=r[3].trim();price=r[5];chg=typeof r[6]==='number'?r[6]:null;ytd=typeof r[7]==='number'?r[7]:null;
+        }
+        if(isin&&price!=null&&price>0){
           const entry={price,chg,ytd,name};
           prices[isin]=entry;
           // También indexar por CUSIP (chars 2-10 del ISIN para acciones US)
@@ -416,15 +451,17 @@ function loadBloomberg(input){
       S.bbgPrices=prices; S.bbgDate=new Date().toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
       let upd=0;
       S.clients.forEach(c=>{
+        let clientUpd=0;
         c.holdings.forEach(h=>{
           const entry=(h.isin&&prices[h.isin])||(h.cusip&&prices['_C_'+h.cusip])||(h.symbol&&prices['_T_'+h.symbol]);
           if(entry){
             h.lastPrice=entry.price;
             h.marketValue=h.quantity*h.lastPrice;
             if(h.totalCost){h.unrealizedGain=h.marketValue-h.totalCost;h.unrealizedGainPct=(h.unrealizedGain/h.totalCost)*100;}
-            upd++;
+            clientUpd++; upd++;
           }
         });
+        c.lastUpdated=S.bbgDate;
         recalc(c);
       });
       save(); bbgBar(); if(cid) renderDetail(cid); else renderGrid();
@@ -493,11 +530,11 @@ function renderGrid(){
 function renderDetail(id){
   const c=S.clients.find(x=>x.id===id); if(!c) return;
   document.getElementById('detail-name').textContent=c.name;
-  document.getElementById('detail-account').textContent=`Cuenta: ${c.accountNo||'—'} · Manager: ${c.manager||'—'}`;
+  document.getElementById('detail-account-view').textContent=`Cuenta: ${c.accountNo||'—'} · Manager: ${c.manager||'—'}`;
+  toggleClientEdit(false);
   const gp=c.unrealizedGain||0, cls=gp>=0?'pos':'neg', sign=gp>=0?'+':'';
   const knownCost=c.holdings.filter(h=>h.totalCost!=null).reduce((s,h)=>s+h.totalCost,0);
-  const knownGain=c.holdings.filter(h=>h.unrealizedGain!=null).reduce((s,h)=>s+h.unrealizedGain,0);
-  const gpPct=knownCost>0?(knownGain/knownCost*100).toFixed(2):'—';
+  const gpPct=knownCost>0?(gp/knownCost*100).toFixed(2):'—';
   document.getElementById('detail-metrics').innerHTML=`
     <div class="d-metric"><div class="d-metric-label">Valor total</div><div class="d-metric-val">${fmt(c.totalValue)}</div></div>
     <div class="d-metric"><div class="d-metric-label">Cash disponible</div><div class="d-metric-val neutral">${fmt(c.cashAvailable)}</div></div>
@@ -513,10 +550,11 @@ function renderHoldings(id){
   const total=c.holdings.reduce((s,h)=>s+(h.marketValue||0),0);
   const knownGain=c.holdings.filter(h=>h.unrealizedGain!=null).reduce((s,h)=>s+h.unrealizedGain,0);
   const knownCost=c.holdings.filter(h=>h.totalCost!=null).reduce((s,h)=>s+h.totalCost,0);
-  const gpPct=knownCost>0?(knownGain/knownCost*100):0;
+  const displayGain=c.unrealizedGain!=null?c.unrealizedGain:knownGain;
+  const gpPct=knownCost>0?(displayGain/knownCost*100):0;
   document.getElementById('perf-grid').innerHTML=`
     <div class="perf-card"><div class="perf-label">Valor cartera</div><div class="perf-val">${fmt(total)}</div></div>
-    <div class="perf-card"><div class="perf-label">G/P total (USD)</div><div class="perf-val ${knownGain>=0?'pos':'neg'}">${knownGain>=0?'+':''}${fmt(knownGain)}</div></div>
+    <div class="perf-card"><div class="perf-label">G/P total (USD)</div><div class="perf-val ${displayGain>=0?'pos':'neg'}">${displayGain>=0?'+':''}${fmt(displayGain)}</div></div>
     <div class="perf-card"><div class="perf-label">Retorno s/costo</div><div class="perf-val ${gpPct>=0?'pos':'neg'}">${gpPct>=0?'+':''}${gpPct.toFixed(2)}%</div></div>
     <div class="perf-card"><div class="perf-label">Cash / Total</div><div class="perf-val">${total>0?(c.cashAvailable/total*100).toFixed(1)+'%':'—'}</div></div>`;
   document.getElementById('holdings-asof').textContent=c.lastUpdated?`Datos al: ${c.lastUpdated}`:'';
@@ -526,12 +564,15 @@ function renderHoldings(id){
     'Exchange-Traded Funds':['t-etf','ETF'],
     'Corporate Bonds':['t-bond','Bond'],
     'Government Bonds':['t-bond','Sov'],
-    'Equities':['t-eq','Eq']
+    'Equities':['t-eq','Eq'],
+    'Common Stocks':['t-eq','Comm'],
+    'Preferred Stocks':['t-eq','Pref'],
+    'Rights & Warrants':['t-eq','Wrt']
   };
   document.getElementById('holdings-tbody').innerHTML=c.holdings.map((h,i)=>{
     const pct=total>0?(h.marketValue/total*100).toFixed(1):'—';
     const [bcls,blbl]=tbadge[h.type]||['t-mf',h.type.substring(0,4)];
-    const gpU=h.unrealizedGain!=null?`<span class="${h.unrealizedGain>=0?'pos':'neg'}">${h.unrealizedGain>=0?'+':''}${fmtN(h.unrealizedGain)}</span>`:'<span style="color:var(--vg)">—</span>';
+    const gpU=h.unrealizedGain!=null?`<span class="${h.unrealizedGain>=0?'pos':'neg'}">${h.unrealizedGain>=0?'+':'-'}${fmtN(h.unrealizedGain)}</span>`:'<span style="color:var(--vg)">—</span>';
     const gpP=h.unrealizedGainPct!=null?`<span class="${h.unrealizedGainPct>=0?'pos':'neg'}">${h.unrealizedGainPct>=0?'+':''}${h.unrealizedGainPct.toFixed(2)}%</span>`:'<span style="color:var(--vg)">—</span>';
     return `<tr>
       <td><div style="font-size:12px;font-weight:500;max-width:260px;line-height:1.3;">${h.description}</div><div style="font-size:10px;color:var(--vg);margin-top:2px;">${h.isin||h.cusip||'—'}</div></td>
@@ -549,11 +590,31 @@ function renderHoldings(id){
   document.getElementById('holdings-total').textContent=fmt(total);
 }
 
+function toggleClientEdit(on){
+  document.getElementById('detail-account-view').style.display=on?'none':'block';
+  document.getElementById('edit-client-btn').style.display=on?'none':'inline';
+  const ed=document.getElementById('detail-account-edit');
+  ed.style.display=on?'flex':'none';
+  if(on){
+    const c=S.clients.find(x=>x.id===cid);
+    document.getElementById('edit-name').value=c.name||'';
+    document.getElementById('edit-account').value=c.accountNo||'';
+    document.getElementById('edit-mgr').value=c.manager||'';
+  }
+}
+function saveClientEdit(){
+  const c=S.clients.find(x=>x.id===cid); if(!c) return;
+  c.name=document.getElementById('edit-name').value.trim()||c.name;
+  c.accountNo=document.getElementById('edit-account').value.trim();
+  c.manager=document.getElementById('edit-mgr').value.trim();
+  save(); renderDetail(cid); toast('Cliente actualizado ✓');
+}
+
 function recalc(c){
-  c.totalValue=c.holdings.reduce((s,h)=>s+(h.marketValue||0),0);
+  const holdingsTotal=c.holdings.reduce((s,h)=>s+(h.marketValue||0),0);
+  c.totalValue=holdingsTotal>0?holdingsTotal:(c.balTotalValue||0);
   const mm=c.holdings.find(h=>h.type==='Money Market Funds');
-  if(mm) c.cashAvailable=mm.marketValue;
-  // Usar total del UGL si está disponible (incluye posiciones sin costo individual)
+  c.cashAvailable=c.balCashAvailable!=null?c.balCashAvailable:(mm?mm.marketValue:c.cashAvailable||0);
   if(c.uglTotalGain!=null) c.unrealizedGain=c.uglTotalGain;
   else c.unrealizedGain=c.holdings.filter(h=>h.unrealizedGain!=null).reduce((s,h)=>s+h.unrealizedGain,0);
 }
@@ -578,7 +639,7 @@ function saveHolding(){
 function removeHolding(clientId,idx){
   if(!confirm('¿Eliminar esta posición?')) return;
   const c=S.clients.find(x=>x.id===clientId);
-  c.holdings.splice(idx,1); recalc(c); save(); renderHoldings(clientId); renderDetail(clientId); toast('Posición eliminada');
+  c.holdings.splice(idx,1); recalc(c); save(); renderDetail(clientId); toast('Posición eliminada');
 }
 
 // ── IMPORT POSITIONS ──
@@ -592,10 +653,11 @@ function importPositions(input){
       const holdings=parsePositions(rows);
       if(!holdings.length){toast('No se encontraron posiciones',1);return;}
       const c=S.clients.find(x=>x.id===cid);
-      c.holdings=holdings; c.lastUpdated=new Date().toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+      c.holdings=holdings; c.uglTotalGain=null; c.balCashAvailable=null; c.lastUpdated=new Date().toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
       if(Object.keys(S.bbgPrices).length){
         c.holdings.forEach(h=>{
-          if(h.isin&&S.bbgPrices[h.isin]){h.lastPrice=S.bbgPrices[h.isin].price;h.marketValue=h.quantity*h.lastPrice;if(h.totalCost){h.unrealizedGain=h.marketValue-h.totalCost;h.unrealizedGainPct=(h.unrealizedGain/h.totalCost)*100;}}
+          const entry=(h.isin&&S.bbgPrices[h.isin])||(h.cusip&&S.bbgPrices['_C_'+h.cusip])||(h.symbol&&S.bbgPrices['_T_'+h.symbol]);
+          if(entry){h.lastPrice=entry.price;h.marketValue=h.quantity*h.lastPrice;if(h.totalCost){h.unrealizedGain=h.marketValue-h.totalCost;h.unrealizedGainPct=(h.unrealizedGain/h.totalCost)*100;}}
         });
       }
       recalc(c); save(); renderDetail(cid); toast(`${holdings.length} posiciones importadas ✓`);
@@ -616,7 +678,8 @@ function importUGL(input){
       const c=S.clients.find(x=>x.id===cid);
       c.holdings=mergeUGLIntoHoldings(c.holdings, uglData);
       if(totalGain!=null) c.uglTotalGain=totalGain;
-      recalc(c); save(); renderDetail(cid); toast(`UGL importado — G/P total: ${totalGain!=null?fmtN(totalGain):'—'} ✓`);
+      else if(uglData.length>0) c.uglTotalGain=uglData.reduce((s,u)=>s+(u.unrealizedGain||0),0);
+      recalc(c); save(); renderDetail(cid); toast(`UGL importado — G/P total: ${c.uglTotalGain!=null?fmtN(c.uglTotalGain):'—'} ✓`);
     }catch(err){toast('Error UGL: '+err.message,1);}
   };
   reader.readAsArrayBuffer(file); input.value='';
@@ -632,9 +695,9 @@ function importBalances(input){
       const bal=parseBalances(rows);
       if(!bal){toast('No se encontraron datos de balance',1);return;}
       const c=S.clients.find(x=>x.id===cid);
-      if(bal.totalValue) c.totalValue=bal.totalValue;
-      if(bal.cashAvailable!=null) c.cashAvailable=bal.cashAvailable;
-      save(); renderDetail(cid); toast(`Balances actualizados ✓`);
+      if(bal.totalValue) c.balTotalValue=bal.totalValue;
+      if(bal.cashAvailable!=null) c.balCashAvailable=bal.cashAvailable;
+      recalc(c); save(); renderDetail(cid); toast(`Balances actualizados ✓`);
     }catch(err){toast('Error Balances: '+err.message,1);}
   };
   reader.readAsArrayBuffer(file); input.value='';
@@ -672,10 +735,15 @@ function importTransactions(input){
         const r=rows[i]; if(!r||!r[col('Transaction Type')]) continue;
         const d=r[col('Process Date')];
         let date=d instanceof Date?d.toISOString().split('T')[0]:(typeof d==='number'?new Date((d-25569)*86400000).toISOString().split('T')[0]:String(d||''));
-        txns.push({date,type:String(r[col('Transaction Type')]||'').trim(),description:String(r[col('Transaction Description')]||'').trim().substring(0,80),asset:String(r[col('Security Description')]||'—').trim().substring(0,30),amount:parseFloat(r[col('Net Amount (Base Currency)')])||0});
+        const cusip=String(r[col('CUSIP')]!=null?r[col('CUSIP')]:(r[col('Security Identifier')]!=null?r[col('Security Identifier')]:'')  ).trim()||null;
+        const qty=parseFloat(r[col('Quantity')])||null;
+        const txType=String(r[col('Transaction Type')]||'').trim();
+        let price=parseFloat(r[col('Price (Transaction Currency)')])||null;
+        if(!price){const pm=txType.match(/\bat\s+([\d.]+)\s*$/i);if(pm)price=parseFloat(pm[1])||null;}
+        txns.push({date,type:txType,description:String(r[col('Transaction Description')]||'').trim().substring(0,80),asset:String(r[col('Security Description')]||'—').trim().substring(0,30),amount:parseFloat(r[col('Net Amount (Base Currency)')])||0,cusip,qty,price});
       }
       const c=S.clients.find(x=>x.id===cid);
-      c.transactions=txns; save(); renderTransactions(cid); toast(`${txns.length} transacciones importadas ✓`);
+      c.transactions=txns; applyTransactionCosts(c); recalc(c); save(); renderTransactions(cid); renderDetail(cid); toast(`${txns.length} transacciones importadas ✓`);
     }catch(err){toast('Error: '+err.message,1);}
   };
   reader.readAsArrayBuffer(file); input.value='';
@@ -685,7 +753,7 @@ function renderTransactions(id){
   const c=S.clients.find(x=>x.id===id); if(!c) return;
   document.getElementById('txn-count').textContent=`${c.transactions.length} registros`;
   document.getElementById('transactions-tbody').innerHTML=c.transactions.map(t=>{
-    const cls=t.amount>=0?'pos':'neg', sign=t.amount>=0?'+':'';
+    const cls=t.amount>=0?'pos':'neg', sign=t.amount>=0?'+':'-';
     return `<tr>
       <td class="mono" style="color:var(--vg);white-space:nowrap;">${t.date}</td>
       <td><span style="font-size:10px;background:rgba(168,218,187,.06);border:1px solid var(--br);padding:2px 6px;border-radius:3px;color:var(--vg);white-space:nowrap;">${t.type}</span></td>
@@ -771,28 +839,33 @@ function ncLoadFile(type, input){
 }
 
 function parseUGL(rows){
-  // Extraer total del encabezado ("Net Unrealized Gain/loss: 45,916.91")
+  // Extraer total del encabezado — soporta "/" o "\", formato (X) para negativos, y celda partida (label en A, valor en B)
   let totalGain=null;
   for(let i=0;i<20;i++){
     const r=rows[i]; if(!r) continue;
-    const cell=String(r[0]||'');
-    const m=cell.match(/Net Unrealized Gain\/loss:\s*([-\d,\.]+)/i);
+    const cell=String(r[0]||'')+' '+String(r[1]!=null?r[1]:'');
+    if(!/Net Unrealized Gain[\\\/]loss/i.test(cell)) continue;
+    let m=cell.match(/\((\d[\d,\.]*)\)/); // formato contable (X.XX) = negativo
+    if(m){totalGain=-parseFloat(m[1].replace(/,/g,''));break;}
+    m=cell.match(/:\s*([-]?\d[\d,\.]*)/); // formato estándar -X.XX o X.XX
     if(m){totalGain=parseFloat(m[1].replace(/,/g,''));break;}
+    break;
   }
   let hi=-1;
   for(let i=0;i<rows.length;i++){if(rows[i]&&rows[i].includes('Security Description')&&rows[i].includes('Security Identifier')){hi=i;break;}}
   if(hi<0) return {items:[],totalGain};
   const hdr=rows[hi], col=k=>hdr.indexOf(k), out=[];
+  const pN=v=>{const n=parseFloat(v);return isNaN(n)?null:n;};
   for(let i=hi+1;i<rows.length;i++){
     const r=rows[i]; if(!r) continue;
     const id=String(r[col('Security Identifier')]||'').trim();
     const desc=String(r[col('Security Description')]||'').trim();
     if(!id||id==='TOTAL'||!desc||desc.startsWith('Disclaimer')) continue;
-    const unitCost=col('Unit Cost')>=0?parseFloat(r[col('Unit Cost')])||null:null;
-    const totalCost=parseFloat(r[col('Current Total Cost')])||null;
-    const mv=parseFloat(r[col('Market Value')])||null;
-    const gain=parseFloat(r[col('Gain/Loss')])||null;
-    const gainPct=parseFloat(r[col('Gain/Loss %')])||null;
+    const unitCost=col('Unit Cost')>=0?pN(r[col('Unit Cost')]):null;
+    const totalCost=pN(r[col('Current Total Cost')])||null;
+    const mv=pN(r[col('Market Value')]);
+    const gain=pN(r[col('Gain/Loss')]);
+    const gainPct=pN(r[col('Gain/Loss %')]);
     if(totalCost!=null||gain!=null) out.push({cusip:id, unitCost, totalCost, marketValue:mv, unrealizedGain:gain, unrealizedGainPct:gainPct});
   }
   return {items:out, totalGain};
@@ -821,20 +894,71 @@ function parseTransactionsRows(rows){
     const r=rows[i]; if(!r||!r[col('Transaction Type')]) continue;
     const d=r[col('Process Date')];
     let date=d instanceof Date?d.toISOString().split('T')[0]:(typeof d==='number'?new Date((d-25569)*86400000).toISOString().split('T')[0]:String(d||''));
-    out.push({date,type:String(r[col('Transaction Type')]||'').trim(),description:String(r[col('Transaction Description')]||'').trim().substring(0,80),asset:String(r[col('Security Description')]||'—').trim().substring(0,30),amount:parseFloat(r[col('Net Amount (Base Currency)')])||0});
+    const cusip=String(r[col('CUSIP')]!=null?r[col('CUSIP')]:(r[col('Security Identifier')]!=null?r[col('Security Identifier')]:'')  ).trim()||null;
+    const qty=parseFloat(r[col('Quantity')])||null;
+    const txType=String(r[col('Transaction Type')]||'').trim();
+    let price=parseFloat(r[col('Price (Transaction Currency)')])||null;
+    if(!price){const pm=txType.match(/\bat\s+([\d.]+)\s*$/i);if(pm)price=parseFloat(pm[1])||null;}
+    out.push({date,type:txType,description:String(r[col('Transaction Description')]||'').trim().substring(0,80),asset:String(r[col('Security Description')]||'—').trim().substring(0,30),amount:parseFloat(r[col('Net Amount (Base Currency)')])||0,cusip,qty,price});
   }
   return out;
 }
 
+function applyTransactionCosts(c){
+  if(!c.holdings||!c.holdings.length) return;
+  // Build weighted avg cost from buy transactions
+  const groups={};
+  if(c.transactions&&c.transactions.length){
+    const isBuy=t=>/buy|bought|purchas|subscri|acquisition/i.test(t.type);
+    c.transactions.forEach(t=>{
+      if(!isBuy(t)||!t.cusip||!(t.qty>0)||!(t.price>0)) return;
+      if(!groups[t.cusip]) groups[t.cusip]={totalQty:0,totalCost:0};
+      groups[t.cusip].totalQty+=t.qty;
+      groups[t.cusip].totalCost+=t.qty*t.price;
+    });
+  }
+  c.holdings.forEach(h=>{
+    // Fill unitCost from transactions only if currently null
+    if(h.unitCost==null){
+      const g=h.cusip&&groups[h.cusip];
+      if(g&&g.totalQty>0){
+        h.unitCost=g.totalCost/g.totalQty;
+      }
+    }
+    // Derive totalCost if missing
+    if(h.totalCost==null&&h.unitCost!=null&&h.quantity) h.totalCost=h.unitCost*h.quantity;
+    // Compute unrealizedGain whenever we have enough data and it's still missing
+    if(h.unrealizedGain==null&&h.marketValue!=null&&h.totalCost!=null){
+      h.unrealizedGain=h.marketValue-h.totalCost;
+      if(h.totalCost>0) h.unrealizedGainPct=(h.unrealizedGain/h.totalCost)*100;
+    }
+  });
+}
+
 function mergeUGLIntoHoldings(holdings, uglData){
   if(!uglData||!uglData.length) return holdings;
+  // Agrupar items por CUSIP y detectar filas de subtotal (Pershing incluye lotes individuales + fila resumen)
+  const groups={};
+  uglData.forEach(u=>{if(!groups[u.cusip])groups[u.cusip]=[];groups[u.cusip].push(u);});
   const map={};
-  uglData.forEach(u=>{
-    if(!map[u.cusip]) map[u.cusip]={totalCost:0,unrealizedGain:0,unitCost:u.unitCost,count:0};
-    if(u.totalCost) map[u.cusip].totalCost+=u.totalCost;
-    if(u.unrealizedGain!=null) map[u.cusip].unrealizedGain+=u.unrealizedGain;
-    if(!map[u.cusip].unitCost&&u.unitCost) map[u.cusip].unitCost=u.unitCost;
-    map[u.cusip].count++;
+  Object.entries(groups).forEach(([cusip,items])=>{
+    const dedup=(vals)=>{
+      const sum=vals.reduce((s,v)=>s+v,0);
+      // Si algún item ≈ suma de los demás → es subtotal, usamos los demás
+      for(let i=0;i<vals.length;i++){
+        const others=sum-vals[i];
+        if(others>0&&Math.abs(vals[i]-others)/others<0.001)return others;
+      }
+      return sum;
+    };
+    const costs=items.map(i=>i.totalCost||0).filter(c=>c>0);
+    const gains=items.map(i=>i.unrealizedGain).filter(g=>g!=null);
+    map[cusip]={
+      totalCost:costs.length?dedup(costs):0,
+      unrealizedGain:gains.length?dedup(gains):null,
+      unitCost:items.find(i=>i.unitCost)?.unitCost||null,
+      count:items.length
+    };
   });
   return holdings.map(h=>{
     // Match by cusip, then symbol, then ticker portion of ISIN
@@ -864,15 +988,17 @@ function saveNewClient(){
   const nc={
     id,name,accountNo:account,manager:mgr,
     lastUpdated:new Date().toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}),
-    totalValue:bal?.totalValue||0,
-    cashAvailable:bal?.cashAvailable||0,
+    totalValue:0,
+    cashAvailable:0,
     unrealizedGain:0,
     uglTotalGain:ncData.ugl?.totalGain??null,
+    balTotalValue:ncData.bal?.totalValue??null,
+    balCashAvailable:ncData.bal?.cashAvailable??null,
     holdings,
     cashMovements:[],
     transactions:ncData.txn||[]
   };
-  recalc(nc); S.clients.push(nc); save();
+  applyTransactionCosts(nc); recalc(nc); S.clients.push(nc); save();
   closeModal('add-client-modal');
   ncData.pos=null; ncData.ugl=null; ncData.bal=null; ncData.txn=null;
   ['nc-name','nc-account','nc-mgr'].forEach(id=>document.getElementById(id).value='');
@@ -893,7 +1019,7 @@ function toast(msg,isErr){
 }
 
 // ── FORMAT ──
-function fmt(n){if(n==null||isNaN(n))return'—';return'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmt(n){if(n==null||isNaN(n))return'—';const v=Number(n);return(v<0?'-':'')+'$'+Math.abs(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function fmtN(n){if(n==null||isNaN(n))return'—';return'$'+Math.abs(Number(n)).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function fmtQ(n){if(n==null||isNaN(n))return'—';return Number(n).toLocaleString('en-US',{minimumFractionDigits:3,maximumFractionDigits:3});}
 
