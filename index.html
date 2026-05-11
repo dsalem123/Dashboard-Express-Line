@@ -1121,23 +1121,17 @@ function hedgeyeActualizar(){
 }
 
 function _stripAttribution(t) {
-  // "Keith/McCullough [verbo] que [...]"
-  t = t.replace(/^(Keith|McCullough)\s+\S+\s+que\s+/i, '');
-  // "Keith/McCullough [verbo] [objeto largo], [resto]" — sin "que"
-  t = t.replace(/^(Keith|McCullough)\s+\S+\s+.{0,80}?,\s*/i, function(m, _name, offset, str) {
-    // Solo reemplazar si lo que queda empieza con minúscula o es útil
-    const rest = str.slice(m.length);
-    return rest.length > 20 ? '' : m;
-  });
-  // "Keith/McCullough [verbo] [frase corta]." — oración completa de atribución sola
-  t = t.replace(/^(Keith|McCullough)\s+\S+\s+[^.!?]{0,120}[.!?]?\s*$/i, '');
-  // Verbo de atribución solo al inicio seguido de "que"
-  t = t.replace(/^(Dijo|Señaló|Reiteró|Agregó|Explicó|Destacó|Enfatizó|Añadió|Mencionó|Citó|Afirmó|Indicó|Advirtió|Apuntó|Comentó|Subrayó|Reforzó|Recordó|Reconoció|Rechazó|Insistió|Precisó|Sostuvo|Hizo)\s+que\s+/i, '');
-  t = t.replace(/^Hizo\s+hincapié\s+en\s+que\s+/i, '');
-  // Gerundio de atribución: "Señalando que", "Destacando que"
+  // "Keith/McCullough [verbo] [que] [...]" — quitar nombre+verbo, preservar el objeto
+  t = t.replace(/^(Keith|McCullough)\s+\S+\s+(?:que\s+)?/i, '');
+  // Verbo de atribución solo al inicio + "que"
+  t = t.replace(/^(Dijo|Señaló|Reitera?|Reitera|Reiteró|Agregó|Explicó|Destacó|Enfatizó|Añadió|Mencionó|Citó|Afirmó|Indicó|Advirtió|Apuntó|Comentó|Subrayó|Reforzó|Recordó|Reconoció|Rechazó|Insistió|Precisó|Sostuvo|Hizo)\s+que\s+/i, '');
+  t = t.replace(/^Hizo\s+hincapi[eé]\s+en\s+que\s+/i, '');
+  // Gerundio de atribución al inicio
   t = t.replace(/^\S+(?:ando|iendo)\s+que\s+/i, '');
-  // "Daryl/alguien preguntó..." — preguntas del chat, no información
-  t = t.replace(/^(Daryl|un\s+usuario|alguien)\s+pregunt[oó]\s+.*/i, '');
+  // Gerundio de atribución inline tras coma: "...del WTI, explicando que ..."
+  t = t.replace(/,\s*(explicando|señalando|indicando|mencionando|destacando|agregando|añadiendo|precisando|sosteniendo|aclarando)\s+que\s+/gi, '. ');
+  // Preguntas del chat — sin valor informativo
+  t = t.replace(/^(Daryl|un\s+usuario|alguien)\s+pregunt[oó]\b.*/i, '');
   if (t) t = t[0].toUpperCase() + t.slice(1);
   return t.trim();
 }
@@ -1162,7 +1156,7 @@ function _pdfBullets(puntos, maxBullets) {
   return out;
 }
 
-function _buildPdfEl(macro, d, subtitle, maxBullets) {
+function _buildPdfEl(macro, d, maxBullets) {
   const bullTickers = [...new Set([...(d.bullish||[]).map(x=>x.ticker), ...(macro.bullish||[])])];
   const bearTickers = [...new Set([...(d.bearish||[]).map(x=>x.ticker), ...(macro.bearish||[])])];
 
@@ -1171,26 +1165,23 @@ function _buildPdfEl(macro, d, subtitle, maxBullets) {
     bullets: _pdfBullets(sec.puntos, maxBullets)
   })).filter(s => s.bullets.length);
 
-  const chip = (c, bg, t) =>
-    '<span style="background:'+bg+';color:'+c+';border-radius:3px;padding:3px 8px;font-weight:700;font-family:\'Courier New\',monospace;font-size:10px;margin:2px 3px;display:inline-block;">'+t+'</span>';
+  const chip = (c, bg, tk) =>
+    '<span style="background:'+bg+';color:'+c+';border-radius:3px;padding:3px 8px;font-weight:700;font-family:\'Courier New\',monospace;font-size:10px;margin:2px 3px;display:inline-block;letter-spacing:.3px;">'+tk+'</span>';
 
   const half = Math.ceil(sections.length / 2);
   const col1Secs = sections.slice(0, half);
   const col2Secs = sections.slice(half);
 
-  // Cada sección es flex:1 para repartir el espacio disponible de la columna
   const renderSec = function(s, isLast) {
-    const border = isLast ? '' : 'border-bottom:1px solid rgba(168,218,187,.12);';
+    const mb = isLast ? '' : 'margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid rgba(168,218,187,.09);';
     return (
-      '<div style="flex:1;min-height:0;display:flex;flex-direction:column;'+border+'padding-bottom:14px;">' +
-        // Título con subrayado dorado
-        '<div style="flex-shrink:0;font-size:8.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#C9A84C;padding-bottom:6px;border-bottom:1px solid rgba(201,168,76,.4);margin-bottom:10px;line-height:1.3;">'+s.titulo+'</div>' +
-        // Bullets — llenan lo que queda de la sección
+      '<div style="flex:1;min-height:0;display:flex;flex-direction:column;'+mb+'">' +
+        '<div style="flex-shrink:0;font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#C9A84C;padding-bottom:5px;border-bottom:1px solid rgba(201,168,76,.3);margin-bottom:8px;line-height:1.3;">'+s.titulo+'</div>' +
         '<div style="flex:1;overflow:hidden;">' +
           s.bullets.map(function(b){
-            return '<div style="display:flex;gap:8px;margin-bottom:10px;">' +
-              '<span style="color:#A8DABB;font-size:14px;flex-shrink:0;line-height:1.55;font-weight:400;">&#8250;</span>' +
-              '<div style="font-size:12px;color:rgba(236,237,227,.93);line-height:1.65;">'+b+'</div>' +
+            return '<div style="display:flex;gap:7px;margin-bottom:8px;">' +
+              '<span style="color:#A8DABB;font-size:12px;flex-shrink:0;line-height:1.65;margin-top:1px;">&#8250;</span>' +
+              '<div style="font-size:11.5px;color:rgba(236,237,227,.92);line-height:1.62;">'+b+'</div>' +
             '</div>';
           }).join('') +
         '</div>' +
@@ -1201,66 +1192,58 @@ function _buildPdfEl(macro, d, subtitle, maxBullets) {
   const col1Html = col1Secs.map(function(s,i){ return renderSec(s, i===col1Secs.length-1); }).join('');
   const col2Html = col2Secs.map(function(s,i){ return renderSec(s, i===col2Secs.length-1); }).join('');
 
-  const bullChips = bullTickers.map(function(t){ return chip('#2ecc71','rgba(46,204,113,.13)',t); }).join('') || '<span style="color:#6B8578;font-size:10px;">—</span>';
-  const bearChips = bearTickers.map(function(t){ return chip('#e74c3c','rgba(231,76,60,.13)',t); }).join('') || '<span style="color:#6B8578;font-size:10px;">—</span>';
+  const bullChips = bullTickers.map(function(tk){ return chip('#2ecc71','rgba(46,204,113,.12)',tk); }).join('') || '<span style="color:#6B8578;font-size:10px;">—</span>';
+  const bearChips = bearTickers.map(function(tk){ return chip('#e74c3c','rgba(231,76,60,.12)',tk); }).join('') || '<span style="color:#6B8578;font-size:10px;">—</span>';
+
+  // Título del episodio: va al header, no en caja aparte
+  const epTitle = (macro.title||'').trim();
+  // Fecha: sólo la parte de fecha (sin hora) para el nombre de archivo; el display usa d.updated completo
+  const dateDisplay = (d.updated||'').trim();
 
   const el = document.createElement('div');
   el.style.cssText = 'position:absolute;top:0;left:0;z-index:9998;width:794px;height:1123px;box-sizing:border-box;background:#0D2924;color:#ECEDE3;font-family:"Segoe UI",Arial,sans-serif;overflow:hidden;display:flex;flex-direction:column;';
 
   el.innerHTML =
     // ── Header ────────────────────────────────────────────────────────────────
-    '<div style="flex-shrink:0;padding:22px 40px 0;">' +
-      '<div style="font-size:7px;letter-spacing:3px;text-transform:uppercase;color:#A8DABB;font-weight:600;margin-bottom:4px;">Dashboard ExpressLine \xb7 Wealth Management</div>' +
-      '<div style="display:flex;align-items:flex-end;justify-content:space-between;">' +
-        '<div>' +
-          '<div style="font-size:30px;font-weight:800;letter-spacing:2px;color:#ECEDE3;line-height:1;">HEDGEYE RESEARCH</div>' +
-          '<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#C9A84C;margin-top:5px;font-weight:600;">'+subtitle+'</div>' +
+    '<div style="flex-shrink:0;padding:20px 40px 0;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;">' +
+        '<div style="flex:1;padding-right:20px;">' +
+          '<div style="font-size:7.5px;letter-spacing:2.5px;text-transform:uppercase;color:#A8DABB;font-weight:600;margin-bottom:7px;">Veta Capital \xb7 Wealth Management</div>' +
+          '<div style="font-size:30px;font-weight:800;letter-spacing:1.5px;color:#ECEDE3;line-height:1;">HEDGEYE RESEARCH</div>' +
+          '<div style="font-size:8.5px;letter-spacing:2px;text-transform:uppercase;color:#C9A84C;font-weight:700;margin-top:5px;">The Macro Show</div>' +
+          (epTitle ? '<div style="font-size:11px;color:rgba(168,218,187,.75);margin-top:7px;font-style:italic;line-height:1.4;">'+epTitle+'</div>' : '') +
         '</div>' +
-        '<div style="text-align:right;">' +
-          '<div style="font-size:13px;color:#A8DABB;font-weight:700;">'+(d.updated||'')+'</div>' +
-          '<div style="font-size:8px;color:#6B8578;margin-top:2px;">Hedgeye Risk Management</div>' +
+        '<div style="text-align:right;padding-top:2px;flex-shrink:0;">' +
+          '<div style="font-size:13px;color:#ECEDE3;font-weight:700;font-family:\'Courier New\',monospace;letter-spacing:.5px;">'+dateDisplay+'</div>' +
+          '<div style="font-size:8px;color:#6B8578;margin-top:5px;letter-spacing:.5px;">Hedgeye Risk Management</div>' +
         '</div>' +
       '</div>' +
-      '<div style="height:2px;background:linear-gradient(90deg,#C9A84C,rgba(201,168,76,.3));margin-top:10px;"></div>' +
+      '<div style="height:2px;background:linear-gradient(90deg,#C9A84C,rgba(201,168,76,.2));margin-top:12px;"></div>' +
     '</div>' +
 
-    // ── Tickers ───────────────────────────────────────────────────────────────
-    '<div style="flex-shrink:0;padding:8px 40px;display:flex;gap:10px;">' +
-      '<div style="flex:1;background:rgba(46,204,113,.05);border:1px solid rgba(46,204,113,.2);border-radius:4px;padding:7px 11px;">' +
-        '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;color:#2ecc71;margin-bottom:5px;text-transform:uppercase;">▲ Long / Bullish</div>' +
-        '<div style="line-height:1.6;">'+bullChips+'</div>' +
+    // ── Posicionamiento (Bullish / Bearish) ───────────────────────────────────
+    '<div style="flex-shrink:0;padding:10px 40px;display:flex;gap:12px;">' +
+      '<div style="flex:1;background:rgba(46,204,113,.05);border:1px solid rgba(46,204,113,.18);border-radius:5px;padding:8px 12px;">' +
+        '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;color:#2ecc71;margin-bottom:6px;text-transform:uppercase;">▲ Bullish</div>' +
+        '<div style="line-height:1.55;">'+bullChips+'</div>' +
       '</div>' +
-      '<div style="flex:1;background:rgba(231,76,60,.05);border:1px solid rgba(231,76,60,.2);border-radius:4px;padding:7px 11px;">' +
-        '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;color:#e74c3c;margin-bottom:5px;text-transform:uppercase;">▼ Short / Bearish</div>' +
-        '<div style="line-height:1.6;">'+bearChips+'</div>' +
-      '</div>' +
-    '</div>' +
-
-    // ── Episodio ──────────────────────────────────────────────────────────────
-    '<div style="flex-shrink:0;padding:0 40px 7px;">' +
-      '<div style="background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.18);border-left:3px solid rgba(201,168,76,.5);border-radius:0 4px 4px 0;padding:6px 12px;">' +
-        '<div style="font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:#C9A84C;font-weight:600;margin-bottom:2px;">Episodio</div>' +
-        '<div style="font-size:12px;color:#ECEDE3;font-weight:500;line-height:1.3;">'+(macro.title||'')+'</div>' +
+      '<div style="flex:1;background:rgba(231,76,60,.05);border:1px solid rgba(231,76,60,.18);border-radius:5px;padding:8px 12px;">' +
+        '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;color:#e74c3c;margin-bottom:6px;text-transform:uppercase;">▼ Bearish</div>' +
+        '<div style="line-height:1.55;">'+bearChips+'</div>' +
       '</div>' +
     '</div>' +
 
-    // ── Separador secciones ───────────────────────────────────────────────────
-    '<div style="flex-shrink:0;padding:0 40px 6px;">' +
-      '<div style="font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#6B8578;border-bottom:1px solid rgba(168,218,187,.1);padding-bottom:5px;">Resumen por secci\xf3n</div>' +
-    '</div>' +
-
-    // ── Columnas — flex:1 para llenar toda la altura restante ─────────────────
-    '<div style="flex:1;min-height:0;padding:0 40px;display:flex;gap:22px;overflow:hidden;">' +
+    // ── Columnas de secciones ─────────────────────────────────────────────────
+    '<div style="flex:1;min-height:0;padding:2px 40px 0;display:flex;gap:24px;overflow:hidden;">' +
       '<div style="flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden;">'+col1Html+'</div>' +
-      '<div style="width:1px;background:rgba(201,168,76,.12);flex-shrink:0;"></div>' +
+      '<div style="width:1px;flex-shrink:0;background:rgba(201,168,76,.1);"></div>' +
       '<div style="flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden;">'+col2Html+'</div>' +
     '</div>' +
 
     // ── Footer ────────────────────────────────────────────────────────────────
-    '<div style="flex-shrink:0;margin:0 40px;padding:7px 0 14px;border-top:1px solid rgba(201,168,76,.15);display:flex;justify-content:space-between;align-items:center;">' +
-      '<span style="font-size:7px;color:#6B8578;">Dashboard ExpressLine \xb7 Wealth Management</span>' +
-      '<div style="width:16px;height:1px;background:rgba(201,168,76,.35);"></div>' +
-      '<span style="font-size:7px;color:#6B8578;">Fuente: Hedgeye Risk Management</span>' +
+    '<div style="flex-shrink:0;margin:0 40px;padding:7px 0 13px;border-top:1px solid rgba(201,168,76,.13);display:flex;justify-content:space-between;align-items:center;">' +
+      '<span style="font-size:9px;color:#5a7a6e;letter-spacing:.3px;">Dashboard ExpressLine \xb7 Wealth Management</span>' +
+      '<span style="font-size:9px;color:#5a7a6e;letter-spacing:.3px;">Hedgeye Risk Management</span>' +
     '</div>';
 
   return el;
@@ -1273,14 +1256,15 @@ async function descargarHedgeyePDF(){
   const d = window._hedgeyeData || (typeof HG_STATIC_DATA!=='undefined' ? HG_STATIC_DATA : null);
   if(!d || !d.macro_show){ alert('Sin datos Hedgeye. Actualizate primero.'); return; }
   const macro = d.macro_show||{};
-  const fechaNombre = (d.updated||'hedgeye').replace(/[: ]/g,'-');
+  // Nombre: solo fecha (sin hora), ej. "Hedgeye_2026-05-11.pdf"
+  const fechaNombre = (d.updated||'hedgeye').replace(/\s+.*/,'').replace(/[: ]/g,'-');
   const btn = document.getElementById('hg-pdf-btn');
   if(btn){ btn.disabled=true; btn.textContent='Generando...'; }
   const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(13,41,36,.97);z-index:99999;display:flex;align-items:center;justify-content:center;pointer-events:none;';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(13,41,36,.96);z-index:99999;display:flex;align-items:center;justify-content:center;pointer-events:none;';
   overlay.innerHTML = '<div style="text-align:center;font-family:\'Segoe UI\',sans-serif;"><div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#C9A84C;margin-bottom:8px;">Generando PDF</div><div style="font-size:9px;color:#6B8578;">un momento…</div></div>';
   document.body.appendChild(overlay);
-  const el = _buildPdfEl(macro, d, 'The Macro Show \xb7 Resumen del Episodio', 3);
+  const el = _buildPdfEl(macro, d, 3);
   document.body.appendChild(el);
   window.scrollTo(0, 0);
   await new Promise(function(r){ setTimeout(r, 300); });
@@ -1290,7 +1274,7 @@ async function descargarHedgeyePDF(){
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({ unit:'mm', format:'a4', orientation:'portrait' });
     pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
-    pdf.save('Hedgeye_'+fechaNombre+'.pdf');
+    pdf.save('Hedgeye_MacroShow_'+fechaNombre+'.pdf');
   } catch(e){
     console.error('PDF error:', e);
     alert('Error PDF: '+(e.message||String(e)));
@@ -1301,40 +1285,6 @@ async function descargarHedgeyePDF(){
   }
 }
 
-async function descargarOnePager(){
-  if(typeof html2canvas==='undefined' || !window.jspdf){
-    alert('Librerias PDF no cargadas. Refrescar la pagina.'); return;
-  }
-  const d = window._hedgeyeData || (typeof HG_STATIC_DATA!=='undefined' ? HG_STATIC_DATA : null);
-  if(!d || !d.macro_show){ alert('Sin datos Hedgeye. Actualizate primero.'); return; }
-  const macro = d.macro_show||{};
-  const fechaNombre = (d.updated||'hedgeye').replace(/[: ]/g,'-');
-  const btn = document.getElementById('hg-op-btn');
-  if(btn){ btn.disabled=true; btn.textContent='Generando...'; }
-  const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(13,41,36,.97);z-index:99999;display:flex;align-items:center;justify-content:center;pointer-events:none;';
-  overlay.innerHTML = '<div style="text-align:center;font-family:\'Segoe UI\',sans-serif;"><div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#A8DABB;margin-bottom:8px;">Generando One Pager</div><div style="font-size:9px;color:#6B8578;">un momento…</div></div>';
-  document.body.appendChild(overlay);
-  const el = _buildPdfEl(macro, d, 'The Macro Show \xb7 Resumen Ejecutivo', 3);
-  document.body.appendChild(el);
-  window.scrollTo(0, 0);
-  await new Promise(function(r){ setTimeout(r, 300); });
-  try {
-    const canvas = await html2canvas(el, { scale:2, backgroundColor:'#0D2924', logging:false, useCORS:true, allowTaint:true, width:794, height:1123, windowWidth:794, windowHeight:1200, scrollX:0, scrollY:0 });
-    const imgData = canvas.toDataURL('image/jpeg', 0.95);
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({ unit:'mm', format:'a4', orientation:'portrait' });
-    pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
-    pdf.save('Hedgeye_OnePager_'+fechaNombre+'.pdf');
-  } catch(e){
-    console.error('OnePager error:', e);
-    alert('Error One Pager: '+(e.message||String(e)));
-  } finally {
-    if(document.body.contains(el)) document.body.removeChild(el);
-    if(document.body.contains(overlay)) document.body.removeChild(overlay);
-    if(btn){ btn.disabled=false; btn.textContent='✦ One Pager AI'; }
-  }
-}
 
 function renderHedgeyeOffline(msg){
   document.getElementById('hg-body').innerHTML=`
@@ -1400,7 +1350,6 @@ function renderHedgeyeData(d){
     ? `<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
         <div class="hg-macro-ep-title" style="margin-bottom:0;">${macro.title}</div>
         <button id="hg-pdf-btn" onclick="descargarHedgeyePDF()" style="background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.3);color:#C9A84C;border-radius:5px;padding:6px 14px;font-size:11px;font-family:Inter,sans-serif;cursor:pointer;letter-spacing:1px;text-transform:uppercase;white-space:nowrap;flex-shrink:0;">⬇ Descargar PDF</button>
-        <button id="hg-op-btn" onclick="descargarOnePager()" style="background:rgba(168,218,187,.08);border:1px solid rgba(168,218,187,.25);color:#A8DABB;border-radius:5px;padding:6px 14px;font-size:11px;font-family:Inter,sans-serif;cursor:pointer;letter-spacing:1px;text-transform:uppercase;white-space:nowrap;flex-shrink:0;">✦ One Pager AI</button>
       </div>`
       + macroTldr
       + resumenSection
