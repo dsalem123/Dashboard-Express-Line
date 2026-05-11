@@ -1120,258 +1120,157 @@ function hedgeyeActualizar(){
     });
 }
 
-async function descargarHedgeyePDF(){
+function _pdfBullets(puntos, maxBullets) {
+  const seen = new Set();
+  const unique = [];
+  for(const p of (puntos||[])) {
+    const k = p.trim().toLowerCase().slice(0,110);
+    if(!seen.has(k)){ seen.add(k); unique.push(p); }
+  }
+  const out = [];
+  for(const p of unique) {
+    if(out.length >= maxBullets) break;
+    const clean = p.replace(/\s*\(\d+:\d+[^)]*\)\s*/g,' ').replace(/\s+/g,' ').trim();
+    const parts = clean.replace(/([.!?])\s+/g,'$1\x00').split('\x00');
+    for(const s of parts) {
+      const st = s.trim();
+      if(st.length > 25 && out.length < maxBullets) out.push(st);
+    }
+  }
+  return out;
+}
+
+function _pdfHTML(macro, d, subtitle, maxBullets) {
+  const bullTickers = [...new Set([...(d.bullish||[]).map(x=>x.ticker), ...(macro.bullish||[])])];
+  const bearTickers = [...new Set([...(d.bearish||[]).map(x=>x.ticker), ...(macro.bearish||[])])];
+
+  const sections = (macro.secciones||[]).map(sec => ({
+    titulo: sec.titulo,
+    bullets: _pdfBullets(sec.puntos, maxBullets)
+  })).filter(s => s.bullets.length);
+
+  const chip = (color, bg, t) =>
+    `<span style="background:${bg};color:${color};border-radius:3px;padding:2px 6px;font-weight:700;font-family:'Courier New',monospace;font-size:8px;margin:2px 2px;display:inline-block;letter-spacing:.3px;">${t}</span>`;
+
+  const half = Math.ceil(sections.length / 2);
+  const col1 = sections.slice(0, half);
+  const col2 = sections.slice(half);
+
+  const renderSec = s => `
+    <div style="margin-bottom:13px;">
+      <div style="font-size:7px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:#C9A84C;border-left:2px solid #C9A84C;padding-left:7px;margin-bottom:5px;line-height:1.3;">${s.titulo}</div>
+      ${s.bullets.map(b=>`<div style="display:flex;gap:6px;margin-bottom:4px;"><span style="color:#A8DABB;font-size:9px;flex-shrink:0;margin-top:1px;font-weight:700;">›</span><div style="font-size:10px;color:rgba(236,237,227,.9);line-height:1.48;">${b}</div></div>`).join('')}
+    </div>`;
+
+  return `
+    <div style="flex-shrink:0;padding:24px 40px 0;">
+      <div style="font-size:7px;letter-spacing:3px;text-transform:uppercase;color:#A8DABB;font-weight:600;margin-bottom:4px;">Dashboard ExpressLine · Wealth Management</div>
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;">
+        <div>
+          <div style="font-size:30px;font-weight:800;letter-spacing:2px;color:#ECEDE3;line-height:1;">HEDGEYE RESEARCH</div>
+          <div style="font-size:8px;letter-spacing:2px;text-transform:uppercase;color:#C9A84C;margin-top:5px;font-weight:600;">${subtitle}</div>
+        </div>
+        <div style="text-align:right;padding-bottom:2px;">
+          <div style="font-size:12px;color:#A8DABB;font-weight:700;">${macro.date||d.updated||''}</div>
+          <div style="font-size:7.5px;color:#6B8578;margin-top:3px;letter-spacing:.5px;">Actualizado: ${d.updated||''}</div>
+        </div>
+      </div>
+      <div style="height:2px;background:linear-gradient(90deg,#C9A84C,rgba(201,168,76,.3));margin-top:11px;"></div>
+    </div>
+
+    <div style="flex-shrink:0;padding:9px 40px;display:flex;gap:10px;">
+      <div style="flex:1;background:rgba(46,204,113,.05);border:1px solid rgba(46,204,113,.2);border-radius:4px;padding:7px 11px;">
+        <div style="font-size:7px;font-weight:700;letter-spacing:1.5px;color:#2ecc71;margin-bottom:5px;text-transform:uppercase;">▲ Long / Bullish</div>
+        <div style="line-height:1.7;">${bullTickers.map(t=>chip('#2ecc71','rgba(46,204,113,.13)',t)).join('')||'<span style="color:#6B8578;font-size:9px;">—</span>'}</div>
+      </div>
+      <div style="flex:1;background:rgba(231,76,60,.05);border:1px solid rgba(231,76,60,.2);border-radius:4px;padding:7px 11px;">
+        <div style="font-size:7px;font-weight:700;letter-spacing:1.5px;color:#e74c3c;margin-bottom:5px;text-transform:uppercase;">▼ Short / Bearish</div>
+        <div style="line-height:1.7;">${bearTickers.map(t=>chip('#e74c3c','rgba(231,76,60,.13)',t)).join('')||'<span style="color:#6B8578;font-size:9px;">—</span>'}</div>
+      </div>
+    </div>
+
+    <div style="flex-shrink:0;padding:0 40px 7px;">
+      <div style="background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.18);border-left:3px solid rgba(201,168,76,.5);border-radius:0 4px 4px 0;padding:6px 12px;">
+        <div style="font-size:7px;letter-spacing:1.5px;text-transform:uppercase;color:#C9A84C;font-weight:600;margin-bottom:2px;">Episodio</div>
+        <div style="font-size:10.5px;color:#ECEDE3;font-weight:500;line-height:1.3;">${macro.title||''}</div>
+      </div>
+    </div>
+
+    <div style="flex-shrink:0;padding:0 40px 7px;">
+      <div style="font-size:7px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#6B8578;border-bottom:1px solid rgba(168,218,187,.1);padding-bottom:5px;">Resumen por sección</div>
+    </div>
+
+    <div style="flex:1;padding:0 40px;display:flex;gap:20px;overflow:hidden;">
+      <div style="flex:1;min-width:0;overflow:hidden;">${col1.map(renderSec).join('')}</div>
+      <div style="width:1px;background:rgba(201,168,76,.1);flex-shrink:0;"></div>
+      <div style="flex:1;min-width:0;overflow:hidden;">${col2.map(renderSec).join('')}</div>
+    </div>
+
+    <div style="flex-shrink:0;margin:8px 40px 0;padding:7px 0 18px;border-top:1px solid rgba(201,168,76,.15);display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:7px;color:#6B8578;letter-spacing:.5px;">Dashboard ExpressLine · Wealth Management</span>
+      <div style="width:16px;height:1px;background:rgba(201,168,76,.35);"></div>
+      <span style="font-size:7px;color:#6B8578;letter-spacing:.5px;">Fuente: Hedgeye Risk Management</span>
+    </div>`;
+}
+
+async function _generarPDF(subtitle, maxBullets, btnId, btnLabel, filename) {
+  if(typeof html2canvas==='undefined' || !window.jspdf){
+    alert('Las librerías PDF no están listas. Refrescá la página e intentá de nuevo.'); return;
+  }
   const d = window._hedgeyeData || (typeof HG_STATIC_DATA!=='undefined' ? HG_STATIC_DATA : null);
   if(!d || !d.macro_show){ alert('Sin datos Hedgeye. Actualizá primero.'); return; }
 
   const macro = d.macro_show||{};
   const fechaNombre = (d.updated||'hedgeye').replace(/[: ]/g,'-');
 
-  const btn = document.getElementById('hg-pdf-btn');
+  const btn = document.getElementById(btnId);
   if(btn){ btn.disabled=true; btn.textContent='Generando...'; }
 
   const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(13,41,36,.97);z-index:99999;display:flex;align-items:center;justify-content:center;';
-  overlay.innerHTML = '<div style="text-align:center;font-family:\'Segoe UI\',sans-serif;"><div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#C9A84C;margin-bottom:8px;">Generando PDF</div><div style="font-size:9px;color:#6B8578;letter-spacing:1px;">un momento…</div></div>';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(13,41,36,.97);z-index:99999;display:flex;align-items:center;justify-content:center;pointer-events:none;';
+  overlay.innerHTML = '<div style="text-align:center;"><div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#C9A84C;margin-bottom:8px;font-family:\'Segoe UI\',sans-serif;">Generando PDF</div><div style="font-size:9px;color:#6B8578;letter-spacing:1px;font-family:\'Segoe UI\',sans-serif;">un momento…</div></div>';
   document.body.appendChild(overlay);
-
-  const bullTickers = [...new Set([...(d.bullish||[]).map(x=>x.ticker), ...(macro.bullish||[])])];
-  const bearTickers = [...new Set([...(d.bearish||[]).map(x=>x.ticker), ...(macro.bearish||[])])];
-
-  // Secciones: 2 bullets deduplicados, truncados a 380 chars
-  const sections = (macro.secciones||[]).map(sec => {
-    const seen = new Set();
-    const unique = (sec.puntos||[]).filter(p => {
-      const k = p.trim().toLowerCase().slice(0,110);
-      return seen.has(k) ? false : (seen.add(k), true);
-    });
-    const bullets = unique.slice(0,2).map(p => {
-      p = p.replace(/\s*\(\d+:\d+(?:[,\s]*\d+:\d+)*\)\s*$/, '').trim();
-      if(p.length > 380){ const dot=p.lastIndexOf('.',380); p = dot>60 ? p.slice(0,dot+1) : p.slice(0,380).trimEnd()+'…'; }
-      return p;
-    }).filter(p => p.length > 20);
-    return {titulo: sec.titulo, bullets};
-  }).filter(s => s.bullets.length);
-
-  const chip = (color, bg, t) =>
-    `<span style="background:${bg};color:${color};border-radius:3px;padding:2px 6px;font-weight:700;font-family:'Courier New',monospace;font-size:8px;margin:2px 2px;display:inline-block;letter-spacing:.3px;">${t}</span>`;
-
-  const half = Math.ceil(sections.length / 2);
-  const col1 = sections.slice(0, half);
-  const col2 = sections.slice(half);
-
-  const renderSec = s => `
-    <div style="margin-bottom:18px;">
-      <div style="font-size:7.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#C9A84C;border-left:2px solid #C9A84C;padding-left:8px;margin-bottom:7px;line-height:1.35;">${s.titulo}</div>
-      ${s.bullets.map(b=>`<div style="display:flex;gap:7px;margin-bottom:7px;"><span style="color:#A8DABB;font-size:9px;flex-shrink:0;margin-top:2px;font-weight:700;">›</span><div style="font-size:10.5px;color:rgba(236,237,227,.9);line-height:1.5;">${b}</div></div>`).join('')}
-    </div>`;
 
   const el = document.createElement('div');
   el.style.cssText = 'position:fixed;top:0;left:0;z-index:9998;width:794px;height:1123px;box-sizing:border-box;background:#0D2924;color:#ECEDE3;font-family:"Segoe UI",Arial,sans-serif;overflow:hidden;display:flex;flex-direction:column;';
-
-  el.innerHTML = `
-    <div style="flex-shrink:0;padding:28px 42px 0;">
-      <div style="font-size:7px;letter-spacing:3px;text-transform:uppercase;color:#A8DABB;font-weight:600;margin-bottom:5px;">Dashboard ExpressLine · Wealth Management</div>
-      <div style="display:flex;align-items:flex-end;justify-content:space-between;">
-        <div>
-          <div style="font-size:32px;font-weight:800;letter-spacing:2px;color:#ECEDE3;line-height:1;">HEDGEYE RESEARCH</div>
-          <div style="font-size:8px;letter-spacing:2.5px;text-transform:uppercase;color:#C9A84C;margin-top:6px;font-weight:600;">The Macro Show · Resumen del Episodio</div>
-        </div>
-        <div style="text-align:right;padding-bottom:2px;">
-          <div style="font-size:13px;color:#A8DABB;font-weight:700;">${macro.date||d.updated||''}</div>
-          <div style="font-size:8px;color:#6B8578;margin-top:3px;letter-spacing:.5px;">Actualizado: ${d.updated||''}</div>
-        </div>
-      </div>
-      <div style="height:2px;background:linear-gradient(90deg,#C9A84C,rgba(201,168,76,.3));margin-top:13px;"></div>
-    </div>
-
-    <div style="flex-shrink:0;padding:11px 42px;display:flex;gap:10px;">
-      <div style="flex:1;background:rgba(46,204,113,.05);border:1px solid rgba(46,204,113,.2);border-radius:4px;padding:8px 12px;">
-        <div style="font-size:7px;font-weight:700;letter-spacing:1.5px;color:#2ecc71;margin-bottom:6px;text-transform:uppercase;">▲ Long / Bullish</div>
-        <div style="line-height:1.75;">${bullTickers.map(t=>chip('#2ecc71','rgba(46,204,113,.13)',t)).join('')||'<span style="color:#6B8578;font-size:9px;">—</span>'}</div>
-      </div>
-      <div style="flex:1;background:rgba(231,76,60,.05);border:1px solid rgba(231,76,60,.2);border-radius:4px;padding:8px 12px;">
-        <div style="font-size:7px;font-weight:700;letter-spacing:1.5px;color:#e74c3c;margin-bottom:6px;text-transform:uppercase;">▼ Short / Bearish</div>
-        <div style="line-height:1.75;">${bearTickers.map(t=>chip('#e74c3c','rgba(231,76,60,.13)',t)).join('')||'<span style="color:#6B8578;font-size:9px;">—</span>'}</div>
-      </div>
-    </div>
-
-    <div style="flex-shrink:0;padding:0 42px 9px;">
-      <div style="background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.18);border-left:3px solid rgba(201,168,76,.5);border-radius:0 4px 4px 0;padding:7px 13px;">
-        <div style="font-size:7px;letter-spacing:1.5px;text-transform:uppercase;color:#C9A84C;font-weight:600;margin-bottom:2px;">Episodio</div>
-        <div style="font-size:11.5px;color:#ECEDE3;font-weight:500;line-height:1.3;">${macro.title||''}</div>
-      </div>
-    </div>
-
-    <div style="flex-shrink:0;padding:0 42px 10px;">
-      <div style="font-size:7px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:#6B8578;border-bottom:1px solid rgba(168,218,187,.1);padding-bottom:7px;">Resumen por sección</div>
-    </div>
-
-    <div style="flex:1;padding:0 42px;display:flex;gap:24px;overflow:hidden;">
-      <div style="flex:1;min-width:0;">${col1.map(renderSec).join('')}</div>
-      <div style="width:1px;background:rgba(201,168,76,.1);flex-shrink:0;"></div>
-      <div style="flex:1;min-width:0;">${col2.map(renderSec).join('')}</div>
-    </div>
-
-    <div style="flex-shrink:0;margin:10px 42px 0;padding:9px 0 22px;border-top:1px solid rgba(201,168,76,.15);display:flex;justify-content:space-between;align-items:center;">
-      <span style="font-size:7.5px;color:#6B8578;letter-spacing:.5px;">Dashboard ExpressLine · Wealth Management</span>
-      <div style="width:18px;height:1px;background:rgba(201,168,76,.35);"></div>
-      <span style="font-size:7.5px;color:#6B8578;letter-spacing:.5px;">Fuente: Hedgeye Risk Management</span>
-    </div>`;
-
+  el.innerHTML = _pdfHTML(macro, d, subtitle, maxBullets);
   document.body.appendChild(el);
-  await new Promise(res => requestAnimationFrame(() => requestAnimationFrame(res)));
+
+  await new Promise(r => setTimeout(r, 250));
 
   try {
     const canvas = await html2canvas(el, {
-      scale: 3,
+      scale: 2,
       backgroundColor: '#0D2924',
       logging: false,
       useCORS: true,
+      allowTaint: true,
       width: 794,
       height: 1123,
       windowWidth: 794,
       windowHeight: 1123
     });
-    const imgData = canvas.toDataURL('image/jpeg', 0.97);
+    const imgData = canvas.toDataURL('image/jpeg', 0.95);
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({ unit:'mm', format:'a4', orientation:'portrait' });
     pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
-    pdf.save(`Hedgeye_${fechaNombre}.pdf`);
+    pdf.save(`${filename}_${fechaNombre}.pdf`);
   } catch(e){
     console.error('PDF error:', e);
+    alert('Error al generar PDF: ' + (e.message||String(e)));
   } finally {
-    document.body.removeChild(el);
-    document.body.removeChild(overlay);
-    if(btn){ btn.disabled=false; btn.textContent='⬇ Descargar PDF'; }
+    if(document.body.contains(el)) document.body.removeChild(el);
+    if(document.body.contains(overlay)) document.body.removeChild(overlay);
+    if(btn){ btn.disabled=false; btn.textContent=btnLabel; }
   }
 }
 
+async function descargarHedgeyePDF(){
+  return _generarPDF('The Macro Show · Resumen del Episodio', 3, 'hg-pdf-btn', '⬇ Descargar PDF', 'Hedgeye');
+}
+
 async function descargarOnePager(){
-  const d = window._hedgeyeData || (typeof HG_STATIC_DATA!=='undefined' ? HG_STATIC_DATA : null);
-  if(!d || !d.macro_show){ alert('Sin datos Hedgeye. Actualizá primero.'); return; }
-
-  const btn = document.getElementById('hg-op-btn');
-  if(btn){ btn.disabled=true; btn.textContent='Generando…'; }
-
-  const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(13,41,36,.97);z-index:99999;display:flex;align-items:center;justify-content:center;';
-  overlay.innerHTML = '<div style="text-align:center;font-family:\'Segoe UI\',sans-serif;"><div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#A8DABB;margin-bottom:8px;">Generando One Pager</div><div style="font-size:9px;color:#6B8578;letter-spacing:1px;">un momento…</div></div>';
-  document.body.appendChild(overlay);
-
-  const macro = d.macro_show || {};
-  const bullTickers = [...new Set([...(d.bullish||[]).map(x=>x.ticker), ...(macro.bullish||[])])];
-  const bearTickers = [...new Set([...(d.bearish||[]).map(x=>x.ticker), ...(macro.bearish||[])])];
-  const fechaNombre = (d.updated||'hedgeye').replace(/[: ]/g,'-');
-
-  // Construir secciones desde puntos reales (deduplicados, máx 3 bullets)
-  const sections = (macro.secciones||[]).map(sec => {
-    const seen = new Set();
-    const unique = (sec.puntos||[]).filter(p => {
-      const k = p.trim().toLowerCase().slice(0,110);
-      return seen.has(k) ? false : (seen.add(k), true);
-    });
-    const bullets = unique.slice(0,3).map(p => {
-      p = p.replace(/\s*\(\d+:\d+(?:[,\s]*\d+:\d+)*\)\s*$/, '').trim();
-      if(p.length > 340){ const dot=p.lastIndexOf('.',340); p = dot>60 ? p.slice(0,dot+1) : p.slice(0,340).trimEnd()+'…'; }
-      return p;
-    }).filter(p => p.length > 20);
-    return {titulo: sec.titulo, bullets};
-  }).filter(s => s.bullets.length);
-
-  const chip = (color, bg, t) =>
-    `<span style="background:${bg};color:${color};border-radius:3px;padding:2px 6px;font-weight:700;font-family:'Courier New',monospace;font-size:8px;margin:2px 2px;display:inline-block;letter-spacing:.3px;">${t}</span>`;
-
-  const half = Math.ceil(sections.length / 2);
-  const col1 = sections.slice(0, half);
-  const col2 = sections.slice(half);
-
-  const renderSec = s => `
-    <div style="margin-bottom:18px;">
-      <div style="font-size:7.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#C9A84C;border-left:2px solid #C9A84C;padding-left:8px;margin-bottom:7px;line-height:1.35;">${s.titulo}</div>
-      ${s.bullets.map(b=>`<div style="display:flex;gap:7px;margin-bottom:6px;"><span style="color:#A8DABB;font-size:9px;flex-shrink:0;margin-top:2px;font-weight:700;">›</span><div style="font-size:10.5px;color:rgba(236,237,227,.9);line-height:1.5;">${b}</div></div>`).join('')}
-    </div>`;
-
-  const el = document.createElement('div');
-  // A4 exacto: 794 × 1123px — sin stretching
-  el.style.cssText = 'position:fixed;top:0;left:0;z-index:9998;width:794px;height:1123px;box-sizing:border-box;background:#0D2924;color:#ECEDE3;font-family:"Segoe UI",Arial,sans-serif;overflow:hidden;display:flex;flex-direction:column;';
-
-  el.innerHTML = `
-    <div style="flex-shrink:0;padding:28px 42px 0;">
-      <div style="font-size:7px;letter-spacing:3px;text-transform:uppercase;color:#A8DABB;font-weight:600;margin-bottom:5px;">Dashboard ExpressLine · Wealth Management</div>
-      <div style="display:flex;align-items:flex-end;justify-content:space-between;">
-        <div>
-          <div style="font-size:32px;font-weight:800;letter-spacing:2px;color:#ECEDE3;line-height:1;">HEDGEYE RESEARCH</div>
-          <div style="font-size:8px;letter-spacing:2.5px;text-transform:uppercase;color:#C9A84C;margin-top:6px;font-weight:600;">The Macro Show · Resumen Ejecutivo</div>
-        </div>
-        <div style="text-align:right;padding-bottom:2px;">
-          <div style="font-size:13px;color:#A8DABB;font-weight:700;">${macro.date||d.updated||''}</div>
-          <div style="font-size:8px;color:#6B8578;margin-top:3px;letter-spacing:.5px;">Actualizado: ${d.updated||''}</div>
-        </div>
-      </div>
-      <div style="height:2px;background:linear-gradient(90deg,#C9A84C,rgba(201,168,76,.3));margin-top:13px;"></div>
-    </div>
-
-    <div style="flex-shrink:0;padding:11px 42px;display:flex;gap:10px;">
-      <div style="flex:1;background:rgba(46,204,113,.05);border:1px solid rgba(46,204,113,.2);border-radius:4px;padding:8px 12px;">
-        <div style="font-size:7px;font-weight:700;letter-spacing:1.5px;color:#2ecc71;margin-bottom:6px;text-transform:uppercase;">▲ Long / Bullish</div>
-        <div style="line-height:1.75;">${bullTickers.map(t=>chip('#2ecc71','rgba(46,204,113,.13)',t)).join('')||'<span style="color:#6B8578;font-size:9px;">—</span>'}</div>
-      </div>
-      <div style="flex:1;background:rgba(231,76,60,.05);border:1px solid rgba(231,76,60,.2);border-radius:4px;padding:8px 12px;">
-        <div style="font-size:7px;font-weight:700;letter-spacing:1.5px;color:#e74c3c;margin-bottom:6px;text-transform:uppercase;">▼ Short / Bearish</div>
-        <div style="line-height:1.75;">${bearTickers.map(t=>chip('#e74c3c','rgba(231,76,60,.13)',t)).join('')||'<span style="color:#6B8578;font-size:9px;">—</span>'}</div>
-      </div>
-    </div>
-
-    <div style="flex-shrink:0;padding:0 42px 9px;">
-      <div style="background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.18);border-left:3px solid rgba(201,168,76,.5);border-radius:0 4px 4px 0;padding:7px 13px;">
-        <div style="font-size:7px;letter-spacing:1.5px;text-transform:uppercase;color:#C9A84C;font-weight:600;margin-bottom:2px;">Episodio</div>
-        <div style="font-size:11.5px;color:#ECEDE3;font-weight:500;line-height:1.3;">${macro.title||''}</div>
-      </div>
-    </div>
-
-    <div style="flex-shrink:0;padding:0 42px 10px;">
-      <div style="font-size:7px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:#6B8578;border-bottom:1px solid rgba(168,218,187,.1);padding-bottom:7px;">Resumen por sección</div>
-    </div>
-
-    <div style="flex:1;padding:0 42px;display:flex;gap:24px;overflow:hidden;">
-      <div style="flex:1;min-width:0;">${col1.map(renderSec).join('')}</div>
-      <div style="width:1px;background:rgba(201,168,76,.1);flex-shrink:0;"></div>
-      <div style="flex:1;min-width:0;">${col2.map(renderSec).join('')}</div>
-    </div>
-
-    <div style="flex-shrink:0;margin:10px 42px 0;padding:9px 0 22px;border-top:1px solid rgba(201,168,76,.15);display:flex;justify-content:space-between;align-items:center;">
-      <span style="font-size:7.5px;color:#6B8578;letter-spacing:.5px;">Dashboard ExpressLine · Wealth Management</span>
-      <div style="width:18px;height:1px;background:rgba(201,168,76,.35);"></div>
-      <span style="font-size:7.5px;color:#6B8578;letter-spacing:.5px;">Fuente: Hedgeye Risk Management</span>
-    </div>`;
-
-  document.body.appendChild(el);
-  await new Promise(res => requestAnimationFrame(() => requestAnimationFrame(res)));
-
-  try {
-    const canvas = await html2canvas(el, {
-      scale: 3,
-      backgroundColor: '#0D2924',
-      logging: false,
-      useCORS: true,
-      width: 794,
-      height: 1123,
-      windowWidth: 794,
-      windowHeight: 1123
-    });
-    const imgData = canvas.toDataURL('image/jpeg', 0.97);
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({ unit:'mm', format:'a4', orientation:'portrait' });
-    pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
-    pdf.save(`Hedgeye_OnePager_${fechaNombre}.pdf`);
-  } catch(e){
-    console.error('One Pager error:', e);
-  } finally {
-    document.body.removeChild(el);
-    document.body.removeChild(overlay);
-    if(btn){ btn.disabled=false; btn.textContent='✦ One Pager AI'; }
-  }
+  return _generarPDF('The Macro Show · Resumen Ejecutivo', 4, 'hg-op-btn', '✦ One Pager AI', 'Hedgeye_OnePager');
 }
 
 function renderHedgeyeOffline(msg){
