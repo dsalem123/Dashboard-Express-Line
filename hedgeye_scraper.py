@@ -182,6 +182,9 @@ def parse_macro_sections(html):
                     cur_pts.append(pt)
 
         elif tag == 'p' and cur_title:
+            # Saltar <p> anidados dentro de <li> — ya procesados por el handler de ul
+            if el.parent and el.parent.name in ('li', 'ul'):
+                continue
             # Formato Ryan: parrafos sueltos con bullet •
             pt = re.sub(r'^[•·\-]\s*', '', text).strip()
             pt = TS_RE.sub('', pt).strip()
