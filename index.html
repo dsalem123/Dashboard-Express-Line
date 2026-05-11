@@ -1120,6 +1120,20 @@ function hedgeyeActualizar(){
     });
 }
 
+function _stripAttribution(t) {
+  // Quitar "Keith/McCullough [verbo] que" al inicio
+  t = t.replace(/^(Keith|McCullough)\s+\S+\s+que\s+/i, '');
+  t = t.replace(/^(Keith|McCullough)\s+\S+(?:\s+con)?\s+[^,]{0,50},\s*/i, '');
+  // Quitar verbo de atribución solo al inicio
+  t = t.replace(/^(Dijo|Señaló|Reiteró|Agregó|Explicó|Destacó|Enfatizó|Añadió|Mencionó|Citó|Afirmó|Indicó|Advirtió|Apuntó|Comentó|Subrayó|Reforzó|Recordó|Reconoció|Rechazó|Insistió|Precisó|Sostuvo|Hizo)\s+que\s+/i, '');
+  t = t.replace(/^Hizo\s+hincapié\s+en\s+que\s+/i, '');
+  // Quitar gerundio de atribución: "Señalando que", "Destacando que"
+  t = t.replace(/^\S+(?:ando|iendo)\s+que\s+/i, '');
+  // Capitalizar
+  if (t) t = t[0].toUpperCase() + t.slice(1);
+  return t.trim();
+}
+
 function _pdfBullets(puntos, maxBullets) {
   const seen = new Set();
   const unique = [];
@@ -1133,7 +1147,7 @@ function _pdfBullets(puntos, maxBullets) {
     const clean = p.replace(/\s*\(\d+:\d+[^)]*\)\s*/g,' ').replace(/\s+/g,' ').trim();
     const sentences = clean.split(/(?<=[.!?])\s+/);
     for(const s of sentences) {
-      const st = s.trim();
+      const st = _stripAttribution(s.trim());
       if(st.length > 25 && out.length < maxBullets) out.push(st);
     }
   }
