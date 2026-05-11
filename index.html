@@ -1121,15 +1121,23 @@ function hedgeyeActualizar(){
 }
 
 function _stripAttribution(t) {
-  // Quitar "Keith/McCullough [verbo] que" al inicio
+  // "Keith/McCullough [verbo] que [...]"
   t = t.replace(/^(Keith|McCullough)\s+\S+\s+que\s+/i, '');
-  t = t.replace(/^(Keith|McCullough)\s+\S+(?:\s+con)?\s+[^,]{0,50},\s*/i, '');
-  // Quitar verbo de atribución solo al inicio
+  // "Keith/McCullough [verbo] [objeto largo], [resto]" — sin "que"
+  t = t.replace(/^(Keith|McCullough)\s+\S+\s+.{0,80}?,\s*/i, function(m, _name, offset, str) {
+    // Solo reemplazar si lo que queda empieza con minúscula o es útil
+    const rest = str.slice(m.length);
+    return rest.length > 20 ? '' : m;
+  });
+  // "Keith/McCullough [verbo] [frase corta]." — oración completa de atribución sola
+  t = t.replace(/^(Keith|McCullough)\s+\S+\s+[^.!?]{0,120}[.!?]?\s*$/i, '');
+  // Verbo de atribución solo al inicio seguido de "que"
   t = t.replace(/^(Dijo|Señaló|Reiteró|Agregó|Explicó|Destacó|Enfatizó|Añadió|Mencionó|Citó|Afirmó|Indicó|Advirtió|Apuntó|Comentó|Subrayó|Reforzó|Recordó|Reconoció|Rechazó|Insistió|Precisó|Sostuvo|Hizo)\s+que\s+/i, '');
   t = t.replace(/^Hizo\s+hincapié\s+en\s+que\s+/i, '');
-  // Quitar gerundio de atribución: "Señalando que", "Destacando que"
+  // Gerundio de atribución: "Señalando que", "Destacando que"
   t = t.replace(/^\S+(?:ando|iendo)\s+que\s+/i, '');
-  // Capitalizar
+  // "Daryl/alguien preguntó..." — preguntas del chat, no información
+  t = t.replace(/^(Daryl|un\s+usuario|alguien)\s+pregunt[oó]\s+.*/i, '');
   if (t) t = t[0].toUpperCase() + t.slice(1);
   return t.trim();
 }
@@ -1197,7 +1205,7 @@ function _buildPdfEl(macro, d, subtitle, maxBullets) {
   const bearChips = bearTickers.map(function(t){ return chip('#e74c3c','rgba(231,76,60,.13)',t); }).join('') || '<span style="color:#6B8578;font-size:10px;">—</span>';
 
   const el = document.createElement('div');
-  el.style.cssText = 'position:fixed;top:0;left:0;z-index:9998;width:794px;height:1123px;box-sizing:border-box;background:#0D2924;color:#ECEDE3;font-family:"Segoe UI",Arial,sans-serif;overflow:hidden;display:flex;flex-direction:column;';
+  el.style.cssText = 'position:absolute;top:0;left:0;z-index:9998;width:794px;height:1123px;box-sizing:border-box;background:#0D2924;color:#ECEDE3;font-family:"Segoe UI",Arial,sans-serif;overflow:hidden;display:flex;flex-direction:column;';
 
   el.innerHTML =
     // ── Header ────────────────────────────────────────────────────────────────
@@ -1307,7 +1315,7 @@ async function descargarOnePager(){
   overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(13,41,36,.97);z-index:99999;display:flex;align-items:center;justify-content:center;pointer-events:none;';
   overlay.innerHTML = '<div style="text-align:center;font-family:\'Segoe UI\',sans-serif;"><div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#A8DABB;margin-bottom:8px;">Generando One Pager</div><div style="font-size:9px;color:#6B8578;">un momento…</div></div>';
   document.body.appendChild(overlay);
-  const el = _buildPdfEl(macro, d, 'The Macro Show \xb7 Resumen Ejecutivo', 4);
+  const el = _buildPdfEl(macro, d, 'The Macro Show \xb7 Resumen Ejecutivo', 3);
   document.body.appendChild(el);
   window.scrollTo(0, 0);
   await new Promise(function(r){ setTimeout(r, 300); });
