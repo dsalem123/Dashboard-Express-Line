@@ -1150,7 +1150,7 @@ function _buildPdfEl(macro, d, subtitle, maxBullets) {
   })).filter(s => s.bullets.length);
 
   const chip = (c, bg, t) =>
-    '<span style="background:'+bg+';color:'+c+';border-radius:3px;padding:2px 7px;font-weight:700;font-family:\'Courier New\',monospace;font-size:9px;margin:2px 2px;display:inline-block;">'+t+'</span>';
+    '<span style="background:'+bg+';color:'+c+';border-radius:3px;padding:1px 5px;font-weight:700;font-family:\'Courier New\',monospace;font-size:7.5px;margin:2px 2px;display:inline-block;">'+t+'</span>';
 
   const half = Math.ceil(sections.length / 2);
 
@@ -1190,11 +1190,11 @@ function _buildPdfEl(macro, d, subtitle, maxBullets) {
     '<div style="flex-shrink:0;padding:8px 40px;display:flex;gap:10px;">' +
       '<div style="flex:1;background:rgba(46,204,113,.05);border:1px solid rgba(46,204,113,.2);border-radius:4px;padding:7px 11px;">' +
         '<div style="font-size:7px;font-weight:700;letter-spacing:1.5px;color:#2ecc71;margin-bottom:5px;text-transform:uppercase;">▲ Long / Bullish</div>' +
-        '<div style="line-height:1.8;">'+bullChips+'</div>' +
+        '<div style="line-height:1.6;">'+bullChips+'</div>' +
       '</div>' +
       '<div style="flex:1;background:rgba(231,76,60,.05);border:1px solid rgba(231,76,60,.2);border-radius:4px;padding:7px 11px;">' +
         '<div style="font-size:7px;font-weight:700;letter-spacing:1.5px;color:#e74c3c;margin-bottom:5px;text-transform:uppercase;">▼ Short / Bearish</div>' +
-        '<div style="line-height:1.8;">'+bearChips+'</div>' +
+        '<div style="line-height:1.6;">'+bearChips+'</div>' +
       '</div>' +
     '</div>' +
 
