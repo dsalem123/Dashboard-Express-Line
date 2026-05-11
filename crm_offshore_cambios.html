@@ -1153,17 +1153,31 @@ function _buildPdfEl(macro, d, subtitle, maxBullets) {
     '<span style="background:'+bg+';color:'+c+';border-radius:3px;padding:1px 5px;font-weight:700;font-family:\'Courier New\',monospace;font-size:7.5px;margin:2px 2px;display:inline-block;">'+t+'</span>';
 
   const half = Math.ceil(sections.length / 2);
+  const col1Secs = sections.slice(0, half);
+  const col2Secs = sections.slice(half);
 
-  const renderSec = function(s) {
-    const titleHtml = '<div style="font-size:9px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#C9A84C;border-left:3px solid #C9A84C;padding-left:8px;margin-bottom:6px;line-height:1.3;">'+s.titulo+'</div>';
-    const bulletsHtml = s.bullets.map(function(b){
-      return '<div style="display:flex;gap:7px;margin-bottom:6px;"><span style="color:#A8DABB;font-size:11px;flex-shrink:0;margin-top:1px;font-weight:700;">&rsaquo;</span><div style="font-size:12px;color:rgba(236,237,227,.92);line-height:1.5;">'+b+'</div></div>';
-    }).join('');
-    return '<div style="margin-bottom:14px;">'+titleHtml+bulletsHtml+'</div>';
+  // Cada sección es flex:1 para repartir el espacio disponible de la columna
+  const renderSec = function(s, isLast) {
+    const border = isLast ? '' : 'border-bottom:1px solid rgba(168,218,187,.12);';
+    return (
+      '<div style="flex:1;min-height:0;display:flex;flex-direction:column;'+border+'padding-bottom:14px;">' +
+        // Título con subrayado dorado
+        '<div style="flex-shrink:0;font-size:8.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#C9A84C;padding-bottom:6px;border-bottom:1px solid rgba(201,168,76,.4);margin-bottom:10px;line-height:1.3;">'+s.titulo+'</div>' +
+        // Bullets — llenan lo que queda de la sección
+        '<div style="flex:1;overflow:hidden;">' +
+          s.bullets.map(function(b){
+            return '<div style="display:flex;gap:8px;margin-bottom:10px;">' +
+              '<span style="color:#A8DABB;font-size:14px;flex-shrink:0;line-height:1.55;font-weight:400;">&#8250;</span>' +
+              '<div style="font-size:12px;color:rgba(236,237,227,.93);line-height:1.65;">'+b+'</div>' +
+            '</div>';
+          }).join('') +
+        '</div>' +
+      '</div>'
+    );
   };
 
-  const col1Html = sections.slice(0, half).map(renderSec).join('');
-  const col2Html = sections.slice(half).map(renderSec).join('');
+  const col1Html = col1Secs.map(function(s,i){ return renderSec(s, i===col1Secs.length-1); }).join('');
+  const col2Html = col2Secs.map(function(s,i){ return renderSec(s, i===col2Secs.length-1); }).join('');
 
   const bullChips = bullTickers.map(function(t){ return chip('#2ecc71','rgba(46,204,113,.13)',t); }).join('') || '<span style="color:#6B8578;font-size:10px;">—</span>';
   const bearChips = bearTickers.map(function(t){ return chip('#e74c3c','rgba(231,76,60,.13)',t); }).join('') || '<span style="color:#6B8578;font-size:10px;">—</span>';
@@ -1172,6 +1186,7 @@ function _buildPdfEl(macro, d, subtitle, maxBullets) {
   el.style.cssText = 'position:fixed;top:0;left:0;z-index:9998;width:794px;height:1123px;box-sizing:border-box;background:#0D2924;color:#ECEDE3;font-family:"Segoe UI",Arial,sans-serif;overflow:hidden;display:flex;flex-direction:column;';
 
   el.innerHTML =
+    // ── Header ────────────────────────────────────────────────────────────────
     '<div style="flex-shrink:0;padding:22px 40px 0;">' +
       '<div style="font-size:7px;letter-spacing:3px;text-transform:uppercase;color:#A8DABB;font-weight:600;margin-bottom:4px;">Dashboard ExpressLine \xb7 Wealth Management</div>' +
       '<div style="display:flex;align-items:flex-end;justify-content:space-between;">' +
@@ -1187,6 +1202,7 @@ function _buildPdfEl(macro, d, subtitle, maxBullets) {
       '<div style="height:2px;background:linear-gradient(90deg,#C9A84C,rgba(201,168,76,.3));margin-top:10px;"></div>' +
     '</div>' +
 
+    // ── Tickers ───────────────────────────────────────────────────────────────
     '<div style="flex-shrink:0;padding:8px 40px;display:flex;gap:10px;">' +
       '<div style="flex:1;background:rgba(46,204,113,.05);border:1px solid rgba(46,204,113,.2);border-radius:4px;padding:7px 11px;">' +
         '<div style="font-size:7px;font-weight:700;letter-spacing:1.5px;color:#2ecc71;margin-bottom:5px;text-transform:uppercase;">▲ Long / Bullish</div>' +
@@ -1198,6 +1214,7 @@ function _buildPdfEl(macro, d, subtitle, maxBullets) {
       '</div>' +
     '</div>' +
 
+    // ── Episodio ──────────────────────────────────────────────────────────────
     '<div style="flex-shrink:0;padding:0 40px 7px;">' +
       '<div style="background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.18);border-left:3px solid rgba(201,168,76,.5);border-radius:0 4px 4px 0;padding:6px 12px;">' +
         '<div style="font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:#C9A84C;font-weight:600;margin-bottom:2px;">Episodio</div>' +
@@ -1205,17 +1222,20 @@ function _buildPdfEl(macro, d, subtitle, maxBullets) {
       '</div>' +
     '</div>' +
 
+    // ── Separador secciones ───────────────────────────────────────────────────
     '<div style="flex-shrink:0;padding:0 40px 6px;">' +
       '<div style="font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#6B8578;border-bottom:1px solid rgba(168,218,187,.1);padding-bottom:5px;">Resumen por secci\xf3n</div>' +
     '</div>' +
 
-    '<div style="flex:1;padding:0 40px;display:flex;gap:20px;overflow:hidden;">' +
-      '<div style="flex:1;min-width:0;overflow:hidden;">'+col1Html+'</div>' +
-      '<div style="width:1px;background:rgba(201,168,76,.1);flex-shrink:0;"></div>' +
-      '<div style="flex:1;min-width:0;overflow:hidden;">'+col2Html+'</div>' +
+    // ── Columnas — flex:1 para llenar toda la altura restante ─────────────────
+    '<div style="flex:1;min-height:0;padding:0 40px;display:flex;gap:22px;overflow:hidden;">' +
+      '<div style="flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden;">'+col1Html+'</div>' +
+      '<div style="width:1px;background:rgba(201,168,76,.12);flex-shrink:0;"></div>' +
+      '<div style="flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden;">'+col2Html+'</div>' +
     '</div>' +
 
-    '<div style="flex-shrink:0;margin:6px 40px 0;padding:6px 0 16px;border-top:1px solid rgba(201,168,76,.15);display:flex;justify-content:space-between;align-items:center;">' +
+    // ── Footer ────────────────────────────────────────────────────────────────
+    '<div style="flex-shrink:0;margin:0 40px;padding:7px 0 14px;border-top:1px solid rgba(201,168,76,.15);display:flex;justify-content:space-between;align-items:center;">' +
       '<span style="font-size:7px;color:#6B8578;">Dashboard ExpressLine \xb7 Wealth Management</span>' +
       '<div style="width:16px;height:1px;background:rgba(201,168,76,.35);"></div>' +
       '<span style="font-size:7px;color:#6B8578;">Fuente: Hedgeye Risk Management</span>' +
@@ -1238,7 +1258,7 @@ async function descargarHedgeyePDF(){
   overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(13,41,36,.97);z-index:99999;display:flex;align-items:center;justify-content:center;pointer-events:none;';
   overlay.innerHTML = '<div style="text-align:center;font-family:\'Segoe UI\',sans-serif;"><div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#C9A84C;margin-bottom:8px;">Generando PDF</div><div style="font-size:9px;color:#6B8578;">un momento…</div></div>';
   document.body.appendChild(overlay);
-  const el = _buildPdfEl(macro, d, 'The Macro Show \xb7 Resumen del Episodio', 2);
+  const el = _buildPdfEl(macro, d, 'The Macro Show \xb7 Resumen del Episodio', 3);
   document.body.appendChild(el);
   await new Promise(function(r){ setTimeout(r, 300); });
   try {
@@ -1272,7 +1292,7 @@ async function descargarOnePager(){
   overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(13,41,36,.97);z-index:99999;display:flex;align-items:center;justify-content:center;pointer-events:none;';
   overlay.innerHTML = '<div style="text-align:center;font-family:\'Segoe UI\',sans-serif;"><div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#A8DABB;margin-bottom:8px;">Generando One Pager</div><div style="font-size:9px;color:#6B8578;">un momento…</div></div>';
   document.body.appendChild(overlay);
-  const el = _buildPdfEl(macro, d, 'The Macro Show \xb7 Resumen Ejecutivo', 3);
+  const el = _buildPdfEl(macro, d, 'The Macro Show \xb7 Resumen Ejecutivo', 4);
   document.body.appendChild(el);
   await new Promise(function(r){ setTimeout(r, 300); });
   try {
