@@ -82,16 +82,27 @@ def _primera_oracion(texto, max_chars=400):
     return trunc.rstrip(' ,;') + '…'
 
 def _resumir_seccion(puntos):
+    # Deduplicar puntos (el scraper a veces repite cada bullet)
+    seen_p = set()
+    unique = []
+    for p in puntos:
+        key = re.sub(r'\s+', ' ', p.strip().lower())[:120]
+        if key not in seen_p:
+            seen_p.add(key)
+            unique.append(p)
     oraciones = []
-    for p in puntos[:3]:
+    seen_o = set()
+    for p in unique[:4]:
         t = _TS_RE.sub('', p.strip()).strip()
         t = _limpiar_atribucion(t)
         t = _limpiar_gerundio(t)
         t = _limpiar_inline(t)
         t = re.sub(r'\s{2,}', ' ', t).strip()
         primera = _primera_oracion(t)
-        if len(primera) > 35:
+        key = primera.lower()[:80]
+        if len(primera) > 35 and key not in seen_o:
             oraciones.append(primera)
+            seen_o.add(key)
         if len(oraciones) >= 2:
             break
     return ' '.join(oraciones)
