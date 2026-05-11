@@ -725,7 +725,7 @@ function congelarSnapshot(btn){
     pfol_v1:localStorage.getItem('pfol_v1'),
     kpi:{}
   };
-  ['kpi-apertura','kpi-facturacion','kpi-aum','kpi-objetivo','kpi-tiempo','kpi-duracion','st-total','st-leads'].forEach(function(k){
+  ['kpi-apertura','kpi-facturacion','kpi-aum','kpi-objetivo','kpi-tiempo','kpi-duracion','st-total','st-leads','kanban_pipe_v1'].forEach(function(k){
     state.kpi[k]=localStorage.getItem(k);
   });
   Object.keys(localStorage).forEach(function(k){
