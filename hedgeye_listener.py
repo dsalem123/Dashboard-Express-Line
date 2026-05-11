@@ -20,6 +20,82 @@ TOPIC = 'crm-hg-dsalem123-offshore'
 PORT  = 5055
 BASE  = os.path.dirname(os.path.abspath(__file__))
 
+# ── Resumen de secciones (misma lógica que hedgeye_server.py) ─────────────────
+
+_TS_RE = re.compile(r'\s*\(\d+:\d+(?:[,\s]+\d+:\d+)*\)\s*$')
+_MID_ATTR = re.compile(
+    r',?\s+y\s+(dijo|agregó|añadió|señaló|reiteró|aclaró|explicó|describió|destacó)\s+(que\s+)?',
+    re.IGNORECASE)
+_DICIENDO = re.compile(r',?\s+diciendo\s+que\s+', re.IGNORECASE)
+_SEGUN = re.compile(r',?\s*según\s+(él|ella|Keith|McCullough)\b[,]?\s*', re.IGNORECASE)
+_REITERO_CITA = re.compile(r'\w+:\s*[«"\'](.*?)[»"\']', re.IGNORECASE)
+_NAMES_RE = r'Keith|McCullough'
+_VERBS_IMPL = (r'Dijo|Señaló|Reiteró|Agregó|Explicó|Destacó|Enfatizó|Añadió|Mencionó|'
+               r'Citó|Afirmó|Indicó|Advirtió|Apuntó|Comentó|Subrayó|Reforzó|Recordó|'
+               r'Reconoció|Rechazó|Insistió|Precisó|Sostuvo|Hizo')
+
+def _limpiar_atribucion(texto):
+    m = re.match(rf'({_NAMES_RE})\s+\S+\s+que\s+', texto, re.IGNORECASE)
+    if m:
+        r = texto[m.end()]; return (r.upper() + texto[m.end()+1:]) if r else ''
+    m2 = re.match(rf'({_NAMES_RE})\s+\S+(?:\s+con)?\s+[^,]+,\s*', texto, re.IGNORECASE)
+    if m2:
+        r = texto[m2.end():]; return (r[0].upper() + r[1:]) if r else ''
+    m3 = re.match(rf'({_VERBS_IMPL})\s+que\s+', texto, re.IGNORECASE)
+    if m3:
+        r = texto[m3.end():]; return (r[0].upper() + r[1:]) if r else ''
+    m4 = re.match(r'Hizo\s+hincapi[eé]\s+en\s+que\s+', texto, re.IGNORECASE)
+    if m4:
+        r = texto[m4.end():]; return (r[0].upper() + r[1:]) if r else ''
+    return texto
+
+def _limpiar_inline(texto):
+    t = _MID_ATTR.sub('. ', texto)
+    t = _DICIENDO.sub('. ', t)
+    t = _SEGUN.sub(' ', t)
+    t = re.sub(r',?\s+pero\s+(' + _VERBS_IMPL + r')\s+que\s+', '. ', t, flags=re.IGNORECASE)
+    t = re.sub(rf'\s+y\s+({_VERBS_IMPL}):\s*[«"\']?(.*?)[»"\']?(?=\.|,|$)', r'. \2', t, flags=re.IGNORECASE)
+    t = re.sub(r'\s+y\s+[«"](.*?)[»"]', r'. \1', t)
+    t = _REITERO_CITA.sub(lambda m: m.group(1), t)
+    t = re.sub(r'\s+y\s+que\s+', ' y ', t)
+    t = re.sub(r'\.\s*\.\s*', '. ', t)
+    return t
+
+def _limpiar_gerundio(texto):
+    m = re.match(r'[A-ZÁÉÍÓÚÑ]\w+(?:ando|iendo)\s+que\s+', texto, re.IGNORECASE)
+    if m:
+        r = texto[m.end():]; return (r[0].upper() + r[1:]) if r else texto
+    return texto
+
+def _primera_oracion(texto, max_chars=400):
+    for sep in ('. ', '.\n'):
+        idx = texto.find(sep)
+        if 0 < idx <= max_chars:
+            return texto[:idx + 1].strip()
+    colon_idx = texto.find(': ')
+    if 60 < colon_idx < max_chars:
+        return texto[:colon_idx] + '.'
+    trunc = texto[:max_chars]
+    last_dot = trunc.rfind('.')
+    if last_dot > 60:
+        return texto[:last_dot + 1].strip()
+    return trunc.rstrip(' ,;') + '…'
+
+def _resumir_seccion(puntos):
+    oraciones = []
+    for p in puntos[:3]:
+        t = _TS_RE.sub('', p.strip()).strip()
+        t = _limpiar_atribucion(t)
+        t = _limpiar_gerundio(t)
+        t = _limpiar_inline(t)
+        t = re.sub(r'\s{2,}', ' ', t).strip()
+        primera = _primera_oracion(t)
+        if len(primera) > 35:
+            oraciones.append(primera)
+        if len(oraciones) >= 2:
+            break
+    return ' '.join(oraciones)
+
 def ts():
     return datetime.datetime.now().strftime('%H:%M:%S')
 
@@ -92,7 +168,19 @@ def handle_hedgeye_trigger():
     hg_json = None
     if os.path.exists(data_file):
         with open(data_file, 'r', encoding='utf-8') as f:
-            hg_json = json.dumps(json.load(f), ensure_ascii=False)
+            data = json.load(f)
+        # Calcular resúmenes por sección y guardarlos en el JSON
+        secciones = data.get('macro_show', {}).get('secciones', [])
+        changed = False
+        for sec in secciones:
+            if sec.get('puntos') and not sec.get('resumen'):
+                sec['resumen'] = _resumir_seccion(sec['puntos'])
+                changed = True
+        if changed:
+            with open(data_file, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False)
+            print(f'[{ts()}] Resúmenes calculados para {len(secciones)} secciones')
+        hg_json = json.dumps(data, ensure_ascii=False)
     update_html_files(state_json=None, hg_json=hg_json)
     git_push(f'Hedgeye update {datetime.datetime.now().strftime("%Y-%m-%d %H:%M")}')
 
