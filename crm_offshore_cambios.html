@@ -1853,7 +1853,7 @@ setInterval(updateSyncStatus,60000);
 var MKT = {
   panels: [
     {id:'indices',   label:'INDICES GLOBALES', tickers:[
-      {sym:'^GSPC',name:'S&P 500'},{sym:'^IXIC',name:'Nasdaq Composite'},{sym:'^DJI',name:'Dow Jones'},
+      {sym:'^GSPC',name:'S&P 500'},{sym:'QQQ',name:'Nasdaq 100 ETF'},{sym:'^DJI',name:'Dow Jones'},
       {sym:'^RUT',name:'Russell 2000'},{sym:'^VIX',name:'Volatilidad (VIX)'},{sym:'^N225',name:'Nikkei 225'},
       {sym:'^GDAXI',name:'DAX'},{sym:'^FTSE',name:'FTSE 100'},{sym:'^FCHI',name:'CAC 40'},
       {sym:'^STOXX50E',name:'EuroStoxx 50'},{sym:'EEM',name:'MSCI Emerg. Markets'},{sym:'URTH',name:'MSCI World'}]},
@@ -2049,7 +2049,7 @@ function mktRender(){
       } else {
         h+='<tr data-idx="'+idx+'" onclick="mktClickRow(this)">';
       }
-      h+='<td class="mt-sym">'+(t.sym.length>12?t.sym.substring(0,11)+'..':t.sym)+'</td>';
+      var _ds=t.sym.replace(/^\^/,''); h+='<td class="mt-sym">'+(_ds.length>12?_ds.substring(0,11)+'..':_ds)+'</td>';
       h+='<td class="mt-name">'+displayName+'</td>';
       h+='<td class="mt-price">'+price+'</td>';
       h+='<td class="mt-pct">'+pctCell+'</td>';
