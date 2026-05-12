@@ -1849,156 +1849,212 @@ setInterval(updateSyncStatus,60000);
 // ======== MERCADO MODULE ========
 var MKT = {
   panels: [
-    {id:'indices', label:'INDICES GLOBALES', tickers:[
+    {id:'indices',   label:'INDICES GLOBALES', tickers:[
       {sym:'^GSPC',name:'S&P 500'},{sym:'^IXIC',name:'Nasdaq Composite'},{sym:'^DJI',name:'Dow Jones'},
       {sym:'^RUT',name:'Russell 2000'},{sym:'^VIX',name:'Volatilidad (VIX)'},{sym:'^N225',name:'Nikkei 225'},
       {sym:'^GDAXI',name:'DAX'},{sym:'^FTSE',name:'FTSE 100'},{sym:'^FCHI',name:'CAC 40'},
-      {sym:'^STOXX50E',name:'EuroStoxx 50'},{sym:'EEM',name:'MSCI Emerg. Markets'},{sym:'URTH',name:'MSCI World'},
-    ]},
-    {id:'commodities', label:'COMMODITIES', tickers:[
+      {sym:'^STOXX50E',name:'EuroStoxx 50'},{sym:'EEM',name:'MSCI Emerg. Markets'},{sym:'URTH',name:'MSCI World'}]},
+    {id:'commodities',label:'COMMODITIES', tickers:[
       {sym:'GLD',name:'Gold ETF'},{sym:'SLV',name:'Silver ETF'},{sym:'USO',name:'Oil ETF (WTI)'},
       {sym:'BNO',name:'Brent Oil ETF'},{sym:'WEAT',name:'Wheat'},{sym:'CORN',name:'Corn'},
-      {sym:'CPER',name:'Copper ETF'},{sym:'UNG',name:'Natural Gas'},
-    ]},
-    {id:'crypto', label:'CRYPTO', tickers:[
-      {sym:'BTC-USD',name:'Bitcoin'},{sym:'ETH-USD',name:'Ethereum'},{sym:'SOL-USD',name:'Solana'},
-    ]},
-    {id:'mag7', label:'MAGNIFICENT 7', tickers:[
+      {sym:'CPER',name:'Copper ETF'},{sym:'UNG',name:'Natural Gas'}]},
+    {id:'crypto',    label:'CRYPTO', tickers:[
+      {sym:'BTC-USD',name:'Bitcoin'},{sym:'ETH-USD',name:'Ethereum'},{sym:'SOL-USD',name:'Solana'}]},
+    {id:'mag7',      label:'MAGNIFICENT 7', tickers:[
       {sym:'AAPL',name:'Apple'},{sym:'MSFT',name:'Microsoft'},{sym:'NVDA',name:'NVIDIA'},
-      {sym:'GOOGL',name:'Alphabet'},{sym:'AMZN',name:'Amazon'},{sym:'META',name:'Meta'},{sym:'TSLA',name:'Tesla'},
-    ]},
-    {id:'acciones-us', label:'ACCIONES US', tickers:[
+      {sym:'GOOGL',name:'Alphabet'},{sym:'AMZN',name:'Amazon'},{sym:'META',name:'Meta'},{sym:'TSLA',name:'Tesla'}]},
+    {id:'acciones-us',label:'ACCIONES US', tickers:[
       {sym:'V',name:'Visa'},{sym:'MA',name:'Mastercard'},{sym:'UNH',name:'UnitedHealth'},
       {sym:'JNJ',name:'Johnson & Johnson'},{sym:'PG',name:'Procter & Gamble'},{sym:'KO',name:'Coca-Cola'},
       {sym:'DIS',name:'Walt Disney'},{sym:'NFLX',name:'Netflix'},{sym:'AMD',name:'AMD'},
-      {sym:'INTC',name:'Intel'},{sym:'CRM',name:'Salesforce'},{sym:'PYPL',name:'PayPal'},
-    ]},
-    {id:'financieras', label:'FINANCIERAS', tickers:[
+      {sym:'INTC',name:'Intel'},{sym:'CRM',name:'Salesforce'},{sym:'PYPL',name:'PayPal'}]},
+    {id:'financieras',label:'FINANCIERAS', tickers:[
       {sym:'JPM',name:'JPMorgan Chase'},{sym:'GS',name:'Goldman Sachs'},{sym:'BAC',name:'Bank of America'},
-      {sym:'MS',name:'Morgan Stanley'},{sym:'BLK',name:'BlackRock'},{sym:'C',name:'Citigroup'},{sym:'WFC',name:'Wells Fargo'},
-    ]},
-    {id:'energeticas', label:'ENERGETICAS', tickers:[
+      {sym:'MS',name:'Morgan Stanley'},{sym:'BLK',name:'BlackRock'},{sym:'C',name:'Citigroup'},{sym:'WFC',name:'Wells Fargo'}]},
+    {id:'energeticas',label:'ENERGETICAS', tickers:[
       {sym:'XOM',name:'ExxonMobil'},{sym:'CVX',name:'Chevron'},{sym:'SLB',name:'Schlumberger'},
-      {sym:'SHEL',name:'Shell'},{sym:'ENB',name:'Enbridge'},{sym:'COP',name:'ConocoPhillips'},{sym:'OXY',name:'Occidental'},
-    ]},
-    {id:'merval', label:'MERVAL - Argentina', tickers:[
+      {sym:'SHEL',name:'Shell'},{sym:'ENB',name:'Enbridge'},{sym:'COP',name:'ConocoPhillips'},{sym:'OXY',name:'Occidental'}]},
+    {id:'merval',    label:'MERVAL - Argentina', tickers:[
       {sym:'GGAL',name:'Galicia Financiero'},{sym:'BMA',name:'Banco Macro'},{sym:'PAM',name:'Pampa Energia'},
       {sym:'YPF',name:'YPF'},{sym:'CEPU',name:'Central Puerto'},{sym:'IRS',name:'IRSA'},
       {sym:'TEO',name:'Telecom Argentina'},{sym:'SUPV',name:'Grupo Supervielle'},
-      {sym:'LOMA',name:'Loma Negra'},{sym:'MELI',name:'MercadoLibre'},
-    ]},
-    {id:'brasil', label:'BRASIL', tickers:[
+      {sym:'LOMA',name:'Loma Negra'},{sym:'MELI',name:'MercadoLibre'}]},
+    {id:'brasil',    label:'BRASIL', tickers:[
       {sym:'VALE',name:'Vale'},{sym:'PBR',name:'Petrobras'},{sym:'ITUB',name:'Itau Unibanco'},
-      {sym:'ABEV',name:'Ambev'},{sym:'EWZ',name:'iShares Brazil ETF'},{sym:'XP',name:'XP Inc.'},
-    ]},
-    {id:'europeas', label:'EUROPEAS', tickers:[
+      {sym:'ABEV',name:'Ambev'},{sym:'EWZ',name:'iShares Brazil ETF'},{sym:'XP',name:'XP Inc.'}]},
+    {id:'europeas',  label:'EUROPEAS', tickers:[
       {sym:'ASML',name:'ASML Holding'},{sym:'SAP',name:'SAP SE'},{sym:'NVO',name:'Novo Nordisk'},
-      {sym:'AZN',name:'AstraZeneca'},{sym:'LVMUY',name:'LVMH'},{sym:'NSRGY',name:'Nestle'},
-    ]},
-    {id:'chinas', label:'CHINAS', tickers:[
+      {sym:'AZN',name:'AstraZeneca'},{sym:'LVMUY',name:'LVMH'},{sym:'NSRGY',name:'Nestle'}]},
+    {id:'chinas',    label:'CHINAS', tickers:[
       {sym:'BABA',name:'Alibaba'},{sym:'TCEHY',name:'Tencent'},{sym:'JD',name:'JD.com'},
-      {sym:'BIDU',name:'Baidu'},{sym:'NIO',name:'NIO'},{sym:'PDD',name:'PDD Holdings'},
-    ]},
-    {id:'etfs', label:'ETFs', tickers:[
+      {sym:'BIDU',name:'Baidu'},{sym:'NIO',name:'NIO'},{sym:'PDD',name:'PDD Holdings'}]},
+    {id:'etfs',      label:'ETFs', tickers:[
       {sym:'SPY',name:'S&P 500 ETF'},{sym:'QQQ',name:'Nasdaq 100 ETF'},{sym:'IWM',name:'Russell 2000 ETF'},
       {sym:'VTI',name:'Total US Market'},{sym:'TLT',name:'Long-term Treasuries'},{sym:'AGG',name:'US Bond Aggregate'},
-      {sym:'XLK',name:'Tech Sector'},{sym:'XLF',name:'Financial Sector'},{sym:'XLE',name:'Energy Sector'},
-    ]},
-    {id:'fondos', label:'FONDOS', nav:true, tickers:[
-      {sym:'IE00BM9KYW45',name:'Nomura US High Yield Bond C USD'},{sym:'IE0004445015',name:'Janus Henderson Balanced A ACC USD'},
-      {sym:'IE0033759436',name:'Muzinich Enhanced Yield ST A'},{sym:'IE00BD0PCH68',name:'Neuberger Berman Corp Hybrid Bond'},
-      {sym:'IE00BTL1FJ89',name:'Nomura Global Dynamic Bond A USD'},{sym:'IE00BDZRXR46',name:'Neuberger Berman ST EM Debt'},
-      {sym:'LU0188167505',name:'AXA IM FIIS US Short Duration HY'},{sym:'LU0292454872',name:'JPMorgan US Select Equity Plus A'},
-      {sym:'LU1058973592',name:'Robeco BP Global Premium Eq F'},{sym:'IE00B87KCF77',name:'PIMCO Income Fund Institutional'},
-      {sym:'LU1953148886',name:'Schroder ISF Global Credit Inc A1'},{sym:'LU1737068558',name:'Schroder ISF Global Credit Inc A'},
-      {sym:'IE00B3XBYN16',name:'Nomura Japan Strategic Value A USD'},{sym:'LU0070214290',name:'JPMorgan US Select Equity A ACC'},
-      {sym:'IE00B7KFL990',name:'PIMCO Income Fund E ACC USD'},{sym:'LU0951559797',name:'Robeco BP Global Premium Eq D'},
-      {sym:'IE00BK71B469',name:'Barings Global Senior Secured Bond'},{sym:'IE00BYYB4711',name:'Muzinich Enhanced Yield ST P'},
-    ]},
-    {id:'salud', label:'SALUD', tickers:[
+      {sym:'XLK',name:'Tech Sector'},{sym:'XLF',name:'Financial Sector'},{sym:'XLE',name:'Energy Sector'}]},
+    {id:'fondos',    label:'FONDOS', nav:true, tickers:[
+      {sym:'IE00BM9KYW45',name:'Nomura US High Yield Bond C USD'},
+      {sym:'IE0004445015',name:'Janus Henderson Balanced A ACC USD'},
+      {sym:'IE0033759436',name:'Muzinich Enhanced Yield ST A'},
+      {sym:'IE00BD0PCH68',name:'Neuberger Berman Corp Hybrid Bond'},
+      {sym:'IE00BTL1FJ89',name:'Nomura Global Dynamic Bond A USD'},
+      {sym:'IE00BDZRXR46',name:'Neuberger Berman ST EM Debt'},
+      {sym:'LU0188167505',name:'AXA IM FIIS US Short Duration HY'},
+      {sym:'LU0292454872',name:'JPMorgan US Select Equity Plus A'},
+      {sym:'LU1058973592',name:'Robeco BP Global Premium Eq F'},
+      {sym:'IE00B87KCF77',name:'PIMCO Income Fund Institutional'},
+      {sym:'LU1953148886',name:'Schroder ISF Global Credit Inc A1'},
+      {sym:'LU1737068558',name:'Schroder ISF Global Credit Inc A'},
+      {sym:'IE00B3XBYN16',name:'Nomura Japan Strategic Value A USD'},
+      {sym:'LU0070214290',name:'JPMorgan US Select Equity A ACC'},
+      {sym:'IE00B7KFL990',name:'PIMCO Income Fund E ACC USD'},
+      {sym:'LU0951559797',name:'Robeco BP Global Premium Eq D'},
+      {sym:'IE00BK71B469',name:'Barings Global Senior Secured Bond'},
+      {sym:'IE00BYYB4711',name:'Muzinich Enhanced Yield ST P'}]},
+    {id:'salud',     label:'SALUD', tickers:[
       {sym:'JNJ',name:'Johnson & Johnson'},{sym:'UNH',name:'UnitedHealth Group'},{sym:'PFE',name:'Pfizer'},
-      {sym:'MRNA',name:'Moderna'},{sym:'ABBV',name:'AbbVie'},{sym:'LLY',name:'Eli Lilly'},
-    ]},
-    {id:'real-estate', label:'REAL ESTATE', tickers:[
+      {sym:'MRNA',name:'Moderna'},{sym:'ABBV',name:'AbbVie'},{sym:'LLY',name:'Eli Lilly'}]},
+    {id:'real-estate',label:'REAL ESTATE', tickers:[
       {sym:'VNQ',name:'Vanguard Real Estate ETF'},{sym:'O',name:'Realty Income'},
-      {sym:'AMT',name:'American Tower'},{sym:'EQIX',name:'Equinix'},
-    ]},
-    {id:'small-caps', label:'SMALL CAPS - Alto Potencial', tickers:[
+      {sym:'AMT',name:'American Tower'},{sym:'EQIX',name:'Equinix'}]},
+    {id:'small-caps',label:'SMALL CAPS - Alto Potencial', tickers:[
       {sym:'PLTR',name:'Palantir Technologies'},{sym:'RKLB',name:'Rocket Lab'},
       {sym:'IONQ',name:'IonQ'},{sym:'ACHR',name:'Archer Aviation'},{sym:'JOBY',name:'Joby Aviation'},
-      {sym:'SOUN',name:'SoundHound AI'},{sym:'QBTS',name:'D-Wave Quantum'},
-    ]},
+      {sym:'SOUN',name:'SoundHound AI'},{sym:'QBTS',name:'D-Wave Quantum'}]}
   ],
   topBar:['^GSPC','^IXIC','^DJI','^VIX','BTC-USD','GLD','EEM'],
   topNames:{'^GSPC':'S&P 500','^IXIC':'NASDAQ','^DJI':'DOW','^VIX':'VIX','BTC-USD':'BTC','GLD':'GOLD','EEM':'Emerg Mkts'},
-  prices:{}, ts:null, _init:false,
+  prices:{},
+  ts:null,
+  _init:false,
   openSections:{indices:true,commodities:true,crypto:true},
+  _idx:[]
 };
 
+// Build flat ticker index for onclick (avoids all string escaping issues)
+(function(){
+  MKT.panels.forEach(function(p){
+    p.tickers.forEach(function(t){ MKT._idx.push({sym:t.sym,name:t.name}); });
+  });
+})();
+
+function mktIdxOf(sym){
+  for(var i=0;i<MKT._idx.length;i++){ if(MKT._idx[i].sym===sym) return i; }
+  return -1;
+}
+
 function initMercado(){
-  if(MKT._init)return;
+  if(MKT._init) return;
   MKT._init=true;
-  try{var c=JSON.parse(localStorage.getItem('mkt_prices')||'null');if(c&&c.prices){MKT.prices=c.prices;MKT.ts=new Date(c.ts);}}catch(e){}
-  mktRender();mktRenderTopBar();mktUpdateTs();mktFetch();
+  try{
+    var c=JSON.parse(localStorage.getItem('mkt_prices')||'null');
+    if(c&&c.prices){MKT.prices=c.prices;MKT.ts=new Date(c.ts);}
+  }catch(e){}
+  mktRender();
+  mktRenderTopBar();
+  mktUpdateTs();
+  mktFetch();
 }
 
 function mktFmtPrice(v){
-  if(v==null)return'--';
-  if(v>=10000)return v.toLocaleString('en-US',{maximumFractionDigits:0});
-  if(v>=1000)return v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-  if(v>=100)return v.toFixed(2);if(v>=1)return v.toFixed(2);return v.toFixed(4);
+  if(v==null) return '--';
+  if(v>=10000) return v.toLocaleString('en-US',{maximumFractionDigits:0});
+  if(v>=1000)  return v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  return v.toFixed(2);
 }
-function mktFmtVol(v){if(!v)return'--';if(v>=1e9)return(v/1e9).toFixed(1)+'B';if(v>=1e6)return(v/1e6).toFixed(1)+'M';if(v>=1e3)return(v/1e3).toFixed(1)+'K';return''+v;}
-function mktFmtCap(v){if(!v)return'--';if(v>=1e12)return'$'+(v/1e12).toFixed(2)+'T';if(v>=1e9)return'$'+(v/1e9).toFixed(1)+'B';if(v>=1e6)return'$'+(v/1e6).toFixed(1)+'M';return'$'+v;}
+function mktFmtVol(v){
+  if(!v) return '--';
+  if(v>=1e9) return (v/1e9).toFixed(1)+'B';
+  if(v>=1e6) return (v/1e6).toFixed(1)+'M';
+  if(v>=1e3) return (v/1e3).toFixed(1)+'K';
+  return ''+v;
+}
+function mktFmtCap(v){
+  if(!v) return '--';
+  if(v>=1e12) return '$'+(v/1e12).toFixed(2)+'T';
+  if(v>=1e9)  return '$'+(v/1e9).toFixed(1)+'B';
+  if(v>=1e6)  return '$'+(v/1e6).toFixed(1)+'M';
+  return '$'+v;
+}
 
 function mktNavPrice(isin){
-  try{var pf=JSON.parse(localStorage.getItem('pfol_v1')||'{}');for(var i=0;i<(pf.clients||[]).length;i++){for(var j=0;j<(pf.clients[i].holdings||[]).length;j++){var h=pf.clients[i].holdings[j];if(h.isin===isin&&h.lastPrice)return'$'+parseFloat(h.lastPrice).toFixed(2);}}}catch(e){}return'--';
+  try{
+    var pf=JSON.parse(localStorage.getItem('pfol_v1')||'{}');
+    var cls=pf.clients||[];
+    for(var i=0;i<cls.length;i++){
+      var hlds=cls[i].holdings||[];
+      for(var j=0;j<hlds.length;j++){
+        var h=hlds[j];
+        if(h.isin===isin&&h.lastPrice) return '$'+parseFloat(h.lastPrice).toFixed(2);
+      }
+    }
+  }catch(e){}
+  return '--';
 }
 
 function mktClientsFor(sym){
   var r=[];
-  try{var pf=JSON.parse(localStorage.getItem('pfol_v1')||'{}');(pf.clients||[]).forEach(function(c){if((c.holdings||[]).some(function(h){return h.symbol===sym||h.isin===sym;}))r.push(c.name);});}catch(e){}
+  try{
+    var pf=JSON.parse(localStorage.getItem('pfol_v1')||'{}');
+    (pf.clients||[]).forEach(function(c){
+      var has=(c.holdings||[]).some(function(h){ return h.symbol===sym||h.isin===sym; });
+      if(has) r.push(c.name);
+    });
+  }catch(e){}
   return r;
 }
 
-function mktRowHTML(t,p,isNav){
-  var price=isNav?mktNavPrice(t.sym):(p&&p.price!=null?mktFmtPrice(p.price):'--');
-  var chg=p&&p.changePct!=null?p.changePct:null;
-  var cls=chg==null?'mkt-flat':(chg>=0?'mkt-up':'mkt-dn');
-  var arr=chg==null?'':(chg>=0?'&#9650; ':'&#9660; ');
-  var pctTxt=isNav?'<span class="mkt-flat">NAV</span>':(chg==null?'--':'<span class="'+cls+'">'+arr+(chg>=0?'+':'')+chg.toFixed(2)+'%</span>');
-  var symDisp=t.sym.length>12?t.sym.substring(0,12)+'...':t.sym;
-  var sn=t.name.replace(/'/g,'&#39;');var ss=t.sym.replace(/'/g,'&#39;');
-  return '<tr onclick="mktOpenModal(''+ss+'',''+sn+'')">'
-    +'<td class="mt-sym">'+symDisp+'</td>'
-    +'<td class="mt-name">'+(p&&p.longName&&!isNav?p.longName:t.name)+'</td>'
-    +'<td class="mt-price">'+price+'</td>'
-    +'<td class="mt-pct">'+pctTxt+'</td>'
-    +'</tr>';
+function mktPctHTML(chg){
+  if(chg==null) return '<span class="mkt-flat">--</span>';
+  var cls=chg>=0?'mkt-up':'mkt-dn';
+  var arr=chg>=0?'&#9650; ':'&#9660; ';
+  return '<span class="'+cls+'">'+arr+(chg>=0?'+':'')+chg.toFixed(2)+'%</span>';
 }
 
 function mktRender(){
-  var el=document.getElementById('mkt-panels');if(!el)return;
+  var el=document.getElementById('mkt-panels');
+  if(!el) return;
   var h='';
   MKT.panels.forEach(function(panel){
     var open=!!MKT.openSections[panel.id];
     h+='<div class="mkt-section">';
-    h+='<div class="mkt-section-hdr" onclick="mktToggle(''+panel.id+'')">';
+    h+='<div class="mkt-section-hdr" onclick="mktToggle(\''+panel.id+'\')">'; // panel.id is always safe (no quotes)
     h+='<span class="mkt-arr'+(open?' open':'')+'" id="mkt-arr-'+panel.id+'">&#9658;</span>';
     h+='<span class="mkt-section-name">'+panel.label+'</span>';
-    if(panel.nav)h+=' <span class="mkt-nav-badge">NAV</span>';
+    if(panel.nav) h+=' <span class="mkt-nav-badge">NAV</span>';
     h+='<span class="mkt-section-cnt">['+panel.tickers.length+']</span>';
     h+='</div>';
     h+='<div id="mkt-body-'+panel.id+'" style="display:'+(open?'block':'none')+'">';
     h+='<table class="mkt-tbl">';
-    panel.tickers.forEach(function(t){h+=mktRowHTML(t,MKT.prices[t.sym]||null,!!panel.nav);});
+    panel.tickers.forEach(function(t){
+      var idx=mktIdxOf(t.sym);
+      var p=MKT.prices[t.sym]||null;
+      var price=panel.nav ? mktNavPrice(t.sym) : (p&&p.price!=null?mktFmtPrice(p.price):'--');
+      var pctCell=panel.nav ? '<span class="mkt-flat">NAV</span>' : mktPctHTML(p?p.changePct:null);
+      var displayName=p&&p.longName&&!panel.nav ? p.longName : t.name;
+      // Use data-idx for onclick — no string escaping needed
+      h+='<tr data-idx="'+idx+'" onclick="mktClickRow(this)">';
+      h+='<td class="mt-sym">'+(t.sym.length>12?t.sym.substring(0,11)+'..':t.sym)+'</td>';
+      h+='<td class="mt-name">'+displayName+'</td>';
+      h+='<td class="mt-price">'+price+'</td>';
+      h+='<td class="mt-pct">'+pctCell+'</td>';
+      h+='</tr>';
+    });
     h+='</table></div></div>';
   });
   el.innerHTML=h;
 }
 
+function mktClickRow(el){
+  var idx=parseInt(el.getAttribute('data-idx'),10);
+  if(isNaN(idx)||idx<0) return;
+  var t=MKT._idx[idx];
+  if(t) mktOpenModal(t.sym,t.name);
+}
+
 function mktRenderTopBar(){
-  var bar=document.getElementById('mkt-top-bar');if(!bar)return;
+  var bar=document.getElementById('mkt-top-bar');
+  if(!bar) return;
   var h='';
   MKT.topBar.forEach(function(s){
     var p=MKT.prices[s]||{};
@@ -2006,15 +2062,20 @@ function mktRenderTopBar(){
     var chg=p.changePct!=null?p.changePct:null;
     var cls=chg==null?'mkt-flat':(chg>=0?'mkt-up':'mkt-dn');
     var arr=chg==null?'':(chg>=0?'&#9650; ':'&#9660; ');
-    var pct=chg==null?'':arr+(chg>=0?'+':'')+chg.toFixed(2)+'%';
-    h+='<div class="mkt-index-chip"><span class="mkt-lbl">'+(MKT.topNames[s]||s)+'</span><span class="mkt-val">'+price+'</span><span class="mkt-chg '+cls+'">'+pct+'</span></div>';
+    var pct=chg==null?'' : arr+(chg>=0?'+':'')+chg.toFixed(2)+'%';
+    h+='<div class="mkt-index-chip">'
+      +'<span class="mkt-lbl">'+(MKT.topNames[s]||s)+'</span>'
+      +'<span class="mkt-val">'+price+'</span>'
+      +'<span class="mkt-chg '+cls+'">'+pct+'</span>'
+      +'</div>';
   });
   bar.innerHTML=h;
 }
 
 function mktUpdateTs(){
-  var el=document.getElementById('mkt-ts');if(!el)return;
-  if(!MKT.ts){el.textContent='--';return;}
+  var el=document.getElementById('mkt-ts');
+  if(!el) return;
+  if(!MKT.ts){el.textContent='--'; return;}
   var diff=Math.floor((new Date()-MKT.ts)/60000);
   el.textContent=diff<1?'Actualizado ahora mismo':'Actualizado hace '+diff+' min';
 }
@@ -2022,36 +2083,53 @@ function mktUpdateTs(){
 function mktToggle(id){
   var body=document.getElementById('mkt-body-'+id);
   var arr=document.getElementById('mkt-arr-'+id);
-  if(!body)return;
+  if(!body) return;
   var open=body.style.display!=='none';
   body.style.display=open?'none':'block';
-  if(arr)arr.classList.toggle('open',!open);
+  if(arr) arr.classList.toggle('open',!open);
   MKT.openSections[id]=!open;
 }
 
-function mktRefresh(){mktFetch();}
+function mktRefresh(){ mktFetch(); }
 
 async function mktFetch(){
   var tickers=[];
-  MKT.panels.forEach(function(p){if(!p.nav)p.tickers.forEach(function(t){if(tickers.indexOf(t.sym)<0)tickers.push(t.sym);});});
-  var batches=[];for(var i=0;i<tickers.length;i+=40)batches.push(tickers.slice(i,i+40));
+  MKT.panels.forEach(function(p){
+    if(!p.nav) p.tickers.forEach(function(t){ if(tickers.indexOf(t.sym)<0) tickers.push(t.sym); });
+  });
+  var batches=[];
+  for(var i=0;i<tickers.length;i+=40) batches.push(tickers.slice(i,i+40));
   var tsEl=document.getElementById('mkt-ts');
-  if(tsEl)tsEl.textContent='Actualizando...';
+  if(tsEl) tsEl.textContent='Actualizando...';
   try{
     for(var b=0;b<batches.length;b++){
       var resp=await fetch('/api/prices?t='+batches[b].join(','));
-      if(!resp.ok)continue;
+      if(!resp.ok) continue;
       var data=await resp.json();
       var quotes=(data.quoteResponse&&data.quoteResponse.result)||[];
       quotes.forEach(function(q){
-        MKT.prices[q.symbol]={price:q.regularMarketPrice,change:q.regularMarketChange,changePct:q.regularMarketChangePercent,
-          longName:q.longName||q.shortName,volume:q.regularMarketVolume,high52:q.fiftyTwoWeekHigh,low52:q.fiftyTwoWeekLow,marketCap:q.marketCap,pe:q.trailingPE};
+        MKT.prices[q.symbol]={
+          price:q.regularMarketPrice,
+          change:q.regularMarketChange,
+          changePct:q.regularMarketChangePercent,
+          longName:q.longName||q.shortName,
+          volume:q.regularMarketVolume,
+          high52:q.fiftyTwoWeekHigh,
+          low52:q.fiftyTwoWeekLow,
+          marketCap:q.marketCap,
+          pe:q.trailingPE
+        };
       });
     }
     MKT.ts=new Date();
-    mktRender();mktRenderTopBar();mktUpdateTs();
+    mktRender();
+    mktRenderTopBar();
+    mktUpdateTs();
     localStorage.setItem('mkt_prices',JSON.stringify({ts:MKT.ts.toISOString(),prices:MKT.prices}));
-  }catch(e){if(tsEl)tsEl.textContent='Error al actualizar';console.error('mktFetch',e);}
+  }catch(e){
+    if(tsEl) tsEl.textContent='Error al actualizar precios';
+    console.error('mktFetch error:',e);
+  }
 }
 
 function mktOpenModal(sym,name){
@@ -2059,109 +2137,141 @@ function mktOpenModal(sym,name){
   var chg=p.changePct!=null?p.changePct:null;
   var cls=chg==null?'mkt-flat':(chg>=0?'mkt-up':'mkt-dn');
   var arr=chg==null?'':(chg>=0?'&#9650; ':'&#9660; ');
-  var pct=chg==null?'--':arr+(chg>=0?'+':'')+chg.toFixed(2)+'%'+(p.change?' ('+(p.change>=0?'+':'')+p.change.toFixed(2)+')':'');
-  var h='<div class="mkt-modal-top"><div>';
+  var pctStr=chg==null?'--':arr+(chg>=0?'+':'')+chg.toFixed(2)+'%'+(p.change?' ('+(p.change>=0?'+':'')+p.change.toFixed(2)+')':'');
+  var modal=document.getElementById('mkt-modal');
+  if(!modal) return;
+  var h='';
+  h+='<div class="mkt-modal-top">';
+  h+='<div>';
   h+='<div class="mkt-modal-sym">'+sym+'</div>';
   h+='<div class="mkt-modal-name">'+(p.longName||name)+'</div>';
-  h+='<div style="display:flex;align-items:baseline;gap:6px;"><span class="mkt-modal-price">'+(p.price!=null?mktFmtPrice(p.price):'--')+'</span><span class="mkt-modal-chg '+cls+'">'+pct+'</span></div>';
-  h+='</div><button class="mkt-modal-close" onclick="mktCloseModal()">&#x2715;</button></div>';
+  h+='<div style="display:flex;align-items:baseline;gap:6px;">';
+  h+='<span class="mkt-modal-price">'+(p.price!=null?mktFmtPrice(p.price):'--')+'</span>';
+  h+='<span class="mkt-modal-chg '+cls+'">'+pctStr+'</span>';
+  h+='</div></div>';
+  h+='<button class="mkt-modal-close" onclick="mktCloseModal()">&#x2715;</button>';
+  h+='</div>';
   h+='<div class="mkt-tf-bar">';
   ['1D','5D','1M','3M','6M','1Y','5Y'].forEach(function(tf){
-    h+='<button class="mkt-tf-btn'+(tf==='1M'?' active':'')+'" onclick="mktLoadChart(''+sym+'',''+tf+'',this)">'+tf+'</button>';
+    h+='<button class="mkt-tf-btn'+(tf==='1M'?' active':'')+'" onclick="mktLoadChart(this)">'+tf+'</button>';
   });
   h+='</div>';
   h+='<div id="mkt-chart"><div style="display:flex;align-items:center;justify-content:center;height:260px;color:var(--vg);font-size:11px;letter-spacing:2px;">Cargando...</div></div>';
   h+='<div class="mkt-stats-grid">';
-  h+=mktStat('52W Max',p.high52!=null?'$'+mktFmtPrice(p.high52):'--');
-  h+=mktStat('52W Min',p.low52!=null?'$'+mktFmtPrice(p.low52):'--');
-  h+=mktStat('Volumen',mktFmtVol(p.volume));
-  h+=mktStat('Market Cap',mktFmtCap(p.marketCap));
-  h+=mktStat('P/E',p.pe!=null?p.pe.toFixed(1)+'x':'--');
+  h+=mktStat('52W Max', p.high52!=null?'$'+mktFmtPrice(p.high52):'--');
+  h+=mktStat('52W Min', p.low52!=null?'$'+mktFmtPrice(p.low52):'--');
+  h+=mktStat('Volumen', mktFmtVol(p.volume));
+  h+=mktStat('Market Cap', mktFmtCap(p.marketCap));
+  h+=mktStat('P/E', p.pe!=null?p.pe.toFixed(1)+'x':'--');
   h+=mktStat('Moneda','USD');
   h+='</div>';
   var clients=mktClientsFor(sym);
   if(clients.length){
     h+='<div class="mkt-in-pfol"><div class="mkt-in-pfol-lbl">En cartera de</div><div class="mkt-client-chips">';
-    clients.forEach(function(c){h+='<span class="mkt-client-chip">'+c+'</span>';});
+    clients.forEach(function(c){ h+='<span class="mkt-client-chip">'+c+'</span>'; });
     h+='</div></div>';
   }
   var note=localStorage.getItem('mkt_note_'+sym)||'';
-  h+='<div class="mkt-notes-lbl">Notas internas</div>';
+  h+='<div class="mkt-notes-lbl" style="margin-top:14px;">Notas internas</div>';
   h+='<textarea class="mkt-notes-area" id="mkt-note-ta" placeholder="Agregar nota sobre este activo...">'+note+'</textarea>';
-  h+='<button class="mkt-notes-save" onclick="mktSaveNote(\''+sym+'\')">&nbsp;Guardar &#10003;</button>';
-  document.getElementById('mkt-modal').innerHTML=h;
+  h+='<div style="text-align:right;margin-top:8px;">';
+  h+='<button class="mkt-notes-save" onclick="mktSaveNote(document.getElementById(\'mkt-note-ta\').value,\''+sym+'\')">Guardar &#10003;</button>';
+  h+='</div>';
+  modal.innerHTML=h;
+  // Store current sym for chart
+  modal._sym=sym;
   document.getElementById('mkt-modal-bg').classList.add('open');
-  mktLoadChart(sym,'1M',null);
+  mktLoadChart(document.querySelector('.mkt-tf-btn.active'));
 }
 
 function mktStat(label,val){
-  return'<div class="mkt-stat"><div class="mkt-stat-lbl">'+label+'</div><div class="mkt-stat-val">'+val+'</div></div>';
+  return '<div class="mkt-stat"><div class="mkt-stat-lbl">'+label+'</div><div class="mkt-stat-val">'+val+'</div></div>';
 }
 
-function mktCloseModal(){document.getElementById('mkt-modal-bg').classList.remove('open');}
+function mktCloseModal(){
+  var bg=document.getElementById('mkt-modal-bg');
+  if(bg) bg.classList.remove('open');
+}
 
-function mktSaveNote(sym){
-  var ta=document.getElementById('mkt-note-ta');if(!ta)return;
-  localStorage.setItem('mkt_note_'+sym,ta.value);
+function mktSaveNote(val,sym){
+  localStorage.setItem('mkt_note_'+sym,val);
   var btn=document.querySelector('.mkt-notes-save');
-  if(btn){btn.textContent='Guardado!';setTimeout(function(){btn.innerHTML=' Guardar &#10003;';},1500);}
+  if(btn){btn.textContent='Guardado!'; setTimeout(function(){btn.innerHTML='Guardar &#10003;';},1500);}
 }
 
-async function mktLoadChart(sym,tf,btn){
+function mktLoadChart(btn){
+  var modal=document.getElementById('mkt-modal');
+  if(!modal||!modal._sym) return;
+  var sym=modal._sym;
   document.querySelectorAll('.mkt-tf-btn').forEach(function(b){b.classList.remove('active');});
-  if(btn)btn.classList.add('active');
-  var chartEl=document.getElementById('mkt-chart');if(!chartEl)return;
+  if(btn) btn.classList.add('active');
+  var tf=btn?btn.textContent:'1M';
+  var chartEl=document.getElementById('mkt-chart');
+  if(!chartEl) return;
   chartEl.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:260px;color:var(--vg);font-size:11px;letter-spacing:2px;">Cargando...</div>';
-  var tfMap={'1D':{interval:'5m',range:'1d'},'5D':{interval:'15m',range:'5d'},'1M':{interval:'1d',range:'1mo'},'3M':{interval:'1d',range:'3mo'},'6M':{interval:'1d',range:'6mo'},'1Y':{interval:'1wk',range:'1y'},'5Y':{interval:'1mo',range:'5y'}};
+  var tfMap={
+    '1D':{interval:'5m',range:'1d'},
+    '5D':{interval:'15m',range:'5d'},
+    '1M':{interval:'1d',range:'1mo'},
+    '3M':{interval:'1d',range:'3mo'},
+    '6M':{interval:'1d',range:'6mo'},
+    '1Y':{interval:'1wk',range:'1y'},
+    '5Y':{interval:'1mo',range:'5y'}
+  };
   var tp=tfMap[tf]||tfMap['1M'];
-  try{
-    var resp=await fetch('/api/chart?sym='+encodeURIComponent(sym)+'&interval='+tp.interval+'&range='+tp.range);
-    if(!resp.ok)throw new Error('HTTP '+resp.status);
-    var data=await resp.json();
-    var res=data.chart&&data.chart.result&&data.chart.result[0];
-    if(!res)throw new Error('no data');
-    mktDrawSVG(chartEl,res.timestamp||[],res.indicators.quote[0].close||[]);
-  }catch(e){
-    chartEl.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:260px;color:var(--vg);font-size:11px;">Sin datos de grafico</div>';
-  }
+  fetch('/api/chart?sym='+encodeURIComponent(sym)+'&interval='+tp.interval+'&range='+tp.range)
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      var res=data.chart&&data.chart.result&&data.chart.result[0];
+      if(!res) throw new Error('no data');
+      mktDrawSVG(chartEl, res.indicators.quote[0].close||[]);
+    })
+    .catch(function(){
+      if(chartEl) chartEl.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:260px;color:var(--vg);font-size:11px;">Sin datos de grafico</div>';
+    });
 }
 
-function mktDrawSVG(el,ts,closes){
-  var W=el.clientWidth||580,H=260;
+function mktDrawSVG(el,closes){
+  var W=el.clientWidth||580, H=260;
   var pad={t:20,r:12,b:30,l:55};
-  var pts=[];for(var i=0;i<ts.length;i++){if(closes[i]!=null)pts.push({v:closes[i]});}
-  if(!pts.length){el.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:260px;color:var(--vg);">Sin datos</div>';return;}
-  var minV=Math.min.apply(null,pts.map(function(p){return p.v;}));
-  var maxV=Math.max.apply(null,pts.map(function(p){return p.v;}));
+  var pts=[];
+  for(var i=0;i<closes.length;i++){ if(closes[i]!=null) pts.push(closes[i]); }
+  if(!pts.length){
+    el.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:260px;color:var(--vg);">Sin datos</div>';
+    return;
+  }
+  var minV=Math.min.apply(null,pts);
+  var maxV=Math.max.apply(null,pts);
   var rng=maxV-minV||maxV*0.01||1;
-  var cW=W-pad.l-pad.r,cH=H-pad.t-pad.b;
-  var up=pts[pts.length-1].v>=pts[0].v;
+  var cW=W-pad.l-pad.r, cH=H-pad.t-pad.b;
+  var up=pts[pts.length-1]>=pts[0];
   var lc=up?'#7ecba0':'#e74c3c';
-  var pathD='',areaD='';
-  pts.forEach(function(p,i){
+  var pathD='', areaD='';
+  pts.forEach(function(v,i){
     var x=(pad.l+(i/(pts.length-1||1))*cW).toFixed(1);
-    var y=(pad.t+cH-((p.v-minV)/rng)*cH).toFixed(1);
+    var y=(pad.t+cH-((v-minV)/rng)*cH).toFixed(1);
     pathD+=(i===0?'M':'L')+x+' '+y;
-    if(i===0)areaD='M'+x+' '+(pad.t+cH)+' L'+x+' '+y;
+    if(i===0) areaD='M'+x+' '+(pad.t+cH)+' L'+x+' '+y;
     else areaD+=' L'+x+' '+y;
   });
   areaD+=' L'+(pad.l+cW).toFixed(1)+' '+(pad.t+cH)+' Z';
   var yL='';
   for(var k=0;k<=4;k++){
-    var v=minV+(rng*k/4);var y2=(pad.t+cH-(k/4)*cH).toFixed(1);
-    var lbl=v>=1000?'$'+v.toLocaleString('en-US',{maximumFractionDigits:0}):'$'+v.toFixed(v>=10?2:4);
-    yL+='<text x="'+(pad.l-6)+'" y="'+(parseFloat(y2)+4)+'" text-anchor="end" fill="#6B8578" font-size="9" font-family="Inter,monospace">'+lbl+'<\/text>';
+    var v2=minV+(rng*k/4);
+    var y2=(pad.t+cH-(k/4)*cH).toFixed(1);
+    var lbl=v2>=1000?'$'+v2.toLocaleString('en-US',{maximumFractionDigits:0}):'$'+v2.toFixed(v2>=10?2:4);
+    yL+='<text x="'+(pad.l-6)+'" y="'+(parseFloat(y2)+4)+'" text-anchor="end" fill="#6B8578" font-size="9" font-family="monospace">'+lbl+'<\/text>';
     yL+='<line x1="'+pad.l+'" y1="'+y2+'" x2="'+(pad.l+cW)+'" y2="'+y2+'" stroke="rgba(168,218,187,.05)" stroke-width="1"\/>';
   }
-  var gid='mg'+Math.random().toString(36).substr(2,6);
-  el.innerHTML='<svg width="100%" height="'+H+'" viewBox="0 0 '+W+' '+H+'" xmlns="http:\/\/www.w3.org\/2000\/svg">'
+  var gid='g'+Math.random().toString(36).substr(2,5);
+  el.innerHTML='<svg width="100%" height="'+H+'" viewBox="0 0 '+W+' '+H+'">'
     +'<defs><linearGradient id="'+gid+'" x1="0" y1="0" x2="0" y2="1">'
     +'<stop offset="0%" stop-color="'+lc+'" stop-opacity="0.18"\/>'
     +'<stop offset="100%" stop-color="'+lc+'" stop-opacity="0"\/>'
     +'<\/linearGradient><\/defs>'
     +yL
-    +'<path d="'+areaD+'" fill="url(#'+gid+')"\/>'+
-    '<path d="'+pathD+'" fill="none" stroke="'+lc+'" stroke-width="1.5"\/>'
+    +'<path d="'+areaD+'" fill="url(#'+gid+')"\/>'
+    +'<path d="'+pathD+'" fill="none" stroke="'+lc+'" stroke-width="1.5"\/>'
     +'<\/svg>';
 }
 </script>
