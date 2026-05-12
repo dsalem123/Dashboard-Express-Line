@@ -289,6 +289,8 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
 .mkt-notes-area:focus{border-color:rgba(201,168,76,.4);}
 .mkt-notes-save{margin-top:8px;float:right;background:none;border:1px solid rgba(201,168,76,.4);color:var(--gold);font-size:10px;letter-spacing:2px;padding:5px 14px;border-radius:4px;cursor:pointer;transition:all .15s;}
 .mkt-notes-save:hover{background:rgba(201,168,76,.1);}
+.mkt-hg-bull{font-size:9px;font-weight:700;letter-spacing:.5px;padding:2px 7px;border-radius:3px;background:rgba(46,204,113,.12);color:#2ecc71;border:1px solid rgba(46,204,113,.25);margin-left:7px;vertical-align:middle;white-space:nowrap;}
+.mkt-hg-bear{font-size:9px;font-weight:700;letter-spacing:.5px;padding:2px 7px;border-radius:3px;background:rgba(231,76,60,.12);color:#e74c3c;border:1px solid rgba(231,76,60,.25);margin-left:7px;vertical-align:middle;white-space:nowrap;}
 
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -2023,9 +2025,22 @@ function mktPctHTML(chg){
   return '<span class="'+cls+'">'+arr+(chg>=0?'+':'')+chg.toFixed(2)+'%</span>';
 }
 
+function mktGetHgSignals(){
+  try{
+    var d=window._hedgeyeData||(typeof HG_STATIC_DATA!=='undefined'&&HG_STATIC_DATA?HG_STATIC_DATA:null);
+    if(!d){var s=localStorage.getItem('hg_data');if(s) d=JSON.parse(s);}
+    if(!d) return {bull:{},bear:{}};
+    var bull={},bear={};
+    (d.bullish||[]).forEach(function(x){ bull[x.ticker.toUpperCase()]=true; });
+    (d.bearish||[]).forEach(function(x){ bear[x.ticker.toUpperCase()]=true; });
+    return {bull:bull,bear:bear};
+  }catch(e){ return {bull:{},bear:{}}; }
+}
+
 function mktRender(){
   var el=document.getElementById('mkt-panels');
   if(!el) return;
+  var hgSig=mktGetHgSignals();
   var h='';
   MKT.panels.forEach(function(panel){
     var open=!!MKT.openSections[panel.id];
@@ -2044,13 +2059,15 @@ function mktRender(){
       var price=panel.nav ? mktNavPrice(t.sym) : (p&&p.price!=null?mktFmtPrice(p.price):'--');
       var pctCell=panel.nav ? '<span class="mkt-flat">—</span>' : mktPctHTML(p?p.changePct:null);
       var displayName=p&&p.longName&&!panel.nav ? p.longName : t.name;
+      var _symUp=t.sym.toUpperCase();
+      var hgBadge=hgSig.bull[_symUp]?'<span class="mkt-hg-bull">▲ Bullish</span>':hgSig.bear[_symUp]?'<span class="mkt-hg-bear">▼ Bearish</span>':'';
       if(panel.nav){
         h+='<tr style="cursor:default;">';
       } else {
         h+='<tr data-idx="'+idx+'" onclick="mktClickRow(this)">';
       }
       var _ds=t.sym.replace(/^\^/,''); h+='<td class="mt-sym">'+(_ds.length>12?_ds.substring(0,11)+'..':_ds)+'</td>';
-      h+='<td class="mt-name">'+displayName+'</td>';
+      h+='<td class="mt-name">'+displayName+hgBadge+'</td>';
       h+='<td class="mt-price">'+price+'</td>';
       h+='<td class="mt-pct">'+pctCell+'</td>';
       h+='</tr>';
