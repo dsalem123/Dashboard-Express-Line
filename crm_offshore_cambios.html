@@ -563,7 +563,7 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
 
   </div>
 
-<div id="page-mercado" class="page" style="overflow:auto;">
+<div id="page-mercado" class="page" style="overflow-y:auto;min-height:100vh;">
   <div class="doc-header">
     <div>
       <div class="logo-wordmark">ExpressLine</div>
@@ -1927,13 +1927,14 @@ var MKT = {
   prices:{},
   ts:null,
   _init:false,
-  openSections:{indices:true,commodities:true,crypto:true},
+  openSections:{},  // populated below — all open by default
   _idx:[]
 };
 
-// Build flat ticker index for onclick (avoids all string escaping issues)
+// Build flat ticker index + open all sections
 (function(){
   MKT.panels.forEach(function(p){
+    MKT.openSections[p.id] = true;
     p.tickers.forEach(function(t){ MKT._idx.push({sym:t.sym,name:t.name}); });
   });
 })();
@@ -1950,9 +1951,16 @@ function initMercado(){
     var c=JSON.parse(localStorage.getItem('mkt_prices')||'null');
     if(c&&c.prices){MKT.prices=c.prices;MKT.ts=new Date(c.ts);}
   }catch(e){}
-  mktRender();
-  mktRenderTopBar();
-  mktUpdateTs();
+  try{
+    mktRender();
+    mktRenderTopBar();
+    mktUpdateTs();
+  }catch(err){
+    var el=document.getElementById('mkt-panels');
+    if(el) el.innerHTML='<div style="color:#e74c3c;padding:24px;font-family:monospace;font-size:12px;background:rgba(231,76,60,.06);border-radius:6px;border:1px solid rgba(231,76,60,.2);">Error al renderizar Mercado:<br><br>'+String(err)+'<br><br>'+err.stack+'</div>';
+    console.error('initMercado render error:',err);
+    return;
+  }
   mktFetch();
 }
 
@@ -2018,7 +2026,7 @@ function mktRender(){
   MKT.panels.forEach(function(panel){
     var open=!!MKT.openSections[panel.id];
     h+='<div class="mkt-section">';
-    h+='<div class="mkt-section-hdr" onclick="mktToggle(\''+panel.id+'\')">'; // panel.id is always safe (no quotes)
+    h+='<div class="mkt-section-hdr" onclick="mktToggle(this.getAttribute(\'data-pid\'))" data-pid="'+panel.id+'">';
     h+='<span class="mkt-arr'+(open?' open':'')+'" id="mkt-arr-'+panel.id+'">&#9658;</span>';
     h+='<span class="mkt-section-name">'+panel.label+'</span>';
     if(panel.nav) h+=' <span class="mkt-nav-badge">NAV</span>';
@@ -2032,7 +2040,6 @@ function mktRender(){
       var price=panel.nav ? mktNavPrice(t.sym) : (p&&p.price!=null?mktFmtPrice(p.price):'--');
       var pctCell=panel.nav ? '<span class="mkt-flat">NAV</span>' : mktPctHTML(p?p.changePct:null);
       var displayName=p&&p.longName&&!panel.nav ? p.longName : t.name;
-      // Use data-idx for onclick — no string escaping needed
       h+='<tr data-idx="'+idx+'" onclick="mktClickRow(this)">';
       h+='<td class="mt-sym">'+(t.sym.length>12?t.sym.substring(0,11)+'..':t.sym)+'</td>';
       h+='<td class="mt-name">'+displayName+'</td>';
@@ -2075,7 +2082,7 @@ function mktRenderTopBar(){
 function mktUpdateTs(){
   var el=document.getElementById('mkt-ts');
   if(!el) return;
-  if(!MKT.ts){el.textContent='--'; return;}
+  if(!MKT.ts){el.textContent='Precios pendientes'; return;}
   var diff=Math.floor((new Date()-MKT.ts)/60000);
   el.textContent=diff<1?'Actualizado ahora mismo':'Actualizado hace '+diff+' min';
 }
@@ -2090,9 +2097,9 @@ function mktToggle(id){
   MKT.openSections[id]=!open;
 }
 
-function mktRefresh(){ mktFetch(); }
+function mktRefresh(){ MKT._init=false; mktFetch(); }
 
-async function mktFetch(){
+function mktFetch(){
   var tickers=[];
   MKT.panels.forEach(function(p){
     if(!p.nav) p.tickers.forEach(function(t){ if(tickers.indexOf(t.sym)<0) tickers.push(t.sym); });
@@ -2101,35 +2108,43 @@ async function mktFetch(){
   for(var i=0;i<tickers.length;i+=40) batches.push(tickers.slice(i,i+40));
   var tsEl=document.getElementById('mkt-ts');
   if(tsEl) tsEl.textContent='Actualizando...';
-  try{
-    for(var b=0;b<batches.length;b++){
-      var resp=await fetch('/api/prices?t='+batches[b].join(','));
-      if(!resp.ok) continue;
-      var data=await resp.json();
-      var quotes=(data.quoteResponse&&data.quoteResponse.result)||[];
-      quotes.forEach(function(q){
-        MKT.prices[q.symbol]={
-          price:q.regularMarketPrice,
-          change:q.regularMarketChange,
-          changePct:q.regularMarketChangePercent,
-          longName:q.longName||q.shortName,
-          volume:q.regularMarketVolume,
-          high52:q.fiftyTwoWeekHigh,
-          low52:q.fiftyTwoWeekLow,
-          marketCap:q.marketCap,
-          pe:q.trailingPE
-        };
-      });
+
+  var batchIdx=0;
+  function nextBatch(){
+    if(batchIdx>=batches.length){
+      MKT.ts=new Date();
+      mktRender();
+      mktRenderTopBar();
+      mktUpdateTs();
+      try{ localStorage.setItem('mkt_prices',JSON.stringify({ts:MKT.ts.toISOString(),prices:MKT.prices})); }catch(e){}
+      return;
     }
-    MKT.ts=new Date();
-    mktRender();
-    mktRenderTopBar();
-    mktUpdateTs();
-    localStorage.setItem('mkt_prices',JSON.stringify({ts:MKT.ts.toISOString(),prices:MKT.prices}));
-  }catch(e){
-    if(tsEl) tsEl.textContent='Error al actualizar precios';
-    console.error('mktFetch error:',e);
+    var batch=batches[batchIdx++];
+    fetch('/api/prices?t='+batch.join(','))
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        var quotes=(data.quoteResponse&&data.quoteResponse.result)||[];
+        quotes.forEach(function(q){
+          MKT.prices[q.symbol]={
+            price:q.regularMarketPrice,
+            change:q.regularMarketChange,
+            changePct:q.regularMarketChangePercent,
+            longName:q.longName||q.shortName,
+            volume:q.regularMarketVolume,
+            high52:q.fiftyTwoWeekHigh,
+            low52:q.fiftyTwoWeekLow,
+            marketCap:q.marketCap,
+            pe:q.trailingPE
+          };
+        });
+        nextBatch();
+      })
+      .catch(function(e){
+        console.warn('mktFetch batch error:',e);
+        nextBatch();
+      });
   }
+  nextBatch();
 }
 
 function mktOpenModal(sym,name){
@@ -2175,10 +2190,9 @@ function mktOpenModal(sym,name){
   h+='<div class="mkt-notes-lbl" style="margin-top:14px;">Notas internas</div>';
   h+='<textarea class="mkt-notes-area" id="mkt-note-ta" placeholder="Agregar nota sobre este activo...">'+note+'</textarea>';
   h+='<div style="text-align:right;margin-top:8px;">';
-  h+='<button class="mkt-notes-save" onclick="mktSaveNote(document.getElementById(\'mkt-note-ta\').value,\''+sym+'\')">Guardar &#10003;</button>';
+  h+='<button class="mkt-notes-save" id="mkt-save-btn" onclick="mktSaveNote()">Guardar &#10003;</button>';
   h+='</div>';
   modal.innerHTML=h;
-  // Store current sym for chart
   modal._sym=sym;
   document.getElementById('mkt-modal-bg').classList.add('open');
   mktLoadChart(document.querySelector('.mkt-tf-btn.active'));
@@ -2193,9 +2207,14 @@ function mktCloseModal(){
   if(bg) bg.classList.remove('open');
 }
 
-function mktSaveNote(val,sym){
-  localStorage.setItem('mkt_note_'+sym,val);
-  var btn=document.querySelector('.mkt-notes-save');
+function mktSaveNote(){
+  var modal=document.getElementById('mkt-modal');
+  var sym=modal&&modal._sym;
+  if(!sym) return;
+  var ta=document.getElementById('mkt-note-ta');
+  if(!ta) return;
+  localStorage.setItem('mkt_note_'+sym, ta.value);
+  var btn=document.getElementById('mkt-save-btn');
   if(btn){btn.textContent='Guardado!'; setTimeout(function(){btn.innerHTML='Guardar &#10003;';},1500);}
 }
 
