@@ -2030,9 +2030,10 @@ function mktGetHgSignals(){
     var d=window._hedgeyeData||(typeof HG_STATIC_DATA!=='undefined'&&HG_STATIC_DATA?HG_STATIC_DATA:null);
     if(!d){var s=localStorage.getItem('hg_data');if(s) d=JSON.parse(s);}
     if(!d) return {bull:{},bear:{}};
+    var macro=d.macro_show||{};
     var bull={},bear={};
-    (d.bullish||[]).forEach(function(x){ bull[x.ticker.toUpperCase()]=true; });
-    (d.bearish||[]).forEach(function(x){ bear[x.ticker.toUpperCase()]=true; });
+    (macro.bullish||[]).forEach(function(t){ bull[t.toUpperCase()]=true; });
+    (macro.bearish||[]).forEach(function(t){ bear[t.toUpperCase()]=true; });
     return {bull:bull,bear:bear};
   }catch(e){ return {bull:{},bear:{}}; }
 }
