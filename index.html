@@ -1968,7 +1968,7 @@ function mktRowHTML(t,p,isNav){
   var arr=chg==null?'':(chg>=0?'&#9650; ':'&#9660; ');
   var pctTxt=isNav?'<span class="mkt-flat">NAV</span>':(chg==null?'--':'<span class="'+cls+'">'+arr+(chg>=0?'+':'')+chg.toFixed(2)+'%</span>');
   var symDisp=t.sym.length>12?t.sym.substring(0,12)+'...':t.sym;
-  var sn=t.name.replace(/'/g,"\\'");var ss=t.sym.replace(/'/g,"\\'");
+  var sn=t.name.replace(/'/g,'&#39;');var ss=t.sym.replace(/'/g,'&#39;');
   return '<tr onclick="mktOpenModal(''+ss+'',''+sn+'')">'
     +'<td class="mt-sym">'+symDisp+'</td>'
     +'<td class="mt-name">'+(p&&p.longName&&!isNav?p.longName:t.name)+'</td>'
@@ -2088,7 +2088,7 @@ function mktOpenModal(sym,name){
   var note=localStorage.getItem('mkt_note_'+sym)||'';
   h+='<div class="mkt-notes-lbl">Notas internas</div>';
   h+='<textarea class="mkt-notes-area" id="mkt-note-ta" placeholder="Agregar nota sobre este activo...">'+note+'</textarea>';
-  h+='<button class="mkt-notes-save" onclick="mktSaveNote(''+sym.replace(/\/g,'\\').replace(/'/g,"\'")+'')"> Guardar &#10003;</button>';
+  h+='<button class="mkt-notes-save" onclick="mktSaveNote(\''+sym+'\')">&nbsp;Guardar &#10003;</button>';
   document.getElementById('mkt-modal').innerHTML=h;
   document.getElementById('mkt-modal-bg').classList.add('open');
   mktLoadChart(sym,'1M',null);
