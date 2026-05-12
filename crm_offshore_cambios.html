@@ -564,6 +564,7 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
   </div>
 
 <div id="page-mercado" class="page" style="overflow-y:auto;min-height:100vh;">
+<div id="mkt-dbg" style="background:#C9A84C;color:#0D2924;padding:6px 18px;font-size:11px;font-weight:700;letter-spacing:1px;">MERCADO v2 — JS activo</div>
   <div class="doc-header">
     <div>
       <div class="logo-wordmark">ExpressLine</div>
@@ -1947,6 +1948,7 @@ function mktIdxOf(sym){
 function initMercado(){
   if(MKT._init) return;
   MKT._init=true;
+  var dbg=document.getElementById('mkt-dbg'); if(dbg) dbg.textContent='MERCADO v2 — JS OK';
   try{
     var c=JSON.parse(localStorage.getItem('mkt_prices')||'null');
     if(c&&c.prices){MKT.prices=c.prices;MKT.ts=new Date(c.ts);}
