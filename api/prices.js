@@ -18,14 +18,28 @@ export default async function handler(req, res) {
   const quotes = [];
   results.forEach((r, i) => {
     if (r.status !== 'fulfilled') return;
-    const meta = r.value?.chart?.result?.[0]?.meta;
+    const result = r.value?.chart?.result?.[0];
+    const meta = result?.meta;
     if (!meta || meta.regularMarketPrice == null) return;
-    const prev = meta.chartPreviousClose ?? meta.previousClose ?? meta.regularMarketPrice;
+
+    // Previous close: use meta.previousClose if present, otherwise
+    // extract from the closes array (second-to-last non-null value)
+    let prevClose = meta.previousClose ?? null;
+    if (prevClose == null) {
+      const closes = (result?.indicators?.quote?.[0]?.close || []).filter(c => c != null);
+      if (closes.length >= 2) prevClose = closes[closes.length - 2];
+    }
+    if (prevClose == null) prevClose = meta.regularMarketPrice;
+
+    const price = meta.regularMarketPrice;
+    const change = price - prevClose;
+    const changePct = prevClose !== 0 ? (change / prevClose) * 100 : 0;
+
     quotes.push({
       symbol: symbols[i],
-      regularMarketPrice: meta.regularMarketPrice,
-      regularMarketChange: meta.regularMarketChange ?? (meta.regularMarketPrice - prev),
-      regularMarketChangePercent: meta.regularMarketChangePercent ?? ((meta.regularMarketPrice - prev) / prev * 100),
+      regularMarketPrice: price,
+      regularMarketChange: change,
+      regularMarketChangePercent: changePct,
       shortName: meta.shortName || symbols[i],
       longName: meta.longName || meta.shortName || symbols[i],
       regularMarketVolume: meta.regularMarketVolume ?? null,
