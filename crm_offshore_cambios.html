@@ -2753,7 +2753,7 @@ function reuBuildPDFHTML(meeting,client,holdings,hgSig,notes){
     ['AUM Declarado',fmtAUM(client.aum),CREAM],
     ['Valor de Cartera',fmtMV(totMV),GOLD],
     ['Capital Invertido',hasCost?'$'+fmt(totCost):'—',CREAM],
-    ['Ganancia No Realizada',fmtGP(totGain),gainColor],
+    ['Resultado',fmtGP(totGain),gainColor],
     ['Retorno Total',fmtPct(totGainPct),gainColor],
     ['N° de Posiciones',String(holdings.length),CREAM]
   ];
