@@ -2724,7 +2724,7 @@ function reuBuildPDFHTML(meeting,client,holdings,hgSig,notes){
   var CREAM='#ECEDE3', MUTED='#6B8578', GREEN='#2ecc71', RED='#e74c3c';
   var ROW_SEP='border-bottom:1px solid #182e28;';
   function card(title,content){
-    return '<div style="background:'+CARD+';border:1px solid '+BORDER+';border-radius:10px;padding:22px 24px;margin-bottom:18px;">'+
+    return '<div style="background:'+CARD+';border-radius:8px;padding:22px 24px;margin-bottom:18px;">'+
       '<div style="font-size:9px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:'+GOLD+';margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid '+BORDER+';">'+title+'</div>'+
       content+'</div>';
   }
@@ -2850,17 +2850,18 @@ function reuBuildPDFHTML(meeting,client,holdings,hgSig,notes){
   var html='<div style="background:'+BG+';padding:44px 48px 40px;font-family:Inter,sans-serif;color:'+CREAM+';width:794px;box-sizing:border-box;line-height:1.4;">';
 
   // HEADER
-  html+='<table width="100%" cellpadding="0" cellspacing="0" style="border-bottom:1px solid '+BORDER+';padding-bottom:22px;margin-bottom:30px;"><tr>'+
-    '<td style="vertical-align:bottom;">'+
+  html+='<table width="100%" cellpadding="0" cellspacing="0" style="padding-bottom:22px;margin-bottom:30px;"><tr>'+
+    '<td style="vertical-align:bottom;background:'+BG+';">'+
       '<div style="font-family:\'Playfair Display\',serif;font-size:27px;color:'+GOLD+';letter-spacing:3px;font-weight:600;line-height:1;">EXPRESSLINE</div>'+
       '<div style="font-size:9px;letter-spacing:3px;color:'+MUTED+';margin-top:4px;text-transform:uppercase;">Dashboard Offshore</div>'+
       '<div style="width:40px;height:2px;background:'+GOLD+';margin-top:9px;"></div>'+
     '</td>'+
-    '<td style="text-align:right;vertical-align:bottom;">'+
+    '<td style="text-align:right;vertical-align:bottom;background:'+BG+';">'+
       '<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:'+MUTED+';">Informe de Reunión</div>'+
       '<div style="font-size:13px;color:'+MINT+';margin-top:5px;font-weight:500;">'+reuEsc(mds)+(meeting.time?' &middot; '+reuEsc(meeting.time):'')+'</div>'+
     '</td>'+
-  '</tr></table>';
+  '</tr></table>'+
+  '<div style="height:1px;background:'+BORDER+';margin-bottom:30px;margin-top:-30px;"></div>';
 
   // CLIENT NAME
   html+='<div style="margin-bottom:24px;">'+
@@ -2873,9 +2874,9 @@ function reuBuildPDFHTML(meeting,client,holdings,hgSig,notes){
 
   // 2-COL: PERFIL + PERFORMANCE
   html+='<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:18px;"><tr>'+
-    '<td width="48%" style="vertical-align:top;padding-right:9px;">'+card('Perfil del Cliente','<table width="100%" cellpadding="0" cellspacing="0">'+profRows+'</table>')+'</td>'+
-    '<td width="4%"></td>'+
-    '<td width="48%" style="vertical-align:top;padding-left:9px;">'+card('Performance','<table width="100%" cellpadding="0" cellspacing="0">'+perfRows+'</table>')+'</td>'+
+    '<td width="48%" style="vertical-align:top;padding-right:9px;background:'+BG+';">'+card('Perfil del Cliente','<table width="100%" cellpadding="0" cellspacing="0">'+profRows+'</table>')+'</td>'+
+    '<td width="4%" style="background:'+BG+';"></td>'+
+    '<td width="48%" style="vertical-align:top;padding-left:9px;background:'+BG+';">'+card('Performance','<table width="100%" cellpadding="0" cellspacing="0">'+perfRows+'</table>')+'</td>'+
   '</tr></table>';
 
   // CARTERA
@@ -2893,9 +2894,10 @@ function reuBuildPDFHTML(meeting,client,holdings,hgSig,notes){
   }
 
   // FOOTER
-  html+='<table width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid '+BORDER+';padding-top:14px;margin-top:6px;"><tr>'+
-    '<td style="font-size:9px;color:#3a5a52;letter-spacing:1.5px;text-transform:uppercase;">Express Line &middot; Uso interno &middot; Confidencial</td>'+
-    '<td style="text-align:right;font-size:9px;color:#3a5a52;">Generado el '+reuEsc(todayStr)+'</td>'+
+  html+='<div style="height:1px;background:'+BORDER+';margin-bottom:14px;margin-top:6px;"></div>'+
+  '<table width="100%" cellpadding="0" cellspacing="0"><tr>'+
+    '<td style="font-size:9px;color:#3a5a52;letter-spacing:1.5px;text-transform:uppercase;background:'+BG+';">Express Line &middot; Uso interno &middot; Confidencial</td>'+
+    '<td style="text-align:right;font-size:9px;color:#3a5a52;background:'+BG+';">Generado el '+reuEsc(todayStr)+'</td>'+
   '</tr></table>';
 
   html+='</div>';
