@@ -232,19 +232,14 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'â
   .page-iframe{left:48px!important;}
 }
 /* === MERCADO MODULE === */
-.mkt-top-bar{background:var(--ev);border-bottom:1px solid rgba(168,218,187,.12);padding:12px 28px;display:flex;gap:32px;overflow-x:auto;flex-wrap:wrap;flex-shrink:0;}
-.mkt-index-chip{display:flex;flex-direction:column;gap:2px;min-width:80px;}
-.mkt-index-chip .mkt-lbl{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--vg);}
-.mkt-index-chip .mkt-val{font-size:13px;font-weight:600;color:var(--cream);font-family:'Inter',monospace;}
-.mkt-index-chip .mkt-chg{font-size:10px;font-weight:600;}
-.mkt-up{color:#7ecba0;}.mkt-dn{color:#e74c3c;}.mkt-flat{color:var(--vg);}
+.mkt-up{color:var(--mint);}.mkt-dn{color:#e74c3c;}.mkt-flat{color:var(--vg);}
 .mkt-body{padding:0 28px 48px;}
 .mkt-refresh-bar{display:flex;align-items:center;justify-content:space-between;padding:12px 0 8px;}
 .mkt-ts{font-size:11px;color:var(--vg);letter-spacing:1px;}
-.btn-mkt-refresh{background:none;border:1px solid rgba(168,218,187,.2);color:var(--mint);font-size:10px;font-weight:600;padding:5px 14px;border-radius:4px;cursor:pointer;letter-spacing:1px;transition:all .15s;}
+.btn-mkt-refresh{background:none;border:1px solid rgba(168,218,187,.2);color:var(--mint);font-size:10px;font-weight:600;padding:5px 14px;border-radius:6px;cursor:pointer;letter-spacing:1px;transition:all .15s;}
 .btn-mkt-refresh:hover{border-color:rgba(168,218,187,.5);background:rgba(168,218,187,.06);}
 .mkt-search-form{display:flex;align-items:center;}
-.mkt-search-inp{background:rgba(0,0,0,.25);border:1px solid rgba(168,218,187,.2);border-right:none;border-radius:6px 0 0 6px;color:var(--cream);font-size:11px;font-family:'Inter',monospace;padding:6px 10px;width:130px;outline:none;text-transform:uppercase;letter-spacing:1px;transition:border-color .15s;}
+.mkt-search-inp{background:rgba(0,0,0,.25);border:1px solid rgba(168,218,187,.2);border-right:none;border-radius:6px 0 0 6px;color:var(--cream);font-size:11px;font-family:'Inter',sans-serif;padding:6px 10px;width:130px;outline:none;text-transform:uppercase;letter-spacing:1px;transition:border-color .15s;}
 .mkt-search-inp::placeholder{text-transform:none;letter-spacing:0;color:var(--vg);}
 .mkt-search-inp:focus{border-color:rgba(201,168,76,.4);}
 .mkt-search-inp.err{border-color:rgba(231,76,60,.5);}
@@ -579,16 +574,13 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'â
       <div class="gold-line"></div>
       <div class="header-sub">Offshore &middot; Precios en tiempo real</div>
     </div>
-    <div style="display:flex;align-items:center;gap:14px;">
-      <span class="badge">Mercado &middot; Offshore</span>
-    </div>
   </div>
   <div class="mkt-body">
     <div class="mkt-refresh-bar">
       <span class="mkt-ts" id="mkt-ts">&#8212;</span>
       <div style="display:flex;align-items:center;gap:8px;">
         <form class="mkt-search-form" onsubmit="mktSearch();return false;">
-          <input class="mkt-search-inp" id="mkt-search-inp" type="text" placeholder="Buscar ticker..." autocomplete="off" spellcheck="false">
+          <input class="mkt-search-inp" id="mkt-search-inp" type="text" placeholder="Buscar ticker..." autocomplete="off" spellcheck="false" autocapitalize="characters" oninput="this.value=this.value.toUpperCase()">
           <button class="mkt-search-btn" type="submit" title="Buscar">&#128269;</button>
         </form>
         <button class="btn-mkt-refresh" onclick="mktRefresh()">&#8635;&nbsp;&nbsp;Actualizar</button>
@@ -1874,10 +1866,9 @@ var MKT = {
       {sym:'AAPL',name:'Apple'},{sym:'MSFT',name:'Microsoft'},{sym:'NVDA',name:'NVIDIA'},
       {sym:'GOOGL',name:'Alphabet'},{sym:'AMZN',name:'Amazon'},{sym:'META',name:'Meta'},{sym:'TSLA',name:'Tesla'}]},
     {id:'acciones-us',label:'ACCIONES US', tickers:[
-      {sym:'V',name:'Visa'},{sym:'MA',name:'Mastercard'},{sym:'UNH',name:'UnitedHealth'},
-      {sym:'JNJ',name:'Johnson & Johnson'},{sym:'PG',name:'Procter & Gamble'},{sym:'KO',name:'Coca-Cola'},
-      {sym:'DIS',name:'Walt Disney'},{sym:'NFLX',name:'Netflix'},{sym:'AMD',name:'AMD'},
-      {sym:'INTC',name:'Intel'},{sym:'CRM',name:'Salesforce'},{sym:'PYPL',name:'PayPal'}]},
+      {sym:'V',name:'Visa'},{sym:'MA',name:'Mastercard'},{sym:'PG',name:'Procter & Gamble'},
+      {sym:'KO',name:'Coca-Cola'},{sym:'DIS',name:'Walt Disney'},{sym:'NFLX',name:'Netflix'},
+      {sym:'AMD',name:'AMD'},{sym:'INTC',name:'Intel'},{sym:'CRM',name:'Salesforce'},{sym:'PYPL',name:'PayPal'}]},
     {id:'financieras',label:'FINANCIERAS', tickers:[
       {sym:'JPM',name:'JPMorgan Chase'},{sym:'GS',name:'Goldman Sachs'},{sym:'BAC',name:'Bank of America'},
       {sym:'MS',name:'Morgan Stanley'},{sym:'BLK',name:'BlackRock'},{sym:'C',name:'Citigroup'},{sym:'WFC',name:'Wells Fargo'}]},
@@ -1927,7 +1918,7 @@ var MKT = {
     {id:'real-estate',label:'REAL ESTATE', tickers:[
       {sym:'VNQ',name:'Vanguard Real Estate ETF'},{sym:'O',name:'Realty Income'},
       {sym:'AMT',name:'American Tower'},{sym:'EQIX',name:'Equinix'}]},
-    {id:'small-caps',label:'SMALL CAPS - Alto Potencial', tickers:[
+    {id:'small-caps',label:'SMALL CAPS Â· ALTO POTENCIAL', tickers:[
       {sym:'PLTR',name:'Palantir Technologies'},{sym:'RKLB',name:'Rocket Lab'},
       {sym:'IONQ',name:'IonQ'},{sym:'ACHR',name:'Archer Aviation'},{sym:'JOBY',name:'Joby Aviation'},
       {sym:'SOUN',name:'SoundHound AI'},{sym:'QBTS',name:'D-Wave Quantum'}]}
@@ -1937,6 +1928,7 @@ var MKT = {
   prices:{},
   ts:null,
   _init:false,
+  _tsInterval:null,
   openSections:{},  // populated below â€” all open by default
   _idx:[]
 };
@@ -1972,6 +1964,7 @@ function initMercado(){
     return;
   }
   if(Object.keys(MKT.prices).length) mktPushToPfol();
+  if(!MKT._tsInterval) MKT._tsInterval=setInterval(function(){ if(MKT.ts) mktUpdateTs(); },60000);
   mktFetch();
 }
 
@@ -2041,7 +2034,7 @@ function mktRender(){
     h+='<span class="mkt-arr'+(open?' open':'')+'" id="mkt-arr-'+panel.id+'">&#9658;</span>';
     h+='<span class="mkt-section-name">'+panel.label+'</span>';
     if(panel.nav) h+=' <span class="mkt-nav-badge">NAV</span>';
-    h+='<span class="mkt-section-cnt">['+panel.tickers.length+']</span>';
+    h+='<span class="mkt-section-cnt">'+panel.tickers.length+'</span>';
     h+='</div>';
     h+='<div id="mkt-body-'+panel.id+'" style="display:'+(open?'block':'none')+'">';
     h+='<table class="mkt-tbl">';
@@ -2049,9 +2042,13 @@ function mktRender(){
       var idx=mktIdxOf(t.sym);
       var p=MKT.prices[t.sym]||null;
       var price=panel.nav ? mktNavPrice(t.sym) : (p&&p.price!=null?mktFmtPrice(p.price):'--');
-      var pctCell=panel.nav ? '<span class="mkt-flat">NAV</span>' : mktPctHTML(p?p.changePct:null);
+      var pctCell=panel.nav ? '<span class="mkt-flat">â€”</span>' : mktPctHTML(p?p.changePct:null);
       var displayName=p&&p.longName&&!panel.nav ? p.longName : t.name;
-      h+='<tr data-idx="'+idx+'" onclick="mktClickRow(this)">';
+      if(panel.nav){
+        h+='<tr style="cursor:default;">';
+      } else {
+        h+='<tr data-idx="'+idx+'" onclick="mktClickRow(this)">';
+      }
       h+='<td class="mt-sym">'+(t.sym.length>12?t.sym.substring(0,11)+'..':t.sym)+'</td>';
       h+='<td class="mt-name">'+displayName+'</td>';
       h+='<td class="mt-price">'+price+'</td>';
