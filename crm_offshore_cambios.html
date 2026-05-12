@@ -2715,97 +2715,142 @@ function reuBuildPDFHTML(meeting,client,holdings,hgSig,notes){
   // ── helpers ──
   function fmt(v,dec){return v!=null?parseFloat(v).toLocaleString('en-US',{minimumFractionDigits:dec||2,maximumFractionDigits:dec||2}):'—';}
   function fmtMV(v){return v>0?'$'+fmt(v):'—';}
-  function fmtGP(v){if(v==null)return '—';return (v>=0?'+':'')+'$'+Math.abs(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
-  function fmtPct(v){if(v==null)return '—';return (v>=0?'+':'')+parseFloat(v).toFixed(2)+'%';}
-  // shared style constants — solid colors (no rgba nesting, renders perfectly in html2canvas)
+  function fmtGP(v){if(v==null||isNaN(v))return '—';var n=parseFloat(v);return (n>=0?'+':'')+'$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+  function fmtPct(v){if(v==null||isNaN(v))return '—';var n=parseFloat(v);return (n>=0?'+':'')+n.toFixed(2)+'%';}
+  // AUM: display raw string (e.g. "200K", "1.9M") with $ prefix — avoid Number() on formatted strings
+  function fmtAUM(s){if(!s||s==='—')return '—';if(typeof s==='number')return '$'+s.toLocaleString('en-US');return '$'+String(s);}
+  // Colors — solid only, no rgba nesting
   var BG='#0a1f1b', CARD='#0e2822', BORDER='#1d3a35', GOLD='#C9A84C', MINT='#A8DABB';
   var CREAM='#ECEDE3', MUTED='#6B8578', GREEN='#2ecc71', RED='#e74c3c';
-  var GOLD_LINE='border-bottom:1px solid #2d2210;';
+  var ROW_SEP='border-bottom:1px solid #182e28;';
   function card(title,content){
-    return '<div style="background:'+CARD+';border:1px solid '+BORDER+';border-radius:10px;padding:20px 22px;margin-bottom:20px;">'+
-      '<div style="font-size:9px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:'+GOLD+';margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #1a3530;">'+title+'</div>'+
+    return '<div style="background:'+CARD+';border:1px solid '+BORDER+';border-radius:10px;padding:22px 24px;margin-bottom:18px;">'+
+      '<div style="font-size:9px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:'+GOLD+';margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid '+BORDER+';">'+title+'</div>'+
       content+'</div>';
   }
 
   // ── Perfil rows ──
   var pfields=[['Comitente',client.comitente],['Broker',client.broker],['Custodio',client.custodio],['Sociedad',client.sociedad],['Tipo de fee',client.tipoFee],['Fee %',client.pctFee],['Perfil de riesgo',client.riesgo],['Plazo',client.plazo],['Seguimiento',client.seguimiento],['Último contacto',client.ultimoContacto],['Comercial',client.comercial]];
   var profRows=pfields.filter(function(r){return r[1];}).map(function(r){
-    return '<tr><td style="padding:5px 0 5px;font-size:10px;color:'+MUTED+';width:140px;vertical-align:top;line-height:1.4;">'+reuEsc(r[0])+'</td>'+
-           '<td style="padding:5px 0 5px 10px;font-size:11px;color:'+CREAM+';font-weight:500;line-height:1.4;">'+reuEsc(String(r[1]))+'</td></tr>';
+    return '<tr>'+
+      '<td style="padding:5px 0;font-size:10px;color:'+MUTED+';width:135px;vertical-align:top;line-height:1.5;">'+reuEsc(r[0])+'</td>'+
+      '<td style="padding:5px 0 5px 12px;font-size:11px;color:'+CREAM+';font-weight:500;line-height:1.5;">'+reuEsc(String(r[1]))+'</td>'+
+    '</tr>';
   }).join('');
 
   // ── Holdings calculations ──
   var totMV=0,totCost=0,hasCost=false;
-  holdings.forEach(function(h){totMV+=parseFloat(h.marketValue)||0;if(h.totalCost!=null){totCost+=parseFloat(h.totalCost)||0;hasCost=true;}});
+  holdings.forEach(function(h){
+    totMV+=parseFloat(h.marketValue)||0;
+    if(h.totalCost!=null){totCost+=parseFloat(h.totalCost)||0;hasCost=true;}
+  });
   var totGain=hasCost?totMV-totCost:null;
   var totGainPct=(hasCost&&totCost>0)?totGain/totCost*100:null;
   var gainColor=totGain!=null?(totGain>=0?GREEN:RED):CREAM;
 
   // ── Performance KPIs ──
-  var aumStr=client.aum?'$'+Number(client.aum).toLocaleString('en-US'):'—';
   var perfKPIs=[
-    ['AUM Declarado',aumStr,CREAM],
+    ['AUM Declarado',fmtAUM(client.aum),CREAM],
     ['Valor de Cartera',fmtMV(totMV),GOLD],
-    ['Capital Invertido',hasCost?'$'+fmt(totCost):' —',CREAM],
+    ['Capital Invertido',hasCost?'$'+fmt(totCost):'—',CREAM],
     ['Ganancia No Realizada',fmtGP(totGain),gainColor],
     ['Retorno Total',fmtPct(totGainPct),gainColor],
     ['N° de Posiciones',String(holdings.length),CREAM]
   ];
   var perfRows=perfKPIs.map(function(r){
-    return '<tr><td style="padding:7px 0;font-size:10px;color:'+MUTED+';line-height:1.4;">'+r[0]+'</td>'+
-           '<td style="padding:7px 0;font-size:15px;font-weight:700;color:'+r[2]+';text-align:right;font-family:\'Playfair Display\',serif;line-height:1.2;">'+reuEsc(r[1])+'</td></tr>';
+    return '<tr>'+
+      '<td style="padding:7px 0;font-size:10px;color:'+MUTED+';line-height:1.4;">'+r[0]+'</td>'+
+      '<td style="padding:7px 0;font-size:15px;font-weight:700;color:'+r[2]+';text-align:right;font-family:\'Playfair Display\',serif;line-height:1.2;">'+reuEsc(r[1])+'</td>'+
+    '</tr>';
   }).join('');
 
+  // ── Check if any Hedgeye signals match holdings ──
+  var hasSignals=false;
+  holdings.forEach(function(h){
+    var sym=(h.symbol||h.cusip||h.isin||'').toUpperCase().replace(/^\^/,'');
+    if(hgSig.bull[sym]||hgSig.bear[sym])hasSignals=true;
+  });
+
   // ── Holdings table rows ──
+  var colSpan=hasSignals?8:7;
   var holdRows='';
   if(holdings.length){
-    holdings.forEach(function(h,i){
+    holdings.forEach(function(h){
       var sym=(h.symbol||h.cusip||h.isin||'—').toUpperCase().replace(/^\^/,'');
-      var gColor=(h.unrealizedGain!=null)?(parseFloat(h.unrealizedGain)>=0?GREEN:RED):CREAM;
-      var rowBg=i%2===0?'#0c2620':'#0e2822';
+      var desc=reuEsc(h.description||h.name||h.isin||sym);
+      // Use unrealizedGain for sign but validate pct independently
+      var gain=h.unrealizedGain!=null?parseFloat(h.unrealizedGain):null;
+      var gainPct=h.unrealizedGainPct!=null?parseFloat(h.unrealizedGainPct):null;
+      // Ensure color sign is consistent: use gain if available, else gainPct
+      var signVal=gain!=null?gain:(gainPct!=null?gainPct:null);
+      var gColor=signVal!=null?(signVal>=0?GREEN:RED):MUTED;
       var hgB='';
-      if(hgSig.bull[sym]) hgB='<span style="font-size:8px;padding:2px 6px;border-radius:3px;background:#0d3320;color:'+GREEN+';border:1px solid #1a5530;font-weight:700;">&#9650; BULL</span>';
-      else if(hgSig.bear[sym]) hgB='<span style="font-size:8px;padding:2px 6px;border-radius:3px;background:#2d0d0d;color:'+RED+';border:1px solid #5a1a1a;font-weight:700;">&#9660; BEAR</span>';
-      holdRows+='<tr style="background:'+rowBg+';">'+
-        '<td style="padding:8px 8px;font-size:11px;font-weight:700;color:'+MINT+';border-bottom:1px solid #1a3530;">'+reuEsc(sym)+'</td>'+
-        '<td style="padding:8px 8px;font-size:11px;color:'+CREAM+';border-bottom:1px solid #1a3530;">'+reuEsc(h.name||h.isin||sym)+'</td>'+
-        '<td style="padding:8px 8px;font-size:11px;color:'+CREAM+';text-align:right;border-bottom:1px solid #1a3530;">'+(h.quantity!=null?fmt(h.quantity,4):'—')+'</td>'+
-        '<td style="padding:8px 8px;font-size:11px;color:'+CREAM+';text-align:right;border-bottom:1px solid #1a3530;">'+(h.lastPrice!=null?'$'+fmt(h.lastPrice):'—')+'</td>'+
-        '<td style="padding:8px 8px;font-size:12px;font-weight:600;color:'+CREAM+';text-align:right;border-bottom:1px solid #1a3530;">'+(h.marketValue!=null?fmtMV(parseFloat(h.marketValue)):'—')+'</td>'+
-        '<td style="padding:8px 8px;font-size:11px;font-weight:600;color:'+gColor+';text-align:right;border-bottom:1px solid #1a3530;">'+fmtGP(h.unrealizedGain!=null?parseFloat(h.unrealizedGain):null)+'</td>'+
-        '<td style="padding:8px 8px;font-size:11px;font-weight:600;color:'+gColor+';text-align:right;border-bottom:1px solid #1a3530;">'+fmtPct(h.unrealizedGainPct!=null?parseFloat(h.unrealizedGainPct):null)+'</td>'+
-        '<td style="padding:8px 8px;text-align:center;border-bottom:1px solid #1a3530;">'+hgB+'</td></tr>';
+      if(hasSignals){
+        if(hgSig.bull[sym]) hgB='<span style="font-size:8px;padding:2px 5px;border-radius:3px;background:#0d3320;color:'+GREEN+';border:1px solid #1a5530;font-weight:700;">&#9650; BULL</span>';
+        else if(hgSig.bear[sym]) hgB='<span style="font-size:8px;padding:2px 5px;border-radius:3px;background:#2d0d0d;color:'+RED+';border:1px solid #5a1a1a;font-weight:700;">&#9660; BEAR</span>';
+      }
+      holdRows+='<tr>'+
+        '<td style="padding:8px 8px;font-size:11px;font-weight:700;color:'+MINT+';'+ROW_SEP+'">'+reuEsc(sym)+'</td>'+
+        '<td style="padding:8px 8px;font-size:10px;color:'+CREAM+';'+ROW_SEP+'max-width:180px;overflow:hidden;">'+desc+'</td>'+
+        '<td style="padding:8px 8px;font-size:11px;color:'+CREAM+';text-align:right;'+ROW_SEP+'">'+(h.quantity!=null?fmt(h.quantity,4):'—')+'</td>'+
+        '<td style="padding:8px 8px;font-size:11px;color:'+CREAM+';text-align:right;'+ROW_SEP+'">'+(h.lastPrice!=null?'$'+fmt(h.lastPrice):'—')+'</td>'+
+        '<td style="padding:8px 8px;font-size:11px;font-weight:600;color:'+CREAM+';text-align:right;'+ROW_SEP+'">'+(h.marketValue!=null?fmtMV(parseFloat(h.marketValue)):'—')+'</td>'+
+        '<td style="padding:8px 8px;font-size:11px;font-weight:600;color:'+gColor+';text-align:right;'+ROW_SEP+'">'+fmtGP(gain)+'</td>'+
+        '<td style="padding:8px 8px;font-size:11px;font-weight:600;color:'+gColor+';text-align:right;'+ROW_SEP+'">'+fmtPct(gainPct)+'</td>'+
+        (hasSignals?'<td style="padding:8px 8px;text-align:center;'+ROW_SEP+'">'+hgB+'</td>':'')+
+      '</tr>';
     });
   } else {
-    holdRows='<tr><td colspan="8" style="padding:24px;text-align:center;color:'+MUTED+';font-size:12px;">Sin posiciones registradas</td></tr>';
+    holdRows='<tr><td colspan="'+colSpan+'" style="padding:24px;text-align:center;color:'+MUTED+';font-size:12px;">Sin posiciones registradas</td></tr>';
   }
+
+  // ── Table header ──
+  var thStyle='padding:9px 8px;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;color:'+MUTED+';border-bottom:2px solid '+BORDER+';';
+  var tableHeader=
+    '<th style="'+thStyle+'text-align:left;">Ticker</th>'+
+    '<th style="'+thStyle+'text-align:left;">Activo</th>'+
+    '<th style="'+thStyle+'text-align:right;">Cantidad</th>'+
+    '<th style="'+thStyle+'text-align:right;">Precio</th>'+
+    '<th style="'+thStyle+'text-align:right;">Val. Mdo.</th>'+
+    '<th style="'+thStyle+'text-align:right;">G/P</th>'+
+    '<th style="'+thStyle+'text-align:right;">G/P %</th>'+
+    (hasSignals?'<th style="'+thStyle+'text-align:center;">Señal</th>':'');
+
+  // ── Total row ──
+  var totalRow='<tr style="border-top:2px solid '+BORDER+';">'+
+    '<td colspan="4" style="padding:11px 8px;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:'+GOLD+';font-weight:700;">Total Cartera</td>'+
+    '<td style="padding:11px 8px;text-align:right;font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:'+GOLD+';">'+fmtMV(totMV)+'</td>'+
+    '<td style="padding:11px 8px;text-align:right;font-size:12px;font-weight:700;color:'+gainColor+';">'+fmtGP(totGain)+'</td>'+
+    '<td style="padding:11px 8px;text-align:right;font-size:12px;font-weight:700;color:'+gainColor+';">'+fmtPct(totGainPct)+'</td>'+
+    (hasSignals?'<td></td>':'')+
+  '</tr>';
 
   // ── Notes ──
   var notesContent='';
   if(notes&&notes.length){
-    var rn=notes.slice(-5).reverse();
-    notesContent=rn.map(function(n){
+    notesContent=notes.slice(-5).reverse().map(function(n){
       var nd=n.date?n.date.split('T')[0]:'';
-      return '<tr><td style="padding:6px 8px;font-size:10px;color:'+MUTED+';white-space:nowrap;vertical-align:top;width:90px;">'+reuEsc(nd)+'</td>'+
-             '<td style="padding:6px 8px;font-size:11px;color:'+CREAM+';line-height:1.6;">'+reuEsc(n.texto||n.text||n.notas||'')+'</td></tr>';
+      return '<tr>'+
+        '<td style="padding:6px 8px;font-size:10px;color:'+MUTED+';white-space:nowrap;vertical-align:top;width:90px;">'+reuEsc(nd)+'</td>'+
+        '<td style="padding:6px 8px;font-size:11px;color:'+CREAM+';line-height:1.6;">'+reuEsc(n.texto||n.text||n.notas||'')+'</td>'+
+      '</tr>';
     }).join('');
   }
 
   // ── Agenda ──
   var agendaBlock='';
   if(meeting.agenda){
-    agendaBlock='<div style="background:#141e12;border-left:3px solid '+GOLD+';border-radius:6px;padding:14px 18px;margin-bottom:20px;">'+
+    agendaBlock='<div style="border-left:3px solid '+GOLD+';padding:12px 16px;margin-bottom:18px;background:#0c231f;border-radius:4px;">'+
       '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:'+GOLD+';margin-bottom:6px;">Agenda</div>'+
-      '<div style="font-size:12px;color:'+CREAM+';line-height:1.7;">'+reuEsc(meeting.agenda)+'</div></div>';
+      '<div style="font-size:12px;color:'+CREAM+';line-height:1.7;">'+reuEsc(meeting.agenda)+'</div>'+
+    '</div>';
   }
 
-  // ══════════════════════════════════
-  // BUILD HTML — all tables, no flex/grid
-  // ══════════════════════════════════
+  // ══ BUILD ══
   var html='<div style="background:'+BG+';padding:44px 48px 40px;font-family:Inter,sans-serif;color:'+CREAM+';width:794px;box-sizing:border-box;line-height:1.4;">';
 
-  // HEADER — table with 2 cells
-  html+='<table width="100%" cellpadding="0" cellspacing="0" style="border-bottom:1px solid #2d2210;padding-bottom:22px;margin-bottom:32px;"><tr>'+
+  // HEADER
+  html+='<table width="100%" cellpadding="0" cellspacing="0" style="border-bottom:1px solid '+BORDER+';padding-bottom:22px;margin-bottom:30px;"><tr>'+
     '<td style="vertical-align:bottom;">'+
       '<div style="font-family:\'Playfair Display\',serif;font-size:27px;color:'+GOLD+';letter-spacing:3px;font-weight:600;line-height:1;">EXPRESSLINE</div>'+
       '<div style="font-size:9px;letter-spacing:3px;color:'+MUTED+';margin-top:4px;text-transform:uppercase;">Dashboard Offshore</div>'+
@@ -2818,59 +2863,37 @@ function reuBuildPDFHTML(meeting,client,holdings,hgSig,notes){
   '</tr></table>';
 
   // CLIENT NAME
-  html+='<div style="margin-bottom:28px;">'+
+  html+='<div style="margin-bottom:24px;">'+
     '<div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:'+MUTED+';margin-bottom:7px;">Cliente</div>'+
     '<div style="font-family:\'Playfair Display\',serif;font-size:30px;color:'+CREAM+';font-weight:600;line-height:1.15;">'+reuEsc(cname)+'</div>'+
     '<div style="width:50px;height:2px;background:'+GOLD+';margin-top:10px;"></div>'+
   '</div>';
 
-  // AGENDA
   html+=agendaBlock;
 
-  // 2-COL: PERFIL + PERFORMANCE — table with 2 cells, guttered
-  html+='<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;"><tr>'+
-    '<td width="49%" style="vertical-align:top;padding-right:10px;">'+
-      card('Perfil del Cliente','<table width="100%" cellpadding="0" cellspacing="0">'+profRows+'</table>')+
-    '</td>'+
-    '<td width="2%"></td>'+
-    '<td width="49%" style="vertical-align:top;padding-left:10px;">'+
-      card('Performance','<table width="100%" cellpadding="0" cellspacing="0">'+perfRows+'</table>')+
-    '</td>'+
+  // 2-COL: PERFIL + PERFORMANCE
+  html+='<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:18px;"><tr>'+
+    '<td width="48%" style="vertical-align:top;padding-right:9px;">'+card('Perfil del Cliente','<table width="100%" cellpadding="0" cellspacing="0">'+profRows+'</table>')+'</td>'+
+    '<td width="4%"></td>'+
+    '<td width="48%" style="vertical-align:top;padding-left:9px;">'+card('Performance','<table width="100%" cellpadding="0" cellspacing="0">'+perfRows+'</table>')+'</td>'+
   '</tr></table>';
 
   // CARTERA
   html+=card('Cartera',
-    '<table width="100%" cellpadding="0" cellspacing="0">'+
-      '<thead><tr style="background:#0c2620;">'+
-        '<th style="padding:8px 8px;text-align:left;color:'+MUTED+';font-size:9px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;border-bottom:1px solid #1d3a35;">Ticker</th>'+
-        '<th style="padding:8px 8px;text-align:left;color:'+MUTED+';font-size:9px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;border-bottom:1px solid #1d3a35;">Activo</th>'+
-        '<th style="padding:8px 8px;text-align:right;color:'+MUTED+';font-size:9px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;border-bottom:1px solid #1d3a35;">Cantidad</th>'+
-        '<th style="padding:8px 8px;text-align:right;color:'+MUTED+';font-size:9px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;border-bottom:1px solid #1d3a35;">Precio</th>'+
-        '<th style="padding:8px 8px;text-align:right;color:'+MUTED+';font-size:9px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;border-bottom:1px solid #1d3a35;">Val. Mdo.</th>'+
-        '<th style="padding:8px 8px;text-align:right;color:'+MUTED+';font-size:9px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;border-bottom:1px solid #1d3a35;">G/P</th>'+
-        '<th style="padding:8px 8px;text-align:right;color:'+MUTED+';font-size:9px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;border-bottom:1px solid #1d3a35;">G/P %</th>'+
-        '<th style="padding:8px 8px;text-align:center;color:'+MUTED+';font-size:9px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;border-bottom:1px solid #1d3a35;">Señal</th>'+
-      '</tr></thead>'+
+    '<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">'+
+      '<thead><tr>'+tableHeader+'</tr></thead>'+
       '<tbody>'+holdRows+'</tbody>'+
-      '<tfoot><tr style="background:#141e10;">'+
-        '<td colspan="4" style="padding:11px 8px;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:'+GOLD+';font-weight:700;">Total Cartera</td>'+
-        '<td style="padding:11px 8px;text-align:right;font-family:\'Playfair Display\',serif;font-size:15px;font-weight:700;color:'+GOLD+';">'+fmtMV(totMV)+'</td>'+
-        '<td style="padding:11px 8px;text-align:right;font-size:12px;font-weight:700;color:'+gainColor+';">'+fmtGP(totGain)+'</td>'+
-        '<td style="padding:11px 8px;text-align:right;font-size:12px;font-weight:700;color:'+gainColor+';">'+fmtPct(totGainPct)+'</td>'+
-        '<td></td>'+
-      '</tr></tfoot>'+
+      '<tfoot>'+totalRow+'</tfoot>'+
     '</table>'
   );
 
-  // NOTES (if any)
+  // NOTES
   if(notesContent){
-    html+=card('Historial de Actividad',
-      '<table width="100%" cellpadding="0" cellspacing="0">'+notesContent+'</table>'
-    );
+    html+=card('Historial de Actividad','<table width="100%" cellpadding="0" cellspacing="0">'+notesContent+'</table>');
   }
 
-  // FOOTER — table with 2 cells
-  html+='<table width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #1a3530;padding-top:14px;margin-top:8px;"><tr>'+
+  // FOOTER
+  html+='<table width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid '+BORDER+';padding-top:14px;margin-top:6px;"><tr>'+
     '<td style="font-size:9px;color:#3a5a52;letter-spacing:1.5px;text-transform:uppercase;">Express Line &middot; Uso interno &middot; Confidencial</td>'+
     '<td style="text-align:right;font-size:9px;color:#3a5a52;">Generado el '+reuEsc(todayStr)+'</td>'+
   '</tr></table>';
