@@ -2550,7 +2550,7 @@ function reuRenderClients(){
     var cnt=REU.meetings.filter(function(m){return String(m.clientId)===String(c.id);}).length;
     h+='<div class="reu-client-row"><div class="reu-client-info"><div class="reu-client-name">'+reuEsc(name)+'</div>';
     if(cnt>0) h+='<div class="reu-client-cnt">'+cnt+' reunión'+(cnt>1?'es':'')+'</div>';
-    h+='</div><button class="reu-btn-crear" onclick="reuOpenModal('+JSON.stringify(c.id)+','+JSON.stringify(name)+')">+ Crear</button></div>';
+    h+='</div><button class="reu-btn-crear" data-cid="'+reuEsc(String(c.id))+'" data-cname="'+reuEsc(name)+'" onclick="reuOpenModal(this.dataset.cid,this.dataset.cname)">+ Crear</button></div>';
   });
   el.innerHTML=h;
 }
@@ -2600,7 +2600,7 @@ function reuCard(m,isPast){
   var h='<div class="reu-meeting-card'+(isPast?' past':'')+'"><div class="reu-meeting-client">'+reuEsc(m.clientName)+'</div>';
   h+='<div class="reu-meeting-date">'+ds+(m.time?' &middot; '+m.time:'')+'</div>';
   if(m.agenda) h+='<div class="reu-meeting-agenda">'+reuEsc(m.agenda)+'</div>';
-  h+='<div class="reu-meeting-actions"><button class="reu-btn-pdf" onclick="reuGeneratePDF('+JSON.stringify(m.id)+')">&#128196;&nbsp;Generar informe</button><button class="reu-btn-del" title="Eliminar" onclick="reuDeleteMeeting('+JSON.stringify(m.id)+')">&#10005;</button></div></div>';
+  h+='<div class="reu-meeting-actions"><button class="reu-btn-pdf" data-mid="'+reuEsc(m.id)+'" onclick="reuGeneratePDF(this.dataset.mid)">&#128196;&nbsp;Informe PDF</button><button class="reu-btn-del" title="Eliminar" data-mid="'+reuEsc(m.id)+'" onclick="reuDeleteMeeting(this.dataset.mid)">&#10005;</button></div></div>';
   return h;
 }
 
@@ -2619,7 +2619,8 @@ function reuOpenModal(clientId,clientName){
       '<div class="reu-field"><label>Agenda / Notas</label><textarea id="reu-inp-agenda" placeholder="Temas a tratar, observaciones previas..."></textarea></div>'+
     '</div>'+
     '<div class="reu-modal-footer"><button class="reu-btn-cancel" onclick="reuCloseModal()">Cancelar</button>'+
-    '<button class="reu-btn-save" onclick="reuSaveMeeting('+JSON.stringify(clientId)+','+JSON.stringify(clientName)+')">Agendar reunión</button></div>';
+    '<button class="reu-btn-pdf" style="padding:9px 14px;font-size:10px;" data-cid="'+reuEsc(String(clientId))+'" data-cname="'+reuEsc(clientName)+'" onclick="reuSaveAndPDF(this.dataset.cid,this.dataset.cname)">&#128196;&nbsp;Agendar y descargar PDF</button>'+
+    '<button class="reu-btn-save" data-cid="'+reuEsc(String(clientId))+'" data-cname="'+reuEsc(clientName)+'" onclick="reuSaveMeeting(this.dataset.cid,this.dataset.cname)">Agendar</button></div>';
   bg.classList.add('open');
 }
 
@@ -2627,10 +2628,17 @@ function reuCloseModal(){var bg=document.getElementById('reu-modal-bg');if(bg)bg
 
 function reuSaveMeeting(clientId,clientName){
   var de=document.getElementById('reu-inp-date'),te=document.getElementById('reu-inp-time'),ae=document.getElementById('reu-inp-agenda');
-  if(!de||!de.value){alert('Seleccioná una fecha');return;}
+  if(!de||!de.value){alert('Seleccioná una fecha');return null;}
   var m={id:'r_'+Date.now(),clientId:clientId,clientName:clientName,date:de.value,time:te?te.value:'',agenda:ae?ae.value.trim():'',createdAt:new Date().toISOString()};
   REU.meetings.push(m); reuSave(); reuCloseModal(); reuRender();
   showToast('Reunión agendada con '+clientName);
+  return m.id;
+}
+
+function reuSaveAndPDF(clientId,clientName){
+  var id=reuSaveMeeting(clientId,clientName);
+  if(!id) return;
+  setTimeout(function(){reuGeneratePDF(id);},200);
 }
 
 function reuDeleteMeeting(id){
