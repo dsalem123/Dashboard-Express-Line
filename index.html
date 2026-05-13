@@ -1068,6 +1068,7 @@ function saveToStorage(){
     localStorage.setItem('crm_leads',JSON.stringify(leads));
     localStorage.setItem('crm_nextId',nextId);
     localStorage.setItem('crm_nextLead',nextLead);
+    _localModified=true;
   }catch(e){showToast('Error al guardar: '+e.message,true);}
 }
 
@@ -1165,7 +1166,7 @@ function congelarSnapshot(btn){
     body:JSON.stringify(state),
     signal:AbortSignal.timeout(15000)
   }).then(function(r){
-    if(r.ok){ localStorage.setItem('_sync_ts',state._sync_ts); updateSyncStatus(); restoreBtn('✓','Sincronizado!'); showToast('Sincronizado ✓'); }
+    if(r.ok){ _localModified=false; localStorage.setItem('_sync_ts',state._sync_ts); updateSyncStatus(); restoreBtn('✓','Sincronizado!'); showToast('Sincronizado ✓'); }
     else{ _syncLocalhost(state,hgData,btn,restoreBtn); }
   }).catch(function(){
     _syncLocalhost(state,hgData,btn,restoreBtn);
@@ -1178,7 +1179,7 @@ function _syncLocalhost(state,hgData,btn,restoreBtn){
     body:JSON.stringify(state),
     signal:AbortSignal.timeout(3000)
   }).then(function(r){
-    if(r.ok){ localStorage.setItem('_sync_ts',state._sync_ts); updateSyncStatus(); if(restoreBtn)restoreBtn('✓','Sincronizado!'); showToast('Sincronizado via listener local'); }
+    if(r.ok){ _localModified=false; localStorage.setItem('_sync_ts',state._sync_ts); updateSyncStatus(); if(restoreBtn)restoreBtn('✓','Sincronizado!'); showToast('Sincronizado via listener local'); }
     else{ if(restoreBtn)restoreBtn('↓','Descargado'); _snapshotDescarga(state,hgData); }
   }).catch(function(){
     if(restoreBtn)restoreBtn('↓','Descargado'); _snapshotDescarga(state,hgData);
@@ -1212,6 +1213,7 @@ function loadFromStorage(){
   }catch(e){clients=DEFAULT_CLIENTS.slice();leads=DEFAULT_LEADS.slice();}
 }
 
+var _localModified=false;
 let clients=[],leads=[];
 let nextId=5,nextLead=200;
 let currentTab='clientes',editId=null,editType=null;
@@ -2120,6 +2122,7 @@ setInterval(updateSyncStatus,60000);
   function autoSync(){
     if(document.visibilityState==='hidden') return;
     if(!localStorage.getItem('crm_clients')) return;
+    if(!_localModified) return;
     congelarSnapshot(null);
     lastAuto=Date.now();
   }
