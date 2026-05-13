@@ -1068,6 +1068,7 @@ function saveToStorage(){
     localStorage.setItem('crm_leads',JSON.stringify(leads));
     localStorage.setItem('crm_nextId',nextId);
     localStorage.setItem('crm_nextLead',nextLead);
+    localStorage.setItem('_localModifiedTs',Date.now());
     _localModified=true;
   }catch(e){showToast('Error al guardar: '+e.message,true);}
 }
@@ -1081,8 +1082,16 @@ function saveToStorage(){
     var storedTs=parseInt(localStorage.getItem('_sync_ts')||'0');
     var snapTs=d._sync_ts||0;
     var newer=snapTs>storedTs;
+    var localModTs=parseInt(localStorage.getItem('_localModifiedTs')||'0');
     var ks=['crm_clients','crm_leads','crm_nextId','crm_nextLead','pfol_v1'];
-    ks.forEach(function(k){ if(d[k]&&(newer||!localStorage.getItem(k))) localStorage.setItem(k,d[k]); });
+    ks.forEach(function(k){
+      if(!d[k]) return;
+      if(newer||!localStorage.getItem(k)){
+        // crm_clients/crm_leads: never overwrite if there are unsynced local changes newer than snapshot
+        if((k==='crm_clients'||k==='crm_leads')&&localModTs&&localModTs>snapTs) return;
+        localStorage.setItem(k,d[k]);
+      }
+    });
     // Para arrays de datos: restaurar desde snapshot si snapshot tiene datos y local está vacío
     ['crm_reuniones','crm_propuestas'].forEach(function(k){
       if(!d[k]) return;
@@ -1166,7 +1175,7 @@ function congelarSnapshot(btn){
     body:JSON.stringify(state),
     signal:AbortSignal.timeout(15000)
   }).then(function(r){
-    if(r.ok){ _localModified=false; localStorage.setItem('_sync_ts',state._sync_ts); updateSyncStatus(); restoreBtn('✓','Sincronizado!'); showToast('Sincronizado ✓'); }
+    if(r.ok){ _localModified=false; localStorage.removeItem('_localModifiedTs'); localStorage.setItem('_sync_ts',state._sync_ts); updateSyncStatus(); restoreBtn('✓','Sincronizado!'); showToast('Sincronizado ✓'); }
     else{ _syncLocalhost(state,hgData,btn,restoreBtn); }
   }).catch(function(){
     _syncLocalhost(state,hgData,btn,restoreBtn);
@@ -1179,7 +1188,7 @@ function _syncLocalhost(state,hgData,btn,restoreBtn){
     body:JSON.stringify(state),
     signal:AbortSignal.timeout(3000)
   }).then(function(r){
-    if(r.ok){ _localModified=false; localStorage.setItem('_sync_ts',state._sync_ts); updateSyncStatus(); if(restoreBtn)restoreBtn('✓','Sincronizado!'); showToast('Sincronizado via listener local'); }
+    if(r.ok){ _localModified=false; localStorage.removeItem('_localModifiedTs'); localStorage.setItem('_sync_ts',state._sync_ts); updateSyncStatus(); if(restoreBtn)restoreBtn('✓','Sincronizado!'); showToast('Sincronizado via listener local'); }
     else{ if(restoreBtn)restoreBtn('↓','Descargado'); _snapshotDescarga(state,hgData); }
   }).catch(function(){
     if(restoreBtn)restoreBtn('↓','Descargado'); _snapshotDescarga(state,hgData);
