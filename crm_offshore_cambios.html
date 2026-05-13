@@ -787,9 +787,7 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
 
   <div class="prop-topbar">
     <div class="prop-topbar-left">
-      <select id="prop-client-sel" class="prop-client-sel" onchange="propSetClient(this.value)">
-        <option value="">— Seleccionar cliente —</option>
-      </select>
+      <input type="text" id="prop-client-sel" class="prop-client-sel" list="prop-client-list" placeholder="Filtrar por cliente..." oninput="propSetClient(this.value)"><datalist id="prop-client-list"></datalist>
     </div>
     <button class="prop-btn-nueva" onclick="propOpenModal()">+ Nueva Cartera</button>
   </div>
@@ -865,6 +863,8 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
         </div>
         <button onclick="propCloseModal()" style="background:none;border:none;color:var(--vg);font-size:20px;cursor:pointer;padding:0 0 0 10px;line-height:1;">&times;</button>
       </div>
+      <div class="prop-modal-lbl">&#128100; Cliente</div>
+      <input id="prop-modal-client" class="prop-modal-inp" type="text" list="prop-client-list" placeholder="Nombre del cliente (nuevo o existente)">
       <div class="prop-modal-lbl">&#128196; Nombre de la Cartera</div>
       <input id="prop-modal-name" class="prop-modal-inp" type="text" placeholder="Ej: Cartera Balanceada 2026">
       <div class="prop-modal-lbl">Descripci&#243;n (opcional)</div>
@@ -3133,11 +3133,8 @@ function propEsc(s){return s==null?'':String(s).replace(/&/g,'&amp;').replace(/<
 function initPropuesta(){
   try{PROP.proposals=JSON.parse(localStorage.getItem('crm_propuestas')||'[]');}catch(e){PROP.proposals=[];}
   var clients=[];try{clients=JSON.parse(localStorage.getItem('crm_clients')||'[]');}catch(e){}
-  var sel=document.getElementById('prop-client-sel');
-  if(sel){
-    sel.innerHTML='<option value="">— Seleccionar cliente —</option>'+
-      clients.map(function(c){return '<option value="'+propEsc(c.nombre)+'">'+propEsc(c.nombre)+'</option>';}).join('');
-  }
+  var dl=document.getElementById('prop-client-list');
+  if(dl){dl.innerHTML=clients.map(function(c){return '<option value="'+propEsc(c.nombre)+'">';}).join('');}
   propRenderSidebar();
   if(PROP.activeId) propRenderEditor();
 }
@@ -3328,14 +3325,18 @@ function propRenderChart(){
 // ── MODAL ──
 function propOpenModal(){
   var sel=document.getElementById('prop-client-sel');
-  if(sel&&!sel.value){showToast('Seleccioná un cliente primero',true);return;}
+  var mc=document.getElementById('prop-modal-client');
+  if(mc)mc.value=(sel?sel.value.trim():'');
   document.getElementById('prop-modal-name').value='';
   document.getElementById('prop-modal-desc').value='';
   document.getElementById('prop-modal-rows').innerHTML='';
   propModalAddRow();propModalAddRow();
   propModalUpdateTotal();
   document.getElementById('prop-modal-bg').classList.add('open');
-  setTimeout(function(){document.getElementById('prop-modal-name').focus();},100);
+  setTimeout(function(){
+    var c=document.getElementById('prop-modal-client');
+    if(c&&!c.value)c.focus();else document.getElementById('prop-modal-name').focus();
+  },100);
 }
 
 function propCloseModal(){document.getElementById('prop-modal-bg').classList.remove('open');}
@@ -3394,8 +3395,8 @@ function propDistributeEqual(){
 function propCreateFromModal(){
   var name=document.getElementById('prop-modal-name').value.trim();
   if(!name){document.getElementById('prop-modal-name').focus();showToast('Ingresá un nombre',true);return;}
-  var sel=document.getElementById('prop-client-sel');
-  var clientName=sel?sel.value:'';
+  var mc=document.getElementById('prop-modal-client');
+  var clientName=(mc?mc.value.trim():'');
   var desc=document.getElementById('prop-modal-desc').value.trim();
   var rows=document.querySelectorAll('#prop-modal-rows .prop-modal-row');
   var assets=[];
