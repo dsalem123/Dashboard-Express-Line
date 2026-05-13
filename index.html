@@ -1945,6 +1945,7 @@ function convertLead(id){
     if(!n||!co||!mn){alert('Completá nombre, comitente y manager');return;}
     clients.push({id:nextId++,nombre:n,comitente:parseInt(co)||co,broker:br||'—',custodio:cu||'—',mgrNum:parseInt(mn)});
     leads=leads.filter(x=>x.id!==id);
+    saveToStorage();
     closeModal();
     switchTab('clientes',document.getElementById('tab-clientes'));
   };
