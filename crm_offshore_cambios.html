@@ -1083,14 +1083,14 @@ function saveToStorage(){
     var snapTs=d._sync_ts||0;
     var newer=snapTs>storedTs;
     var localModTs=parseInt(localStorage.getItem('_localModifiedTs')||'0');
+    window._snapDbg={storedTs:storedTs,snapTs:snapTs,newer:newer,localModTs:localModTs,snapClients:0};
+    try{window._snapDbg.snapClients=JSON.parse(d.crm_clients||'[]').length;}catch(e){}
     var ks=['crm_clients','crm_leads','crm_nextId','crm_nextLead','pfol_v1'];
     ks.forEach(function(k){
       if(!d[k]) return;
-      if(newer||!localStorage.getItem(k)){
-        // crm_clients/crm_leads: never overwrite if there are unsynced local changes newer than snapshot
-        if((k==='crm_clients'||k==='crm_leads')&&localModTs&&localModTs>snapTs) return;
-        localStorage.setItem(k,d[k]);
-      }
+      // crm_clients / crm_leads: snapshot is ONLY a fallback — never overwrite existing localStorage
+      if((k==='crm_clients'||k==='crm_leads')&&localStorage.getItem(k)) return;
+      if(newer||!localStorage.getItem(k)) localStorage.setItem(k,d[k]);
     });
     // Para arrays de datos: restaurar desde snapshot si snapshot tiene datos y local está vacío
     ['crm_reuniones','crm_propuestas'].forEach(function(k){
@@ -1227,6 +1227,20 @@ let clients=[],leads=[];
 let nextId=5,nextLead=200;
 let currentTab='clientes',editId=null,editType=null;
 loadFromStorage();
+// DEBUG badge — muestra cuántos clientes cargaron y si el snapshot fue usado
+(function(){
+  var dbg=window._snapDbg||{};
+  var info='clientes:'+clients.length+' | snap:'+(dbg.snapClients||0)+(dbg.newer?' NEWER':'')+(dbg.localModTs?' modLocal':'');
+  try{localStorage.setItem('_dbgLastLoad',JSON.stringify({ts:Date.now(),clients:clients.length,snap:dbg}));}catch(e){}
+  var el=document.createElement('div');
+  el.id='dbg-badge';
+  el.style.cssText='position:fixed;bottom:6px;right:6px;z-index:99999;background:#0a1f1b;border:1px solid #6B8578;color:#6B8578;font-family:monospace;font-size:10px;padding:3px 7px;border-radius:3px;cursor:pointer;';
+  el.title='Debug — click para ocultar';
+  el.textContent=info;
+  el.onclick=function(){el.remove();};
+  document.addEventListener('DOMContentLoaded',function(){document.body&&document.body.appendChild(el);});
+  if(document.body) document.body.appendChild(el);
+})();
 
 // ── KPI bar ──────────────────────────────────────────────────────────────────
 const _KPI_FIELDS = ['st-total','st-leads','kpi-apertura','kpi-facturacion','kpi-aum','kpi-objetivo','kpi-tiempo'];
