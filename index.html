@@ -3441,14 +3441,15 @@ function propBuildPDFHTML(p){
   var valid=p.assets.filter(function(a){return (parseFloat(a.pct)||0)>0;});
   var total=valid.reduce(function(s,a){return s+(parseFloat(a.pct)||0);},0);
   var svgChart=propBuildSVG(valid,240);
-  var thS='padding:8px 10px;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:'+MUTED+';font-weight:700;border-bottom:2px solid '+BORDER+';';
+  var thS='padding:8px 10px;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:'+MUTED+';font-weight:700;border-bottom:2px solid '+BORDER+';background:'+CARD+';';
+  var tdS='background:'+CARD+';';
   var rowsHTML=valid.map(function(a,i){
     var col=PROP_COLORS[i%PROP_COLORS.length];
     return '<tr>'+
-      '<td style="padding:8px 10px;"><div style="width:10px;height:10px;border-radius:2px;background:'+col+';"></div></td>'+
-      '<td style="padding:8px 10px;font-size:10px;color:'+MUTED+';font-weight:600;">'+(i+1)+'</td>'+
-      '<td style="padding:8px 10px;font-size:12px;color:'+CREAM+';">'+propEsc(a.name)+'</td>'+
-      '<td style="padding:8px 10px;font-size:14px;font-weight:700;color:'+CREAM+';text-align:right;font-family:\'Playfair Display\',serif;">'+a.pct+'%</td>'+
+      '<td style="padding:8px 10px;'+tdS+'"><div style="width:10px;height:10px;border-radius:2px;background:'+col+';"></div></td>'+
+      '<td style="padding:8px 10px;font-size:10px;color:'+MUTED+';font-weight:600;'+tdS+'">'+(i+1)+'</td>'+
+      '<td style="padding:8px 10px;font-size:12px;color:'+CREAM+';'+tdS+'">'+propEsc(a.name)+'</td>'+
+      '<td style="padding:8px 10px;font-size:14px;font-weight:700;color:'+CREAM+';text-align:right;font-family:\'Playfair Display\',serif;'+tdS+'">'+a.pct+'%</td>'+
     '</tr>';
   }).join('');
   var html='<div style="background:'+BG+';padding:44px 48px 40px;font-family:Inter,sans-serif;color:'+CREAM+';width:794px;box-sizing:border-box;line-height:1.4;">';
@@ -3474,7 +3475,7 @@ function propBuildPDFHTML(p){
       '<div style="font-size:12px;color:'+CREAM+';line-height:1.8;">'+propEsc(p.description).replace(/\n/g,'<br>')+'</div>'+
     '</div>';
   }
-  html+='<table width="100%" cellpadding="0" cellspacing="0"><tr>'+
+  html+='<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;"><tr>'+
     '<td width="42%" style="vertical-align:top;background:'+BG+';padding-right:16px;">'+
       '<div style="background:'+CARD+';border-radius:8px;padding:20px;text-align:center;">'+
         '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:'+GOLD+';margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid '+BORDER+';">Distribución por activo</div>'+
@@ -3493,8 +3494,8 @@ function propBuildPDFHTML(p){
           '</tr></thead>'+
           '<tbody>'+rowsHTML+'</tbody>'+
           '<tfoot><tr>'+
-            '<td colspan="3" style="padding:10px;border-top:1px solid '+BORDER+';font-size:9px;letter-spacing:1px;text-transform:uppercase;color:'+GOLD+';font-weight:700;">Total</td>'+
-            '<td style="padding:10px;border-top:1px solid '+BORDER+';text-align:right;font-size:16px;font-weight:700;color:'+GOLD+';font-family:\'Playfair Display\',serif;">'+total.toFixed(1)+'%</td>'+
+            '<td colspan="3" style="padding:10px;border-top:1px solid '+BORDER+';font-size:9px;letter-spacing:1px;text-transform:uppercase;color:'+GOLD+';font-weight:700;background:'+CARD+';">Total</td>'+
+            '<td style="padding:10px;border-top:1px solid '+BORDER+';text-align:right;font-size:16px;font-weight:700;color:'+GOLD+';font-family:\'Playfair Display\',serif;background:'+CARD+';">'+total.toFixed(1)+'%</td>'+
           '</tr></tfoot>'+
         '</table>'+
       '</div>'+
