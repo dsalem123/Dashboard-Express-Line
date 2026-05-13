@@ -1088,9 +1088,11 @@ function saveToStorage(){
     var ks=['crm_clients','crm_leads','crm_nextId','crm_nextLead','pfol_v1'];
     ks.forEach(function(k){
       if(!d[k]) return;
-      // crm_clients / crm_leads: snapshot is ONLY a fallback — never overwrite existing localStorage
-      if((k==='crm_clients'||k==='crm_leads')&&localStorage.getItem(k)) return;
-      if(newer||!localStorage.getItem(k)) localStorage.setItem(k,d[k]);
+      if(newer||!localStorage.getItem(k)){
+        // no sobreescribir si hay cambios locales no sincronizados más nuevos que el snapshot
+        if((k==='crm_clients'||k==='crm_leads')&&localModTs&&localModTs>snapTs) return;
+        localStorage.setItem(k,d[k]);
+      }
     });
     // Para arrays de datos: restaurar desde snapshot si snapshot tiene datos y local está vacío
     ['crm_reuniones','crm_propuestas'].forEach(function(k){
@@ -1106,6 +1108,9 @@ function saveToStorage(){
       if((k.startsWith('crm_act_')||k.startsWith('mkt_note_'))&&d[k]&&(newer||!localStorage.getItem(k))) localStorage.setItem(k,d[k]);
     });
     if(newer) localStorage.setItem('_sync_ts',snapTs);
+    // Propagar lista de IDs borrados desde snapshot hacia localStorage
+    if(newer&&d._deletedClientIds) try{localStorage.setItem('_deletedClientIds',d._deletedClientIds);}catch(e){}
+    if(newer&&d._deletedLeadIds) try{localStorage.setItem('_deletedLeadIds',d._deletedLeadIds);}catch(e){}
   }catch(e){}
 })();
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1163,6 +1168,8 @@ function congelarSnapshot(btn){
   Object.keys(localStorage).forEach(function(k){
     if(k.startsWith('crm_act_')||k.startsWith('mkt_note_')) state[k]=localStorage.getItem(k);
   });
+  var _dci=localStorage.getItem('_deletedClientIds');if(_dci)state._deletedClientIds=_dci;
+  var _dli=localStorage.getItem('_deletedLeadIds');if(_dli)state._deletedLeadIds=_dli;
   state._sync_ts=Date.now();
   var hgData=window._hedgeyeData||
     (typeof HG_STATIC_DATA!=='undefined'&&HG_STATIC_DATA?HG_STATIC_DATA:null)||
@@ -1977,8 +1984,8 @@ function convertLead(id){
   document.getElementById('modal').classList.add('open');
 }
 
-function delClient(id){if(confirm('¿Eliminar cliente?')){clients=clients.filter(c=>c.id!==id);render();saveToStorage();}}
-function delLead(id){if(confirm('¿Eliminar lead?')){leads=leads.filter(l=>l.id!==id);render();saveToStorage();}}
+function delClient(id){if(confirm('¿Eliminar cliente?')){clients=clients.filter(c=>c.id!==id);render();saveToStorage();try{var d=JSON.parse(localStorage.getItem('_deletedClientIds')||'[]');if(!d.includes(id))d.push(id);localStorage.setItem('_deletedClientIds',JSON.stringify(d));}catch(e){}}}
+function delLead(id){if(confirm('¿Eliminar lead?')){leads=leads.filter(l=>l.id!==id);render();saveToStorage();try{var d=JSON.parse(localStorage.getItem('_deletedLeadIds')||'[]');if(!d.includes(id))d.push(id);localStorage.setItem('_deletedLeadIds',JSON.stringify(d));}catch(e){}}}
 function moveLead(id,dir){const i=leads.findIndex(l=>l.id===id);const j=i+dir;if(j<0||j>=leads.length)return;[leads[i],leads[j]]=[leads[j],leads[i]];render();saveToStorage();}
 
 function saveRow(id){

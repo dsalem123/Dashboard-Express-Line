@@ -14,7 +14,6 @@ export default async function handler(req, res) {
     const state  = req.body;
     const hgRaw  = state._hgData || null;
     delete state._hgData;
-    const stateJson = JSON.stringify(state);
 
     const apiBase = 'https://api.github.com/repos/dsalem123/Dashboard-Express-Line/contents';
     const headers = {
@@ -27,6 +26,46 @@ export default async function handler(req, res) {
     if (!getRes.ok) throw new Error('Error leyendo index.html: ' + getRes.status);
     const { content: b64, sha } = await getRes.json();
     let html = Buffer.from(b64, 'base64').toString('utf-8');
+
+    // ── Merge clients/leads: never lose records ──────────────────────────────
+    try {
+      const snapMatch = html.match(/<script type="application\/json" id="crm-snapshot">([\s\S]*?)<\/script>/);
+      if (snapMatch) {
+        const existing = JSON.parse(snapMatch[1]);
+        const deletedIds = new Set(JSON.parse(state._deletedClientIds || '[]'));
+
+        // Merge crm_clients: incoming takes precedence; restore existing records not in incoming
+        const incomingClients = JSON.parse(state.crm_clients || '[]');
+        const existingClients = JSON.parse(existing.crm_clients || '[]');
+        const merged = {};
+        incomingClients.forEach(c => { merged[c.id] = c; });
+        existingClients.forEach(c => {
+          if (!merged[c.id] && !deletedIds.has(c.id)) merged[c.id] = c;
+        });
+        state.crm_clients = JSON.stringify(
+          Object.values(merged).sort((a, b) => a.id - b.id)
+        );
+
+        // Merge crm_leads similarly
+        const deletedLeadIds = new Set(JSON.parse(state._deletedLeadIds || '[]'));
+        const incomingLeads = JSON.parse(state.crm_leads || '[]');
+        const existingLeads = JSON.parse(existing.crm_leads || '[]');
+        const mergedLeads = {};
+        incomingLeads.forEach(l => { mergedLeads[l.id] = l; });
+        existingLeads.forEach(l => {
+          if (!mergedLeads[l.id] && !deletedLeadIds.has(l.id)) mergedLeads[l.id] = l;
+        });
+        state.crm_leads = JSON.stringify(
+          Object.values(mergedLeads).sort((a, b) => a.id - b.id)
+        );
+      }
+    } catch (mergeErr) {
+      // merge failed — use incoming as-is
+    }
+
+    delete state._deletedClientIds;
+    delete state._deletedLeadIds;
+    const stateJson = JSON.stringify(state);
 
     html = html.replace(
       /<script type="application\/json" id="crm-snapshot">[\s\S]*?<\/script>/,
