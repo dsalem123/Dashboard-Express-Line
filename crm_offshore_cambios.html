@@ -3157,7 +3157,7 @@ function propRenderSidebar(filterClient){
   }
   el.innerHTML=list.map(function(p){
     var total=p.assets.reduce(function(s,a){return s+(parseFloat(a.pct)||0);},0);
-    return '<div class="prop-list-item'+(p.id===PROP.activeId?' active':'')+'" onclick="propSelect(''+propEsc(p.id)+'')">'+
+    return '<div class="prop-list-item'+(p.id===PROP.activeId?' active':'')+'" onclick="propSelect(\''+propEsc(p.id)+'\')">'+
       '<div class="prop-list-name">'+propEsc(p.name)+'</div>'+
       '<div class="prop-list-client">'+propEsc(p.clientName||'Sin cliente')+'</div>'+
       '<div class="prop-list-total">'+total.toFixed(1)+'%</div>'+
