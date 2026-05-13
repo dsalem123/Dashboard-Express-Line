@@ -1080,8 +1080,15 @@ function saveToStorage(){
     var storedTs=parseInt(localStorage.getItem('_sync_ts')||'0');
     var snapTs=d._sync_ts||0;
     var newer=snapTs>storedTs;
-    var ks=['crm_clients','crm_leads','crm_nextId','crm_nextLead','pfol_v1','crm_reuniones','crm_propuestas'];
+    var ks=['crm_clients','crm_leads','crm_nextId','crm_nextLead','pfol_v1'];
     ks.forEach(function(k){ if(d[k]&&(newer||!localStorage.getItem(k))) localStorage.setItem(k,d[k]); });
+    // Para arrays de datos: restaurar desde snapshot si snapshot tiene datos y local está vacío
+    ['crm_reuniones','crm_propuestas'].forEach(function(k){
+      if(!d[k]) return;
+      var local=localStorage.getItem(k);
+      var isEmpty=!local||local==='[]'||local==='null';
+      if(newer||isEmpty) localStorage.setItem(k,d[k]);
+    });
     if(d.kpi) Object.keys(d.kpi).forEach(function(k){
       if(d.kpi[k]&&(newer||!localStorage.getItem(k))) localStorage.setItem(k,d.kpi[k]);
     });
@@ -1136,8 +1143,8 @@ function congelarSnapshot(btn){
     crm_nextId:localStorage.getItem('crm_nextId'),
     crm_nextLead:localStorage.getItem('crm_nextLead'),
     pfol_v1:localStorage.getItem('pfol_v1'),
-    crm_reuniones:localStorage.getItem('crm_reuniones'),
-    crm_propuestas:localStorage.getItem('crm_propuestas'),
+    crm_reuniones:(function(){var v=localStorage.getItem('crm_reuniones');return(v&&v!=='[]')?v:undefined;}()),
+    crm_propuestas:(function(){var v=localStorage.getItem('crm_propuestas');return(v&&v!=='[]')?v:undefined;}()),
     kpi:{}
   };
   ['kpi-apertura','kpi-facturacion','kpi-aum','kpi-objetivo','kpi-tiempo','kpi-duracion','st-total','st-leads','kanban_pipe_v1'].forEach(function(k){
