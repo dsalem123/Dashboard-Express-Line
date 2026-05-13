@@ -853,42 +853,41 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'â
     </div>
   </div>
 
-  <!-- Modal Nueva Cartera -->
-  <div class="prop-modal-bg" id="prop-modal-bg" onclick="if(event.target===this)propCloseModal()">
-    <div class="prop-modal">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;">
-        <div>
-          <div class="prop-modal-title">Nueva Cartera</div>
-          <div class="prop-modal-sub">Cre&#225; una cartera seleccionando instrumentos y su asignaci&#243;n.</div>
-        </div>
-        <button onclick="propCloseModal()" style="background:none;border:none;color:var(--vg);font-size:20px;cursor:pointer;padding:0 0 0 10px;line-height:1;">&times;</button>
-      </div>
-      <div class="prop-modal-lbl">&#128100; Cliente</div>
-      <input id="prop-modal-client" class="prop-modal-inp" type="text" list="prop-client-list" placeholder="Nombre del cliente (nuevo o existente)">
-      <div class="prop-modal-lbl">&#128196; Nombre de la Cartera</div>
-      <input id="prop-modal-name" class="prop-modal-inp" type="text" placeholder="Ej: Cartera Balanceada 2026">
-      <div class="prop-modal-lbl">Descripci&#243;n (opcional)</div>
-      <textarea id="prop-modal-desc" class="prop-modal-inp" rows="3" placeholder="Breve descripci&#243;n del objetivo de inversi&#243;n..." style="resize:vertical;"></textarea>
-      <div class="prop-modal-comp-hdr">
-        <div class="prop-modal-lbl" style="margin-bottom:0;">&#9202; Composici&#243;n</div>
-        <button class="prop-btn-distrib" onclick="propDistributeEqual()">&#9881; Distribuir igual</button>
-      </div>
-      <div class="prop-modal-rows" id="prop-modal-rows"></div>
-      <button class="prop-modal-add-row" onclick="propModalAddRow()">&#43; Agregar instrumento</button>
-      <div class="prop-modal-footer-bar">
-        <span class="prop-modal-count" id="prop-modal-count">0 instrumentos asignados</span>
-        <span class="prop-modal-total" id="prop-modal-total" style="color:var(--vg);">0.0%</span>
-      </div>
-      <div class="prop-modal-btns">
-        <button class="prop-btn-cancel" onclick="propCloseModal()">Cancelar</button>
-        <button class="prop-btn-crear" onclick="propCreateFromModal()">Crear Cartera</button>
-      </div>
-    </div>
-  </div>
-
   <div id="prop-pdf-stage"></div>
 </div>
 </div><!-- /content-area -->
+
+<div class="prop-modal-bg" id="prop-modal-bg" onclick="if(event.target===this)propCloseModal()">
+  <div class="prop-modal">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;">
+      <div>
+        <div class="prop-modal-title">Nueva Cartera</div>
+        <div class="prop-modal-sub">Cre&#225; una cartera seleccionando instrumentos y su asignaci&#243;n.</div>
+      </div>
+      <button onclick="propCloseModal()" style="background:none;border:none;color:var(--vg);font-size:20px;cursor:pointer;padding:0 0 0 10px;line-height:1;">&times;</button>
+    </div>
+    <div class="prop-modal-lbl">&#128100; Cliente</div>
+    <input id="prop-modal-client" class="prop-modal-inp" type="text" list="prop-client-list" placeholder="Nombre del cliente (nuevo o existente)">
+    <div class="prop-modal-lbl">&#128196; Nombre de la Cartera</div>
+    <input id="prop-modal-name" class="prop-modal-inp" type="text" placeholder="Ej: Cartera Balanceada 2026">
+    <div class="prop-modal-lbl">Descripci&#243;n (opcional)</div>
+    <textarea id="prop-modal-desc" class="prop-modal-inp" rows="3" placeholder="Breve descripci&#243;n del objetivo de inversi&#243;n..." style="resize:vertical;"></textarea>
+    <div class="prop-modal-comp-hdr">
+      <div class="prop-modal-lbl" style="margin-bottom:0;">&#9202; Composici&#243;n</div>
+      <button class="prop-btn-distrib" onclick="propDistributeEqual()">&#9881; Distribuir igual</button>
+    </div>
+    <div class="prop-modal-rows" id="prop-modal-rows"></div>
+    <button class="prop-modal-add-row" onclick="propModalAddRow()">&#43; Agregar instrumento</button>
+    <div class="prop-modal-footer-bar">
+      <span class="prop-modal-count" id="prop-modal-count">0 instrumentos asignados</span>
+      <span class="prop-modal-total" id="prop-modal-total" style="color:var(--vg);">0.0%</span>
+    </div>
+    <div class="prop-modal-btns">
+      <button class="prop-btn-cancel" onclick="propCloseModal()">Cancelar</button>
+      <button class="prop-btn-crear" onclick="propCreateFromModal()">Crear Cartera</button>
+    </div>
+  </div>
+</div>
 
 <div class="reu-modal-bg" id="reu-modal-bg" onclick="if(event.target===this)reuCloseModal()">
   <div class="reu-modal" id="reu-modal"></div>
