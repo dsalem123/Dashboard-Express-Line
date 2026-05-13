@@ -1093,7 +1093,7 @@ function saveToStorage(){
       if(d.kpi[k]&&(newer||!localStorage.getItem(k))) localStorage.setItem(k,d.kpi[k]);
     });
     Object.keys(d).forEach(function(k){
-      if(k.startsWith('crm_act_')&&d[k]&&(newer||!localStorage.getItem(k))) localStorage.setItem(k,d[k]);
+      if((k.startsWith('crm_act_')||k.startsWith('mkt_note_'))&&d[k]&&(newer||!localStorage.getItem(k))) localStorage.setItem(k,d[k]);
     });
     if(newer) localStorage.setItem('_sync_ts',snapTs);
   }catch(e){}
@@ -1151,7 +1151,7 @@ function congelarSnapshot(btn){
     state.kpi[k]=localStorage.getItem(k);
   });
   Object.keys(localStorage).forEach(function(k){
-    if(k.startsWith('crm_act_')) state[k]=localStorage.getItem(k);
+    if(k.startsWith('crm_act_')||k.startsWith('mkt_note_')) state[k]=localStorage.getItem(k);
   });
   state._sync_ts=Date.now();
   var hgData=window._hedgeyeData||
