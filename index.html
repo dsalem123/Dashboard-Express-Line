@@ -1165,7 +1165,7 @@ function congelarSnapshot(btn){
     body:JSON.stringify(state),
     signal:AbortSignal.timeout(15000)
   }).then(function(r){
-    if(r.ok){ localStorage.setItem('_sync_ts',state._sync_ts); updateSyncStatus(); restoreBtn('✓','Sincronizado!'); var propCount=0;try{propCount=(JSON.parse(state.crm_propuestas||'[]')).length;}catch(e){}; showToast('Sincronizado ✓ — '+(propCount>0?propCount+' cartera(s) incluida(s)':'⚠ sin carteras en sync')); }
+    if(r.ok){ localStorage.setItem('_sync_ts',state._sync_ts); updateSyncStatus(); restoreBtn('✓','Sincronizado!'); showToast('Sincronizado ✓'); }
     else{ _syncLocalhost(state,hgData,btn,restoreBtn); }
   }).catch(function(){
     _syncLocalhost(state,hgData,btn,restoreBtn);
