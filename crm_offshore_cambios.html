@@ -1827,50 +1827,50 @@ async function descargarHedgeyePDF(){
 
     const chipRowCount = (tickers, boxInnerW) => {
       if(!tickers.length) return 1;
-      doc.setFont('courier','bold'); doc.setFontSize(6.5);
+      doc.setFont('courier','bold'); doc.setFontSize(8);
       let tx=0, rows=1;
       tickers.forEach(tk=>{
-        const cw=doc.getTextWidth(tk)+3.5;
+        const cw=doc.getTextWidth(tk)+4;
         if(tx+cw>boxInnerW){ tx=0; rows++; }
-        tx+=cw+2;
+        tx+=cw+2.5;
       });
       return rows;
     };
-    const bRows = chipRowCount(bullT, halfW-6);
-    const eRows = chipRowCount(bearT, halfW-6);
-    const boxH  = Math.max(bRows, eRows)*5.2 + 11;
+    const bRows = chipRowCount(bullT, halfW-8);
+    const eRows = chipRowCount(bearT, halfW-8);
+    const boxH  = Math.max(bRows, eRows)*6.5 + 15;
 
     // Bull box
     sf_(...BULL_BG); doc.roundedRect(ML, cy, halfW, boxH, 1.5, 1.5, 'F');
     sd_(...BULL_BD); doc.setLineWidth(0.2); doc.roundedRect(ML, cy, halfW, boxH, 1.5, 1.5, 'S');
-    doc.setFont('helvetica','bold'); doc.setFontSize(6); sc_(...BULL_LBL);
-    doc.text('BULLISH', ML+3.5, cy+5.5);
-    doc.setFont('courier','bold'); doc.setFontSize(6.5);
-    let bx=ML+3.5, by=cy+11;
+    doc.setFont('helvetica','bold'); doc.setFontSize(7); sc_(...BULL_LBL);
+    doc.text('BULLISH', ML+4, cy+7);
+    doc.setFont('courier','bold'); doc.setFontSize(8);
+    let bx=ML+4, by=cy+14;
     bullT.forEach(tk=>{
-      const cw=doc.getTextWidth(tk)+3.5;
-      if(bx+cw>ML+halfW-2){ bx=ML+3.5; by+=5.2; }
-      sf_(...BULL_CBG); doc.roundedRect(bx-0.8,by-3.6,cw+0.8,4.5,0.6,0.6,'F');
-      sc_(...BULL_CTX); doc.text(tk,bx+0.8,by);
-      bx+=cw+2;
+      const cw=doc.getTextWidth(tk)+4;
+      if(bx+cw>ML+halfW-3){ bx=ML+4; by+=6.5; }
+      sf_(...BULL_CBG); doc.roundedRect(bx-1,by-4.2,cw+1,5.5,0.8,0.8,'F');
+      sc_(...BULL_CTX); doc.text(tk,bx+1,by);
+      bx+=cw+2.5;
     });
-    if(!bullT.length){ sc_(...SOURCE_C); doc.text('—',ML+3.5,cy+11); }
+    if(!bullT.length){ sc_(...SOURCE_C); doc.text('—',ML+4,cy+14); }
 
     // Bear box
     sf_(...BEAR_BG); doc.roundedRect(bearX, cy, halfW, boxH, 1.5, 1.5, 'F');
     sd_(...BEAR_BD); doc.setLineWidth(0.2); doc.roundedRect(bearX, cy, halfW, boxH, 1.5, 1.5, 'S');
-    doc.setFont('helvetica','bold'); doc.setFontSize(6); sc_(...BEAR_LBL);
-    doc.text('BEARISH', bearX+3.5, cy+5.5);
-    doc.setFont('courier','bold'); doc.setFontSize(6.5);
-    let rx=bearX+3.5, ry=cy+11;
+    doc.setFont('helvetica','bold'); doc.setFontSize(7); sc_(...BEAR_LBL);
+    doc.text('BEARISH', bearX+4, cy+7);
+    doc.setFont('courier','bold'); doc.setFontSize(8);
+    let rx=bearX+4, ry=cy+14;
     bearT.forEach(tk=>{
-      const cw=doc.getTextWidth(tk)+3.5;
-      if(rx+cw>bearX+halfW-2){ rx=bearX+3.5; ry+=5.2; }
-      sf_(...BEAR_CBG); doc.roundedRect(rx-0.8,ry-3.6,cw+0.8,4.5,0.6,0.6,'F');
-      sc_(...BEAR_CTX); doc.text(tk,rx+0.8,ry);
-      rx+=cw+2;
+      const cw=doc.getTextWidth(tk)+4;
+      if(rx+cw>bearX+halfW-3){ rx=bearX+4; ry+=6.5; }
+      sf_(...BEAR_CBG); doc.roundedRect(rx-1,ry-4.2,cw+1,5.5,0.8,0.8,'F');
+      sc_(...BEAR_CTX); doc.text(tk,rx+1,ry);
+      rx+=cw+2.5;
     });
-    if(!bearT.length){ sc_(...SOURCE_C); doc.text('—',bearX+3.5,cy+11); }
+    if(!bearT.length){ sc_(...SOURCE_C); doc.text('—',bearX+4,cy+14); }
 
     cy += boxH+8;
 
@@ -1887,7 +1887,7 @@ async function descargarHedgeyePDF(){
     const availH = H - cy - 16;
     const mmPt = 25.4/72; // pt → mm
 
-    let bodyPt = 7.5, titlePt = 5.5;
+    let bodyPt = 7.5, titlePt = 9.5;
 
     // measureSec usa doc.getLineHeight() — altura exacta de jsPDF, no estimada
     const measureSec = (sec) => {
@@ -1915,19 +1915,19 @@ async function descargarHedgeyePDF(){
         if(rawScale < 1){
           // Demasiado texto: escalar para abajo
           bodyPt  = Math.max(6,   bodyPt  * Math.max(0.70, rawScale));
-          titlePt = Math.max(4.5, titlePt * Math.max(0.70, rawScale));
+          titlePt = Math.max(7,   titlePt * Math.max(0.70, rawScale));
         } else if(rawScale > 1.04){
           // Sobra espacio: búsqueda binaria, 7 iteraciones converge a <1% error
           let lo=1.0, hi=Math.min(2.5, 1+(rawScale-1)*0.80);
           for(let iter=0; iter<7; iter++){
             const mid=(lo+hi)/2;
-            bodyPt=7.5*mid; titlePt=5.5*mid;
+            bodyPt=7.5*mid; titlePt=9.5*mid;
             let h2=0;
             for(let j=0; j<secs.length; j+=2) h2+=pairH(j);
             if(h2 <= availH*0.96) lo=mid; else hi=mid;
           }
           bodyPt  = Math.min(16, Math.max(6,   7.5*lo));
-          titlePt = Math.min(12, Math.max(4.5, 5.5*lo));
+          titlePt = Math.min(20, Math.max(7,   9.5*lo));
         }
       }
     }
