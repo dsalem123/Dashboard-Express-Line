@@ -517,9 +517,9 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
     <div class="kpi-label">Leads</div>
     <span class="kpi-val" id="st-leads">0</span>
   </div>
-  <div class="kpi-item editable" onclick="startKPIEdit('kpi-apertura')">
+  <div class="kpi-item">
     <div class="kpi-label">En Apertura</div>
-    <span class="kpi-val" id="kpi-apertura">—</span><span class="kpi-pencil">✏</span>
+    <span class="kpi-val" id="kpi-apertura">—</span>
   </div>
   <div class="kpi-item editable" onclick="startKPIEdit('kpi-facturacion')">
     <div class="kpi-label">Facturación</div>
@@ -2235,7 +2235,7 @@ function updateAutoAUM(){
     document.getElementById('kpi-aum').textContent=fmt;
   }
   var enApertura=leads.filter(function(l){return l.estado==='En Proceso';}).length;
-  if(enApertura>0){document.getElementById('kpi-apertura').textContent=enApertura;}
+  document.getElementById('kpi-apertura').textContent=enApertura||'—';
 }
 
 function updateSyncStatus(){
