@@ -1887,7 +1887,7 @@ async function descargarHedgeyePDF(){
     const availH = H - cy - 16;
     const mmPt = 25.4/72; // pt → mm
 
-    let bodyPt = 7.5, titlePt = 9.5;
+    let bodyPt = 7.5, titlePt = 8.2;
 
     // measureSec usa doc.getLineHeight() — altura exacta de jsPDF, no estimada
     const measureSec = (sec) => {
@@ -1915,19 +1915,19 @@ async function descargarHedgeyePDF(){
         if(rawScale < 1){
           // Demasiado texto: escalar para abajo
           bodyPt  = Math.max(6,   bodyPt  * Math.max(0.70, rawScale));
-          titlePt = Math.max(7,   titlePt * Math.max(0.70, rawScale));
+          titlePt = Math.max(6.5, titlePt * Math.max(0.70, rawScale));
         } else if(rawScale > 1.04){
           // Sobra espacio: búsqueda binaria, 7 iteraciones converge a <1% error
           let lo=1.0, hi=Math.min(2.5, 1+(rawScale-1)*0.80);
           for(let iter=0; iter<7; iter++){
             const mid=(lo+hi)/2;
-            bodyPt=7.5*mid; titlePt=9.5*mid;
+            bodyPt=7.5*mid; titlePt=8.2*mid;
             let h2=0;
             for(let j=0; j<secs.length; j+=2) h2+=pairH(j);
             if(h2 <= availH*0.96) lo=mid; else hi=mid;
           }
           bodyPt  = Math.min(16, Math.max(6,   7.5*lo));
-          titlePt = Math.min(20, Math.max(7,   9.5*lo));
+          titlePt = Math.min(11, Math.max(6.5, 8.2*lo));
         }
       }
     }
