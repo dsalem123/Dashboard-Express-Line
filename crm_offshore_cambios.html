@@ -1902,12 +1902,12 @@ async function descargarHedgeyePDF(){
       for(let i=0; i<secs.length; i+=2)
         totalH += Math.max(measureH(secs[i]), measureH(secs[i+1])||0);
 
-      if(totalH > availH){
-        const scale = Math.max(0.72, availH / totalH);
-        bodyPt  = Math.max(6,   bodyPt  * scale);
-        titlePt = Math.max(4.5, titlePt * scale);
-        bodyLH  = Math.max(3.1, bodyLH  * scale);
-        titleLH = Math.max(2.8, titleLH * scale);
+      if(totalH > 0){
+        const scale = Math.min(1.45, Math.max(0.72, availH / totalH));
+        bodyPt  = Math.min(11,  Math.max(6,   bodyPt  * scale));
+        titlePt = Math.min(8,   Math.max(4.5, titlePt * scale));
+        bodyLH  = Math.min(5.8, Math.max(3.1, bodyLH  * scale));
+        titleLH = Math.min(4.2, Math.max(2.8, titleLH * scale));
       }
     }
 
