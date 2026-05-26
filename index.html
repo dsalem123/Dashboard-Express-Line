@@ -1086,14 +1086,31 @@ function saveToStorage(){
     window._snapDbg={storedTs:storedTs,snapTs:snapTs,newer:newer,localModTs:localModTs,snapClients:0,snapLeads:0};
     try{window._snapDbg.snapClients=JSON.parse(d.crm_clients||'[]').length;}catch(e){}
     try{window._snapDbg.snapLeads=JSON.parse(d.crm_leads||'[]').length;}catch(e){}
-    var ks=['crm_clients','crm_leads','crm_nextId','crm_nextLead','pfol_v1'];
+    // Merge client-side: absorber del snapshot registros que no existan localmente
+    // Esto garantiza que cada PC siempre recibe leads/clientes nuevos del otro dispositivo
+    // sin depender de timestamps ni de que newer=true
+    (function(){
+      var deletedLeadIds=new Set(JSON.parse(localStorage.getItem('_deletedLeadIds')||'[]'));
+      var deletedClientIds=new Set(JSON.parse(localStorage.getItem('_deletedClientIds')||'[]'));
+      function mergeArr(snapJson,localJson,delSet){
+        try{
+          var snap=JSON.parse(snapJson||'[]');
+          var local=JSON.parse(localJson||'[]');
+          var byId={};local.forEach(function(x){byId[x.id]=x;});
+          var added=false;
+          snap.forEach(function(x){if(!byId[x.id]&&!delSet.has(x.id)){local.push(x);byId[x.id]=x;added=true;}});
+          return added?JSON.stringify(local):null;
+        }catch(e){return null;}
+      }
+      var mLeads=mergeArr(d.crm_leads,localStorage.getItem('crm_leads'),deletedLeadIds);
+      if(mLeads) localStorage.setItem('crm_leads',mLeads);
+      var mClients=mergeArr(d.crm_clients,localStorage.getItem('crm_clients'),deletedClientIds);
+      if(mClients) localStorage.setItem('crm_clients',mClients);
+    })();
+    var ks=['crm_nextId','crm_nextLead','pfol_v1'];
     ks.forEach(function(k){
       if(!d[k]) return;
-      if(newer||!localStorage.getItem(k)){
-        // no sobreescribir si hay cambios locales no sincronizados más nuevos que el snapshot
-        if((k==='crm_clients'||k==='crm_leads')&&localModTs&&localModTs>snapTs) return;
-        localStorage.setItem(k,d[k]);
-      }
+      if(newer||!localStorage.getItem(k)) localStorage.setItem(k,d[k]);
     });
     // Para arrays de datos: restaurar desde snapshot si snapshot tiene datos y local está vacío
     ['crm_reuniones','crm_propuestas'].forEach(function(k){
@@ -1109,9 +1126,19 @@ function saveToStorage(){
       if((k.startsWith('crm_act_')||k.startsWith('mkt_note_'))&&d[k]&&(newer||!localStorage.getItem(k))) localStorage.setItem(k,d[k]);
     });
     if(newer) localStorage.setItem('_sync_ts',snapTs);
-    // Propagar lista de IDs borrados desde snapshot hacia localStorage
-    if(newer&&d._deletedClientIds) try{localStorage.setItem('_deletedClientIds',d._deletedClientIds);}catch(e){}
-    if(newer&&d._deletedLeadIds) try{localStorage.setItem('_deletedLeadIds',d._deletedLeadIds);}catch(e){}
+    // Propagar lista de IDs borrados: hacer union con la lista local (siempre, no solo si newer)
+    try{
+      var sdci=JSON.parse(d._deletedClientIds||'[]');
+      var ldci=JSON.parse(localStorage.getItem('_deletedClientIds')||'[]');
+      var udci=Array.from(new Set(sdci.concat(ldci)));
+      localStorage.setItem('_deletedClientIds',JSON.stringify(udci));
+    }catch(e){}
+    try{
+      var sdli=JSON.parse(d._deletedLeadIds||'[]');
+      var ldli=JSON.parse(localStorage.getItem('_deletedLeadIds')||'[]');
+      var udli=Array.from(new Set(sdli.concat(ldli)));
+      localStorage.setItem('_deletedLeadIds',JSON.stringify(udli));
+    }catch(e){}
   }catch(e){}
 })();
 // ─────────────────────────────────────────────────────────────────────────────
