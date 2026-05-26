@@ -1183,7 +1183,7 @@ function congelarSnapshot(btn){
     body:JSON.stringify(state),
     signal:AbortSignal.timeout(15000)
   }).then(function(r){
-    if(r.ok){ r.json().then(function(d){ _localModified=false; localStorage.removeItem('_localModifiedTs'); localStorage.setItem('_sync_ts',state._sync_ts); if(d&&d.crm_clients) localStorage.setItem('crm_clients',d.crm_clients); if(d&&d.crm_leads) localStorage.setItem('crm_leads',d.crm_leads); updateSyncStatus(); restoreBtn('✓','Sincronizado!'); showToast('Sincronizado ✓'); }).catch(function(){ _localModified=false; localStorage.removeItem('_localModifiedTs'); localStorage.setItem('_sync_ts',state._sync_ts); updateSyncStatus(); restoreBtn('✓','Sincronizado!'); showToast('Sincronizado ✓'); }); }
+    if(r.ok){ r.json().then(function(d){ _localModified=false; localStorage.removeItem('_localModifiedTs'); localStorage.setItem('_sync_ts',state._sync_ts); var rerender=false; if(d&&d.crm_clients){ localStorage.setItem('crm_clients',d.crm_clients); try{clients=JSON.parse(d.crm_clients);rerender=true;}catch(e){} } if(d&&d.crm_leads){ localStorage.setItem('crm_leads',d.crm_leads); try{leads=JSON.parse(d.crm_leads);rerender=true;}catch(e){} } updateSyncStatus(); restoreBtn('✓','Sincronizado!'); showToast('Sincronizado ✓'); if(rerender){render();try{updateAutoAUM();}catch(e){}} }).catch(function(){ _localModified=false; localStorage.removeItem('_localModifiedTs'); localStorage.setItem('_sync_ts',state._sync_ts); updateSyncStatus(); restoreBtn('✓','Sincronizado!'); showToast('Sincronizado ✓'); }); }
     else{ _syncLocalhost(state,hgData,btn,restoreBtn); }
   }).catch(function(){
     _syncLocalhost(state,hgData,btn,restoreBtn);
@@ -1979,6 +1979,7 @@ function convertLead(id){
     clients.push({id:nextId++,nombre:n,comitente:parseInt(co)||co,broker:br||'—',custodio:cu||'—',mgrNum:parseInt(mn)});
     leads=leads.filter(x=>x.id!==id);
     saveToStorage();
+    try{var _dl=JSON.parse(localStorage.getItem('_deletedLeadIds')||'[]');if(!_dl.includes(id))_dl.push(id);localStorage.setItem('_deletedLeadIds',JSON.stringify(_dl));}catch(e){}
     closeModal();
     switchTab('clientes',document.getElementById('tab-clientes'));
   };
