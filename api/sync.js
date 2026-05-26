@@ -90,7 +90,7 @@ export default async function handler(req, res) {
     });
     if (!putRes.ok) throw new Error('Error actualizando: ' + putRes.status + ' ' + await putRes.text());
 
-    return res.status(200).json({ ok: true });
+    return res.status(200).json({ ok: true, crm_clients: state.crm_clients, crm_leads: state.crm_leads });
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }

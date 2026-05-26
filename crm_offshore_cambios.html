@@ -1083,8 +1083,9 @@ function saveToStorage(){
     var snapTs=d._sync_ts||0;
     var newer=snapTs>storedTs;
     var localModTs=parseInt(localStorage.getItem('_localModifiedTs')||'0');
-    window._snapDbg={storedTs:storedTs,snapTs:snapTs,newer:newer,localModTs:localModTs,snapClients:0};
+    window._snapDbg={storedTs:storedTs,snapTs:snapTs,newer:newer,localModTs:localModTs,snapClients:0,snapLeads:0};
     try{window._snapDbg.snapClients=JSON.parse(d.crm_clients||'[]').length;}catch(e){}
+    try{window._snapDbg.snapLeads=JSON.parse(d.crm_leads||'[]').length;}catch(e){}
     var ks=['crm_clients','crm_leads','crm_nextId','crm_nextLead','pfol_v1'];
     ks.forEach(function(k){
       if(!d[k]) return;
@@ -1182,7 +1183,7 @@ function congelarSnapshot(btn){
     body:JSON.stringify(state),
     signal:AbortSignal.timeout(15000)
   }).then(function(r){
-    if(r.ok){ _localModified=false; localStorage.removeItem('_localModifiedTs'); localStorage.setItem('_sync_ts',state._sync_ts); updateSyncStatus(); restoreBtn('✓','Sincronizado!'); showToast('Sincronizado ✓'); }
+    if(r.ok){ r.json().then(function(d){ _localModified=false; localStorage.removeItem('_localModifiedTs'); localStorage.setItem('_sync_ts',state._sync_ts); if(d&&d.crm_clients) localStorage.setItem('crm_clients',d.crm_clients); if(d&&d.crm_leads) localStorage.setItem('crm_leads',d.crm_leads); updateSyncStatus(); restoreBtn('✓','Sincronizado!'); showToast('Sincronizado ✓'); }).catch(function(){ _localModified=false; localStorage.removeItem('_localModifiedTs'); localStorage.setItem('_sync_ts',state._sync_ts); updateSyncStatus(); restoreBtn('✓','Sincronizado!'); showToast('Sincronizado ✓'); }); }
     else{ _syncLocalhost(state,hgData,btn,restoreBtn); }
   }).catch(function(){
     _syncLocalhost(state,hgData,btn,restoreBtn);
@@ -1237,7 +1238,7 @@ loadFromStorage();
 // DEBUG badge — muestra cuántos clientes cargaron y si el snapshot fue usado
 (function(){
   var dbg=window._snapDbg||{};
-  var info='clientes:'+clients.length+' | snap:'+(dbg.snapClients||0)+(dbg.newer?' NEWER':'')+(dbg.localModTs?' modLocal':'');
+  var info='c:'+clients.length+'/'+( dbg.snapClients||0)+' l:'+leads.length+'/'+(dbg.snapLeads||0)+(dbg.newer?' NEWER':'')+(dbg.localModTs?' modLocal':'');
   try{localStorage.setItem('_dbgLastLoad',JSON.stringify({ts:Date.now(),clients:clients.length,snap:dbg}));}catch(e){}
   var el=document.createElement('div');
   el.id='dbg-badge';
