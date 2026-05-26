@@ -134,6 +134,12 @@ tbody td{padding:10px 12px;color:var(--cream);vertical-align:middle;}
 .s-interesado{background:rgba(201,168,76,.18);color:var(--gold);}
 .s-proceso{background:rgba(168,218,187,.28);color:#7ecba0;}
 .actions{display:flex;gap:5px;}
+.lead-drag-handle{cursor:grab;color:var(--vg);font-size:15px;padding:0 6px;opacity:.4;user-select:none;line-height:1;}
+.lead-drag-handle:hover{opacity:.9;}
+#tbody-leads tr[data-lid]{transition:opacity .12s;}
+#tbody-leads tr[data-lid].lead-dragging{opacity:.3;}
+#tbody-leads tr[data-lid].lead-drop-above td:first-child{border-top:2px solid var(--gold);}
+#tbody-leads tr[data-lid].lead-drop-below td:first-child{border-bottom:2px solid var(--gold);}
 .btn-act{background:none;border:1px solid rgba(168,218,187,.2);border-radius:6px;padding:3px 9px;font-size:11px;cursor:pointer;color:var(--vg);font-family:'Inter',sans-serif;transition:all .12s;}
 .btn-act:hover{border-color:var(--gold);color:var(--ev);}
 .btn-del:hover{border-color:#c0392b!important;color:#c0392b!important;}
@@ -575,6 +581,7 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
       <div class="table-wrap">
         <table>
           <thead><tr>
+            <th style="width:24px;"></th>
             <th class="sortable" data-sort-lead="nombre" onclick="sortByLead('nombre')">Nombre</th>
             <th class="sortable" data-sort-lead="estado" onclick="sortByLead('estado')">Estado</th>
             <th>Notas</th>
@@ -1382,13 +1389,12 @@ function render(){
     th.classList.remove('sort-asc','sort-desc');
     if(th.dataset.sortLead===sortColL) th.classList.add(sortDirL===1?'sort-asc':'sort-desc');
   });
-  document.getElementById('tbody-leads').innerHTML=fl.length?fl.map(l=>`<tr>
-    <td class="client-name" contenteditable="true" data-key="l-${l.id}-nombre">${l.nombre}</td>
-    <td><span class="badge-status ${statusClass(l.estado)}" contenteditable="true" data-key="l-${l.id}-estado">${l.estado}</span></td>
-    <td style="font-size:12px;color:var(--vg);" contenteditable="true" data-key="l-${l.id}-notas">${l.notas||''}</td>
+  document.getElementById('tbody-leads').innerHTML=fl.length?fl.map(l=>`<tr data-lid="${l.id}">
+    <td class="lead-drag-handle" title="Arrastrar para reordenar">⠿</td>
+    <td class="client-name" contenteditable="true" ondragstart="event.stopPropagation()" data-key="l-${l.id}-nombre">${l.nombre}</td>
+    <td ondragstart="event.stopPropagation()"><span class="badge-status ${statusClass(l.estado)}" contenteditable="true" data-key="l-${l.id}-estado">${l.estado}</span></td>
+    <td style="font-size:12px;color:var(--vg);" contenteditable="true" ondragstart="event.stopPropagation()" data-key="l-${l.id}-notas">${l.notas||''}</td>
     <td><div class="actions">
-      <button class="btn-act btn-move" onclick="moveLead(${l.id},-1)" title="Subir">▲</button>
-      <button class="btn-act btn-move" onclick="moveLead(${l.id},1)" title="Bajar">▼</button>
       <button class="btn-act btn-convert" onclick="convertLead(${l.id})">Convertir</button>
       <button class="btn-act btn-save-row" onclick="saveLeadRow(${l.id})" title="Guardar cambios">✓</button>
       <button class="btn-act btn-del" onclick="delLead(${l.id})">Eliminar</button>
@@ -1396,6 +1402,53 @@ function render(){
   if(!localStorage.getItem('st-total')) document.getElementById('st-total').textContent=clients.length;
   if(!localStorage.getItem('st-leads')) document.getElementById('st-leads').textContent=leads.length;
   updateAutoAUM();
+  initLeadsDnd();
+}
+function initLeadsDnd(){
+  var tbody=document.getElementById('tbody-leads');
+  var rows=tbody.querySelectorAll('tr[data-lid]');
+  if(!rows.length) return;
+  var dragId=null;
+  rows.forEach(function(row){
+    row.draggable=true;
+    row.addEventListener('dragstart',function(e){
+      dragId=parseInt(row.dataset.lid);
+      e.dataTransfer.effectAllowed='move';
+      e.dataTransfer.setData('text/plain',String(dragId));
+      setTimeout(function(){row.classList.add('lead-dragging');},0);
+    });
+    row.addEventListener('dragend',function(){
+      row.classList.remove('lead-dragging');
+      tbody.querySelectorAll('tr[data-lid]').forEach(function(r){r.classList.remove('lead-drop-above','lead-drop-below');});
+      dragId=null;
+    });
+    row.addEventListener('dragover',function(e){
+      e.preventDefault();
+      if(parseInt(row.dataset.lid)===dragId) return;
+      tbody.querySelectorAll('tr[data-lid]').forEach(function(r){r.classList.remove('lead-drop-above','lead-drop-below');});
+      var mid=row.getBoundingClientRect().top+row.getBoundingClientRect().height/2;
+      row.classList.add(e.clientY<mid?'lead-drop-above':'lead-drop-below');
+    });
+    row.addEventListener('dragleave',function(e){
+      if(!row.contains(e.relatedTarget)) row.classList.remove('lead-drop-above','lead-drop-below');
+    });
+    row.addEventListener('drop',function(e){
+      e.preventDefault();
+      row.classList.remove('lead-drop-above','lead-drop-below');
+      var targetId=parseInt(row.dataset.lid);
+      if(!dragId||dragId===targetId) return;
+      var fromIdx=leads.findIndex(function(l){return l.id===dragId;});
+      var toIdx=leads.findIndex(function(l){return l.id===targetId;});
+      if(fromIdx<0||toIdx<0) return;
+      var mid=row.getBoundingClientRect().top+row.getBoundingClientRect().height/2;
+      var insertAfter=e.clientY>=mid;
+      var item=leads.splice(fromIdx,1)[0];
+      var newTo=leads.findIndex(function(l){return l.id===targetId;});
+      leads.splice(insertAfter?newTo+1:newTo,0,item);
+      saveToStorage();
+      render();
+    });
+  });
 }
 
 function renderMgr(){
