@@ -1779,57 +1779,45 @@ async function descargarHedgeyePDF(){
 
     const fillPage = () => {
       sf_(13,41,36); doc.rect(0,0,W,H,'F');
-      sf_(...STRIPE); doc.rect(0,0,W,1,'F');   // 1mm top stripe
+      sf_(...STRIPE); doc.rect(0,0,W,1,'F');
     };
-    const newPage = () => {
-      doc.addPage(); fillPage(); cy=8;
-    };
+    const newPage = () => { doc.addPage(); fillPage(); cy=8; };
 
     // Data
     const bullT = [...new Set([...(d.bullish||[]).map(x=>x.ticker||x), ...(macro.bullish||[])])];
     const bearT = [...new Set([...(d.bearish||[]).map(x=>x.ticker||x), ...(macro.bearish||[])])];
     const secs  = (macro.secciones||[]).filter(s=>s.resumen||(s.puntos||[]).length);
-    const epTitle  = (macro.title||'').trim();
-    const dateStr  = (d.updated||'').replace(/\s+\d+:\d+.*$/,'').trim();
+    const dateStr = (d.updated||'').replace(/\s+\d+:\d+.*$/,'').trim();
 
     // ── Page 1
     fillPage();
-    cy = 9;
+    cy = 10;
 
     // Overline
-    doc.setFont('helvetica','normal'); doc.setFontSize(5); sc_(...OVERLINE);
+    doc.setFont('helvetica','normal'); doc.setFontSize(6.5); sc_(...OVERLINE);
     doc.text('EXPRESS LINE  \xb7  WEALTH MANAGEMENT', ML, cy);
 
     // Main title + date
-    cy += 6;
-    doc.setFont('helvetica','bold'); doc.setFontSize(20); sc_(...TITLE_C);
+    cy += 8;
+    doc.setFont('helvetica','bold'); doc.setFontSize(24); sc_(...TITLE_C);
     doc.text('HEDGEYE RESEARCH', ML, cy);
     if(dateStr){
-      doc.setFont('helvetica','normal'); doc.setFontSize(8); sc_(...DATE_C);
+      doc.setFont('helvetica','bold'); doc.setFontSize(10); sc_(...DATE_C);
       doc.text(dateStr, W-MR, cy, {align:'right'});
     }
 
     // Sub-label + source
-    cy += 4.5;
-    doc.setFont('helvetica','bold'); doc.setFontSize(6); sc_(...SUBMACRO);
+    cy += 6;
+    doc.setFont('helvetica','bold'); doc.setFontSize(7.5); sc_(...SUBMACRO);
     doc.text('THE MACRO SHOW', ML, cy);
-    doc.setFont('helvetica','normal'); doc.setFontSize(5); sc_(...SOURCE_C);
+    doc.setFont('helvetica','normal'); doc.setFontSize(6); sc_(...SOURCE_C);
     doc.text('HEDGEYE RISK MANAGEMENT', W-MR, cy, {align:'right'});
 
-    // Episode title
-    if(epTitle){
-      cy += 5;
-      doc.setFont('helvetica','italic'); doc.setFontSize(7.5); sc_(95,130,108);
-      const etLines = doc.splitTextToSize(epTitle, CW*0.82);
-      doc.text(etLines, ML, cy);
-      cy += etLines.length * 3.5;
-    }
-
-    // Subtle divider
-    cy += 4;
+    // Divider
+    cy += 6;
     sd_(...DIV_C); doc.setLineWidth(0.15);
     doc.line(ML, cy, W-MR, cy);
-    cy += 7;
+    cy += 8;
 
     // ── Bull / Bear boxes ─────────────────────────────────────────────────────
     const halfW = (CW-6)/2;
@@ -1853,9 +1841,8 @@ async function descargarHedgeyePDF(){
     // Bull box
     sf_(...BULL_BG); doc.roundedRect(ML, cy, halfW, boxH, 1.5, 1.5, 'F');
     sd_(...BULL_BD); doc.setLineWidth(0.2); doc.roundedRect(ML, cy, halfW, boxH, 1.5, 1.5, 'S');
-    doc.setFont('helvetica','bold'); doc.setFontSize(5.5); sc_(...BULL_LBL);
+    doc.setFont('helvetica','bold'); doc.setFontSize(6); sc_(...BULL_LBL);
     doc.text('BULLISH', ML+3.5, cy+5.5);
-
     doc.setFont('courier','bold'); doc.setFontSize(6.5);
     let bx=ML+3.5, by=cy+11;
     bullT.forEach(tk=>{
@@ -1870,9 +1857,8 @@ async function descargarHedgeyePDF(){
     // Bear box
     sf_(...BEAR_BG); doc.roundedRect(bearX, cy, halfW, boxH, 1.5, 1.5, 'F');
     sd_(...BEAR_BD); doc.setLineWidth(0.2); doc.roundedRect(bearX, cy, halfW, boxH, 1.5, 1.5, 'S');
-    doc.setFont('helvetica','bold'); doc.setFontSize(5.5); sc_(...BEAR_LBL);
+    doc.setFont('helvetica','bold'); doc.setFontSize(6); sc_(...BEAR_LBL);
     doc.text('BEARISH', bearX+3.5, cy+5.5);
-
     doc.setFont('courier','bold'); doc.setFontSize(6.5);
     let rx=bearX+3.5, ry=cy+11;
     bearT.forEach(tk=>{
@@ -1887,36 +1873,61 @@ async function descargarHedgeyePDF(){
     cy += boxH+8;
 
     // ── "Puntos clave" label ──────────────────────────────────────────────────
-    doc.setFont('helvetica','bold'); doc.setFontSize(5); sc_(...SEC_LBL);
+    doc.setFont('helvetica','bold'); doc.setFontSize(5.5); sc_(...SEC_LBL);
     doc.text('PUNTOS CLAVE DEL EPISODIO', ML, cy);
     sd_(...DIV_C); doc.setLineWidth(0.12);
     doc.line(ML + doc.getTextWidth('PUNTOS CLAVE DEL EPISODIO') + 4, cy-1, W-MR, cy-1);
-    cy += 6;
+    cy += 7;
 
-    // ── 2-column sections (paired) ────────────────────────────────────────────
+    // ── Auto-fit: escalar fuente según cantidad de contenido ──────────────────
     const cW2 = (CW-10)/2;
     const c1X = ML, c2X = ML+cW2+10;
+    const availH = H - cy - 16;
 
+    let bodyPt = 7.5, titlePt = 5.5;
+    let bodyLH = 3.9, titleLH = 3.2;
+
+    if(secs.length > 0){
+      const measureH = (sec) => {
+        if(!sec) return 0;
+        doc.setFont('helvetica','bold'); doc.setFontSize(titlePt);
+        const tl = doc.splitTextToSize((sec.titulo||'').toUpperCase(), cW2-5);
+        doc.setFont('helvetica','normal'); doc.setFontSize(bodyPt);
+        const bl = doc.splitTextToSize(sec.resumen||((sec.puntos||[])[0]||''), cW2-5);
+        return tl.length*titleLH + 2 + bl.length*bodyLH + 8;
+      };
+      let totalH = 0;
+      for(let i=0; i<secs.length; i+=2)
+        totalH += Math.max(measureH(secs[i]), measureH(secs[i+1])||0);
+
+      if(totalH > availH){
+        const scale = Math.max(0.72, availH / totalH);
+        bodyPt  = Math.max(6,   bodyPt  * scale);
+        titlePt = Math.max(4.5, titlePt * scale);
+        bodyLH  = Math.max(3.1, bodyLH  * scale);
+        titleLH = Math.max(2.8, titleLH * scale);
+      }
+    }
+
+    // ── Section helpers ───────────────────────────────────────────────────────
     const measureSec = (sec) => {
       if(!sec) return {h:0};
-      doc.setFont('helvetica','bold'); doc.setFontSize(5.5);
+      doc.setFont('helvetica','bold'); doc.setFontSize(titlePt);
       const tl = doc.splitTextToSize((sec.titulo||'').toUpperCase(), cW2-5);
-      doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
-      const body = sec.resumen || ((sec.puntos||[])[0]||'');
-      const bl = doc.splitTextToSize(body, cW2-5);
-      const h = tl.length*3.2 + 2 + bl.length*3.9 + 8;
-      return {tl, bl, h};
+      doc.setFont('helvetica','normal'); doc.setFontSize(bodyPt);
+      const bl = doc.splitTextToSize(sec.resumen||((sec.puntos||[])[0]||''), cW2-5);
+      return {tl, bl, h: tl.length*titleLH + 2 + bl.length*bodyLH + 8};
     };
 
     const drawSec = (sec, x, startY) => {
       if(!sec) return;
       const {tl, bl} = measureSec(sec);
-      const barH = tl.length*3.2 + 2 + bl.length*3.9;
+      const barH = tl.length*titleLH + 2 + bl.length*bodyLH;
       sf_(...SEC_BAR); doc.rect(x, startY-2, 0.5, barH, 'F');
-      doc.setFont('helvetica','bold'); doc.setFontSize(5.5); sc_(...SEC_TTL);
+      doc.setFont('helvetica','bold'); doc.setFontSize(titlePt); sc_(...SEC_TTL);
       doc.text(tl, x+3, startY);
-      doc.setFont('helvetica','normal'); doc.setFontSize(7.5); sc_(...SEC_TXT);
-      doc.text(bl, x+3, startY + tl.length*3.2 + 2);
+      doc.setFont('helvetica','normal'); doc.setFontSize(bodyPt); sc_(...SEC_TXT);
+      doc.text(bl, x+3, startY + tl.length*titleLH + 2);
     };
 
     for(let i=0; i<secs.length; i+=2){
