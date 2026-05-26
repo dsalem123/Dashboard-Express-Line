@@ -548,7 +548,7 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
       <button class="tab" id="tab-leads" onclick="switchTab('leads',this)">Leads / Prospects</button>
     </div>
     <div class="search-row">
-      <input type="text" id="search" placeholder="Buscar..." oninput="render()" />
+      <input type="text" id="search" placeholder="Buscar..." oninput="_renderDebounced()" />
     </div>
     <div id="view-clientes">
       <div class="table-wrap">
@@ -560,7 +560,7 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
             <th class="sortable" data-sort="custodio" onclick="sortBy('custodio')">Custodio</th>
             <th class="sortable" data-sort="numCuenta" onclick="sortBy('numCuenta')">Nº de cuenta</th>
             <th class="sortable" data-sort="mgrNum" onclick="sortBy('mgrNum')">Manager</th>
-            <th class="sortable" data-sort="nombreContacto" onclick="sortBy('nombreContacto')">Nombre</th>
+            <th class="sortable" data-sort="nombreContacto" onclick="sortBy('nombreContacto')">Titular / Rep.</th>
             <th class="sortable" data-sort="comercial" onclick="sortBy('comercial')">Comercial</th>
             <th class="sortable" data-sort="sociedad" onclick="sortBy('sociedad')">Sociedad/Estructura</th>
             <th class="sortable" data-sort="tipoFee" onclick="sortBy('tipoFee')">Tipo de Fee</th>
@@ -572,7 +572,7 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
             <th class="sortable" data-sort="ultimoContacto" onclick="sortBy('ultimoContacto')">Último contacto</th>
             <th class="sortable" data-sort="mail" onclick="sortBy('mail')">Mail</th>
             <th class="sortable" data-sort="telefono" onclick="sortBy('telefono')">Teléfono</th>
-            <th></th><th></th>
+            <th title="Comentario"></th><th title="Acciones"></th>
           </tr></thead>
           <tbody id="tbody-clients"></tbody>
         </table>
@@ -1061,6 +1061,8 @@ const DEFAULT_LEADS=[
 ].map((n,i)=>({id:100+i,nombre:n,estado:'Nuevo',notas:''}));;
 
 // ── Persistencia localStorage ──
+function debounce(fn,ms){var t;return function(){clearTimeout(t);t=setTimeout(fn,ms);};}
+var _renderDebounced=debounce(render,250);
 function showToast(msg,isError){
   const t=document.getElementById('toast');
   t.textContent=msg;
@@ -1340,7 +1342,7 @@ function sortByLead(col){
 
 function render(){
   const q=document.getElementById('search').value.toLowerCase();
-  var fc=clients.filter(c=>c.nombre.toLowerCase().includes(q)||String(c.comitente).includes(q)||c.broker.toLowerCase().includes(q)||String(c.mgrNum).includes(q));
+  var fc=clients.filter(c=>[c.nombre,String(c.comitente),c.broker,c.custodio,c.numCuenta||'',c.nombreContacto||'',c.comercial||'',c.sociedad||'',c.mail||'',c.telefono||'',c.aum||''].some(v=>v.toLowerCase().includes(q)));
   if(sortCol){
     fc.sort(function(a,b){
       var av=String(a[sortCol]||'').toLowerCase(), bv=String(b[sortCol]||'').toLowerCase();
@@ -1359,7 +1361,7 @@ function render(){
     <td><span class="badge-broker" contenteditable="true" data-key="c-${c.id}-broker">${c.broker}</span></td>
     <td class="mono" contenteditable="true" data-key="c-${c.id}-custodio">${c.custodio}</td>
     <td class="mono" contenteditable="true" data-key="c-${c.id}-numCuenta">${c.numCuenta||''}</td>
-    <td class="mono" contenteditable="true" data-key="c-${c.id}-mgrNum">${c.mgrNum}</td>
+    <td class="mono" style="text-align:center;"><span style="display:inline-block;padding:2px 7px;border-radius:3px;background:rgba(168,218,187,.08);color:var(--mint);font-size:11px;letter-spacing:.5px;">${MANAGERS[c.mgrNum]?MANAGERS[c.mgrNum].abbr:c.mgrNum}</span></td>
     <td class="mono" contenteditable="true" data-key="c-${c.id}-nombreContacto">${c.nombreContacto||''}</td>
     <td class="mono" contenteditable="true" data-key="c-${c.id}-comercial">${c.comercial||''}</td>
     <td class="mono" contenteditable="true" data-key="c-${c.id}-sociedad">${c.sociedad||''}</td>
@@ -1467,6 +1469,7 @@ function initLeadsDnd(){
       var item=leads.splice(fromIdx,1)[0];
       var newTo=leads.findIndex(function(l){return l.id===targetId;});
       leads.splice(insertAfter?newTo+1:newTo,0,item);
+      sortColL=null;
       saveToStorage();
       render();
     });
@@ -2191,17 +2194,16 @@ function convertLead(id){
 
 function delClient(id){if(confirm('¿Eliminar cliente?')){clients=clients.filter(c=>c.id!==id);render();saveToStorage();try{var d=JSON.parse(localStorage.getItem('_deletedClientIds')||'[]');if(!d.includes(id))d.push(id);localStorage.setItem('_deletedClientIds',JSON.stringify(d));}catch(e){}}}
 function delLead(id){if(confirm('¿Eliminar lead?')){leads=leads.filter(l=>l.id!==id);render();saveToStorage();try{var d=JSON.parse(localStorage.getItem('_deletedLeadIds')||'[]');if(!d.includes(id))d.push(id);localStorage.setItem('_deletedLeadIds',JSON.stringify(d));}catch(e){}}}
-function moveLead(id,dir){const i=leads.findIndex(l=>l.id===id);const j=i+dir;if(j<0||j>=leads.length)return;[leads[i],leads[j]]=[leads[j],leads[i]];render();saveToStorage();}
 
 function saveRow(id){
   const c=clients.find(x=>x.id===id);
   if(!c) return;
-  ['nombre','comitente','broker','custodio','numCuenta','mgrNum','nombreContacto','comercial','sociedad','tipoFee','pctFee','aum','riesgo','plazo','seguimiento','ultimoContacto','mail','telefono'].forEach(f=>{
+  ['nombre','comitente','broker','custodio','numCuenta','nombreContacto','comercial','sociedad','tipoFee','pctFee','aum','riesgo','plazo','seguimiento','ultimoContacto','mail','telefono'].forEach(f=>{
     const el=document.querySelector('[data-key="c-'+id+'-'+f+'"]');
     if(el){const v=el.textContent.trim();c[f]=v==='—'?'':v;}
   });
   c.comitente=parseInt(c.comitente)||c.comitente;
-  c.mgrNum=parseInt(c.mgrNum)||c.mgrNum;
+  if(c.ultimoContacto&&!/^\d{2}\/\d{2}\/\d{2,4}$/.test(c.ultimoContacto)&&!/^\d{4}-\d{2}-\d{2}$/.test(c.ultimoContacto)){c.ultimoContacto='';}
   saveToStorage();
   showToast('Guardado ✓');
 }
@@ -2228,9 +2230,12 @@ function parseAUM(s){
 }
 function updateAutoAUM(){
   var total=clients.reduce(function(sum,c){return sum+parseAUM(c.aum);},0);
-  if(!total) return;
-  var fmt=total>=1e6?'$'+(total/1e6).toFixed(1)+'M':total>=1e3?'$'+Math.round(total/1e3)+'k':'$'+Math.round(total);
-  document.getElementById('kpi-aum').textContent=fmt;
+  if(total){
+    var fmt=total>=1e6?'$'+(total/1e6).toFixed(1)+'M':total>=1e3?'$'+Math.round(total/1e3)+'k':'$'+Math.round(total);
+    document.getElementById('kpi-aum').textContent=fmt;
+  }
+  var enApertura=leads.filter(function(l){return l.estado==='En Proceso';}).length;
+  if(enApertura>0){document.getElementById('kpi-apertura').textContent=enApertura;}
 }
 
 function updateSyncStatus(){
@@ -2320,6 +2325,7 @@ function registrarContactoHoy(){
   document.getElementById('pf-ult-row').innerHTML='<span style="color:var(--vg)">Último contacto:</span> <span>'+fmt+'</span>';
   addActividad(perfilClientId,'Contacto registrado','contacto');
   saveToStorage();render();
+  renderProximoStatus(clients.find(function(x){return x.id===perfilClientId;}));
   showToast('Contacto registrado ✓');
 }
 function guardarNota(){
