@@ -260,6 +260,8 @@ try:
     wait = WebDriverWait(driver, 25)
 
     # ── LOGIN ────────────────────────────────────────────────────────────────
+    MACRO_URL = 'https://app.hedgeye.com/feed_items/all?page=1&with_category=43-the-macro-show'
+
     if has_cookies:
         print("Cargando cookies guardadas...", flush=True)
         driver.get('https://app.hedgeye.com')
@@ -269,15 +271,15 @@ try:
             for cookie in json.load(f):
                 try: driver.add_cookie(cookie)
                 except: pass
-        driver.get('https://app.hedgeye.com/insights')
+        driver.get(MACRO_URL)
         wait_for_page(driver, 30)
         time.sleep(3)
-        if 'sign_in' in driver.current_url:
+        if 'sign_in' in driver.current_url or 'accounts.hedgeye.com' in driver.current_url:
             print("Cookies expiradas - haciendo login completo", flush=True)
             has_cookies = False
             os.remove(COOKIES_FILE)
         else:
-            print(f"Login via cookies OK: {driver.current_url}", flush=True)
+            print(f"Login via cookies OK — en The Macro Show: {driver.current_url}", flush=True)
             try: driver.minimize_window()
             except: pass
 
