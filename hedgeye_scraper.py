@@ -87,6 +87,15 @@ CF_MARKERS = ['un momento', 'just a moment', 'verificaci', 'momento...', 'moment
 def is_cf_page(driver):
     return any(s in driver.title.lower() for s in CF_MARKERS)
 
+def check_session(driver, cookies_file):
+    """Si fue redirigido al login, borra cookies y lanza excepción."""
+    if 'sign_in' in driver.current_url or 'accounts.hedgeye.com' in driver.current_url:
+        print(f"  Sesión expirada mid-scrape (URL: {driver.current_url})", flush=True)
+        if os.path.exists(cookies_file):
+            os.remove(cookies_file)
+            print("  Cookies borradas — próximo scrape hará login completo", flush=True)
+        raise Exception("Sesión expirada durante el scraping — cookies borradas, reintentar")
+
 def wait_for_page(driver, timeout=90):
     """Espera que Cloudflare resuelva el challenge."""
     deadline = time.time() + timeout
@@ -240,7 +249,7 @@ try:
     options.add_argument('--disable-dev-shm-usage')
     options.add_argument('--no-sandbox')
     # Siempre non-headless: headless falla en Windows Y Cloudflare Turnstile lo detecta
-    driver = uc.Chrome(options=options, headless=False, version_main=147)
+    driver = uc.Chrome(options=options, headless=False, version_main=148)
 
     # Deshabilitar window.print() para evitar dialogos de impresion
     driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
@@ -320,6 +329,7 @@ try:
     driver.get('https://app.hedgeye.com/stock_positions/open_signals')
     wait_for_page(driver, 90)
     time.sleep(6)
+    check_session(driver, COOKIES_FILE)
     html = driver.page_source
     dbg('03_open_signals.html', html)
     print(f"Open signals title: '{driver.title}'", flush=True)
@@ -333,6 +343,7 @@ try:
     driver.get('https://app.hedgeye.com/feed_items/all?page=1&with_category=43-the-macro-show')
     wait_for_page(driver, 90)
     time.sleep(6)
+    check_session(driver, COOKIES_FILE)
     html = driver.page_source
     dbg('04_macro_list.html', html)
     soup_m = BeautifulSoup(html, 'html.parser')
