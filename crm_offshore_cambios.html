@@ -509,13 +509,13 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
 </div>
 
 <div class="kpi-bar">
-  <div class="kpi-item editable" onclick="startKPIEdit('st-total')">
+  <div class="kpi-item">
     <div class="kpi-label">Clientes</div>
-    <span class="kpi-val" id="st-total">0</span><span class="kpi-pencil">✏</span>
+    <span class="kpi-val" id="st-total">0</span>
   </div>
-  <div class="kpi-item editable" onclick="startKPIEdit('st-leads')">
+  <div class="kpi-item">
     <div class="kpi-label">Leads</div>
-    <span class="kpi-val" id="st-leads">0</span><span class="kpi-pencil">✏</span>
+    <span class="kpi-val" id="st-leads">0</span>
   </div>
   <div class="kpi-item editable" onclick="startKPIEdit('kpi-apertura')">
     <div class="kpi-label">En Apertura</div>
@@ -1285,7 +1285,7 @@ loadFromStorage();
 })();
 
 // ── KPI bar ──────────────────────────────────────────────────────────────────
-const _KPI_FIELDS = ['st-total','st-leads','kpi-apertura','kpi-facturacion','kpi-aum','kpi-objetivo','kpi-tiempo'];
+const _KPI_FIELDS = ['kpi-apertura','kpi-facturacion','kpi-aum','kpi-objetivo','kpi-tiempo'];
 (function initKPIs(){
   _KPI_FIELDS.forEach(id=>{
     const el=document.getElementById(id);
@@ -1419,8 +1419,10 @@ function render(){
     });
     return rows;
   })();
-  if(!localStorage.getItem('st-total')) document.getElementById('st-total').textContent=clients.length;
-  if(!localStorage.getItem('st-leads')) document.getElementById('st-leads').textContent=leads.length;
+  document.getElementById('st-total').textContent=clients.length;
+  document.getElementById('st-leads').textContent=leads.length;
+  localStorage.setItem('st-total',clients.length);
+  localStorage.setItem('st-leads',leads.length);
   updateAutoAUM();
   initLeadsDnd();
 }
