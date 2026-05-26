@@ -939,7 +939,7 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
       </div>
     </div>
     <div class="field"><label>Nº de cuenta (Pershing)</label><input type="text" id="f-numcuenta" placeholder="Ej: RDS011109" /></div>
-    <div class="field"><label>Nombre</label><input type="text" id="f-nombre-contacto" placeholder="Nombre del titular/rep. de la sociedad" /></div>
+    <div class="field"><label>Titular / Rep.</label><input type="text" id="f-nombre-contacto" placeholder="Nombre del titular/rep. de la sociedad" /></div>
     <div class="field-row">
       <div class="field"><label>Comercial</label><input type="text" id="f-comercial" placeholder="" /></div>
       <div class="field"><label>Sociedad / Estructura</label><input type="text" id="f-sociedad" placeholder="Ej. NEVIS NBCD" /></div>
@@ -949,6 +949,9 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
     </div>
     <div class="field-row">
       <div class="field"><label>% de Fee</label><input type="text" id="f-pctfee" placeholder="Ej. 1.5%" /></div>
+      <div class="field"><label>AUM</label><input type="text" id="f-aum" placeholder="Ej. 1.5M" /></div>
+    </div>
+    <div class="field-row">
       <div class="field"><label>Riesgo</label><input type="text" id="f-riesgo" placeholder="Ej. Moderado, Conservador..." /></div>
     </div>
     <div class="field-row">
@@ -1325,6 +1328,7 @@ function switchTab(tab,el){
   el.classList.add('active');
   document.getElementById('view-clientes').style.display=tab==='clientes'?'':'none';
   document.getElementById('view-leads').style.display=tab==='leads'?'':'none';
+  document.getElementById('search').value='';
   render();
 }
 
@@ -1504,7 +1508,7 @@ function openModal(){
   document.getElementById('f-nombre-contacto').value='';document.getElementById('f-comercial').value='';document.getElementById('f-sociedad').value='';document.getElementById('f-tipofee').value='';
   document.getElementById('f-pctfee').value='';document.getElementById('f-seguimiento').value='';
   document.getElementById('f-ultimocontacto').value='';document.getElementById('f-riesgo').value='';
-  document.getElementById('f-plazo').value='';document.getElementById('f-mail').value='';
+  document.getElementById('f-aum').value='';document.getElementById('f-plazo').value='';document.getElementById('f-mail').value='';
   document.getElementById('f-telefono').value='';document.getElementById('f-detalles').value='';
   document.getElementById('f-lead-nombre').value='';document.getElementById('f-lead-estado').value='Nuevo';
   document.getElementById('f-lead-notas').value='';
@@ -2108,7 +2112,7 @@ function save(){
     const mn=document.getElementById('f-mgr').value;
     const br=document.getElementById('f-broker').value;
     const cu=document.getElementById('f-custodio').value;
-    const extra={numCuenta:document.getElementById('f-numcuenta').value.trim(),nombreContacto:document.getElementById('f-nombre-contacto').value.trim(),comercial:document.getElementById('f-comercial').value.trim(),sociedad:document.getElementById('f-sociedad').value.trim(),tipoFee:document.getElementById('f-tipofee').value.trim(),pctFee:document.getElementById('f-pctfee').value.trim(),seguimiento:document.getElementById('f-seguimiento').value.trim(),ultimoContacto:document.getElementById('f-ultimocontacto').value,riesgo:document.getElementById('f-riesgo').value.trim(),plazo:document.getElementById('f-plazo').value.trim(),mail:document.getElementById('f-mail').value.trim(),telefono:document.getElementById('f-telefono').value.trim(),detalles:document.getElementById('f-detalles').value.trim()};
+    const extra={numCuenta:document.getElementById('f-numcuenta').value.trim(),nombreContacto:document.getElementById('f-nombre-contacto').value.trim(),comercial:document.getElementById('f-comercial').value.trim(),sociedad:document.getElementById('f-sociedad').value.trim(),tipoFee:document.getElementById('f-tipofee').value.trim(),pctFee:document.getElementById('f-pctfee').value.trim(),aum:document.getElementById('f-aum').value.trim(),seguimiento:document.getElementById('f-seguimiento').value.trim(),ultimoContacto:document.getElementById('f-ultimocontacto').value,riesgo:document.getElementById('f-riesgo').value.trim(),plazo:document.getElementById('f-plazo').value.trim(),mail:document.getElementById('f-mail').value.trim(),telefono:document.getElementById('f-telefono').value.trim(),detalles:document.getElementById('f-detalles').value.trim()};
     if(!n||!co||!mn){alert('Completá nombre, comitente y manager');return;}
     if(editId){const c=clients.find(x=>x.id===editId);c.nombre=n;c.comitente=co;c.mgrNum=parseInt(mn);c.broker=br;c.custodio=cu;Object.assign(c,extra);}
     else{
@@ -2139,6 +2143,7 @@ function editClient(id){
   document.getElementById('f-sociedad').value=c.sociedad||'';
   document.getElementById('f-tipofee').value=c.tipoFee||'';
   document.getElementById('f-pctfee').value=c.pctFee||'';
+  document.getElementById('f-aum').value=c.aum||'';
   document.getElementById('f-seguimiento').value=c.seguimiento||'';
   document.getElementById('f-ultimocontacto').value=c.ultimoContacto||'';
   document.getElementById('f-riesgo').value=c.riesgo||'';
@@ -2181,12 +2186,17 @@ function convertLead(id){
     const mn=document.getElementById('f-mgr').value;
     const br=document.getElementById('f-broker').value;
     const cu=document.getElementById('f-custodio').value;
+    const extra={numCuenta:document.getElementById('f-numcuenta').value.trim(),nombreContacto:document.getElementById('f-nombre-contacto').value.trim(),comercial:document.getElementById('f-comercial').value.trim(),sociedad:document.getElementById('f-sociedad').value.trim(),tipoFee:document.getElementById('f-tipofee').value.trim(),pctFee:document.getElementById('f-pctfee').value.trim(),aum:document.getElementById('f-aum').value.trim(),seguimiento:document.getElementById('f-seguimiento').value.trim(),ultimoContacto:document.getElementById('f-ultimocontacto').value,riesgo:document.getElementById('f-riesgo').value.trim(),plazo:document.getElementById('f-plazo').value.trim(),mail:document.getElementById('f-mail').value.trim(),telefono:document.getElementById('f-telefono').value.trim(),detalles:document.getElementById('f-detalles').value.trim()};
     if(!n||!co||!mn){alert('Completá nombre, comitente y manager');return;}
-    clients.push({id:nextId++,nombre:n,comitente:parseInt(co)||co,broker:br||'—',custodio:cu||'—',mgrNum:parseInt(mn)});
+    clients.push({id:nextId++,nombre:n,comitente:parseInt(co)||co,broker:br||'—',custodio:cu||'—',mgrNum:parseInt(mn),...extra});
     leads=leads.filter(x=>x.id!==id);
+    var _fr=document.getElementById('portfolios-frame');
+    var _mgr=MANAGERS[parseInt(mn)]?MANAGERS[parseInt(mn)].abbr:mn;
+    if(_fr&&_fr.contentWindow)_fr.contentWindow.postMessage({type:'pfol_add_client',name:n,accountNo:extra.numCuenta||'',manager:_mgr},'*');
     saveToStorage();
     try{var _dl=JSON.parse(localStorage.getItem('_deletedLeadIds')||'[]');if(!_dl.includes(id))_dl.push(id);localStorage.setItem('_deletedLeadIds',JSON.stringify(_dl));}catch(e){}
     closeModal();
+    showToast('Lead convertido a cliente ✓');
     switchTab('clientes',document.getElementById('tab-clientes'));
   };
   document.getElementById('modal').classList.add('open');
@@ -3671,6 +3681,8 @@ function propCreateFromModal(){
     var pct=parseFloat(r.querySelector('.prop-modal-row-pct').value)||0;
     if(n||pct)assets.push({name:n,pct:pct});
   });
+  var totalPct=assets.reduce(function(s,a){return s+(parseFloat(a.pct)||0);},0);
+  if(assets.length>0&&Math.abs(totalPct-100)>1){showToast('Los porcentajes deben sumar 100% (actual: '+totalPct.toFixed(1)+'%)',true);return;}
   var id='prop_'+Date.now();
   var today=new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'long',year:'numeric'});
   PROP.proposals.unshift({id:id,clientName:clientName,name:name,description:desc,assets:assets,createdAt:today});
