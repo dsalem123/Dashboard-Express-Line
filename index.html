@@ -1745,9 +1745,41 @@ async function descargarHedgeyePDF(){
 
     let cy = 0;
 
+    // ── Palette (muted / brand-aligned) ──────────────────────────────────────
+    // Stripes: very dark gold, thin
+    const STRIPE   = [82,66,26];
+    // Header
+    const OVERLINE = [72,108,88];
+    const TITLE_C  = [228,230,220];
+    const DATE_C   = [148,154,140];
+    const SUBMACRO = [148,120,46];   // "THE MACRO SHOW" — muted gold
+    const SOURCE_C = [52,76,62];
+    // Divider
+    const DIV_C    = [48,68,55];
+    // Bull
+    const BULL_BG  = [13,43,32];
+    const BULL_BD  = [28,68,46];
+    const BULL_LBL = [52,125,76];
+    const BULL_CBG = [17,52,37];
+    const BULL_CTX = [52,138,80];
+    // Bear
+    const BEAR_BG  = [26,13,12];
+    const BEAR_BD  = [65,28,24];
+    const BEAR_LBL = [138,56,48];
+    const BEAR_CBG = [36,15,14];
+    const BEAR_CTX = [148,60,50];
+    // Sections
+    const SEC_LBL  = [52,76,62];
+    const SEC_BAR  = [72,58,22];     // accent bar — very dark gold
+    const SEC_TTL  = [162,132,50];   // section title — muted gold
+    const SEC_TXT  = [172,178,166];  // body text
+    // Footer
+    const FOOT_LN  = [38,56,46];
+    const FOOT_TX  = [48,70,58];
+
     const fillPage = () => {
       sf_(13,41,36); doc.rect(0,0,W,H,'F');
-      sf_(201,168,76); doc.rect(0,0,W,2.5,'F');
+      sf_(...STRIPE); doc.rect(0,0,W,1,'F');   // 1mm top stripe
     };
     const newPage = () => {
       doc.addPage(); fillPage(); cy=8;
@@ -1760,44 +1792,42 @@ async function descargarHedgeyePDF(){
     const epTitle  = (macro.title||'').trim();
     const dateStr  = (d.updated||'').replace(/\s+\d+:\d+.*$/,'').trim();
 
-    // ── Page 1 background + stripe
+    // ── Page 1
     fillPage();
-    cy = 8;
+    cy = 9;
 
     // Overline
-    doc.setFont('helvetica','normal'); doc.setFontSize(5.5); sc_(122,184,154);
+    doc.setFont('helvetica','normal'); doc.setFontSize(5); sc_(...OVERLINE);
     doc.text('EXPRESS LINE  \xb7  WEALTH MANAGEMENT', ML, cy);
 
-    // Main title
-    cy += 5.5;
-    doc.setFont('helvetica','bold'); doc.setFontSize(22); sc_(236,237,227);
+    // Main title + date
+    cy += 6;
+    doc.setFont('helvetica','bold'); doc.setFontSize(20); sc_(...TITLE_C);
     doc.text('HEDGEYE RESEARCH', ML, cy);
-
-    // Date right
     if(dateStr){
-      doc.setFont('helvetica','bold'); doc.setFontSize(9); sc_(236,237,227);
+      doc.setFont('helvetica','normal'); doc.setFontSize(8); sc_(...DATE_C);
       doc.text(dateStr, W-MR, cy, {align:'right'});
     }
 
     // Sub-label + source
     cy += 4.5;
-    doc.setFont('helvetica','bold'); doc.setFontSize(6.5); sc_(201,168,76);
+    doc.setFont('helvetica','bold'); doc.setFontSize(6); sc_(...SUBMACRO);
     doc.text('THE MACRO SHOW', ML, cy);
-    doc.setFont('helvetica','normal'); doc.setFontSize(5.5); sc_(74,107,94);
+    doc.setFont('helvetica','normal'); doc.setFontSize(5); sc_(...SOURCE_C);
     doc.text('HEDGEYE RISK MANAGEMENT', W-MR, cy, {align:'right'});
 
-    // Episode title (italic, wrapped)
+    // Episode title
     if(epTitle){
       cy += 5;
-      doc.setFont('helvetica','italic'); doc.setFontSize(8); sc_(168,218,187);
-      const etLines = doc.splitTextToSize(epTitle, CW*0.8);
+      doc.setFont('helvetica','italic'); doc.setFontSize(7.5); sc_(95,130,108);
+      const etLines = doc.splitTextToSize(epTitle, CW*0.82);
       doc.text(etLines, ML, cy);
-      cy += etLines.length * 3.6;
+      cy += etLines.length * 3.5;
     }
 
-    // Gold divider
+    // Subtle divider
     cy += 4;
-    sd_(201,168,76); doc.setLineWidth(0.3);
+    sd_(...DIV_C); doc.setLineWidth(0.15);
     doc.line(ML, cy, W-MR, cy);
     cy += 7;
 
@@ -1805,13 +1835,12 @@ async function descargarHedgeyePDF(){
     const halfW = (CW-6)/2;
     const bearX  = ML+halfW+6;
 
-    // Compute chip rows (font must be set before getTextWidth)
     const chipRowCount = (tickers, boxInnerW) => {
       if(!tickers.length) return 1;
-      doc.setFont('courier','bold'); doc.setFontSize(7);
+      doc.setFont('courier','bold'); doc.setFontSize(6.5);
       let tx=0, rows=1;
       tickers.forEach(tk=>{
-        const cw=doc.getTextWidth(tk)+4;
+        const cw=doc.getTextWidth(tk)+3.5;
         if(tx+cw>boxInnerW){ tx=0; rows++; }
         tx+=cw+2;
       });
@@ -1819,79 +1848,75 @@ async function descargarHedgeyePDF(){
     };
     const bRows = chipRowCount(bullT, halfW-6);
     const eRows = chipRowCount(bearT, halfW-6);
-    const boxH  = Math.max(bRows, eRows)*5.5 + 10;
+    const boxH  = Math.max(bRows, eRows)*5.2 + 11;
 
-    // Bull box fill + border
-    sf_(17,50,38); doc.roundedRect(ML, cy, halfW, boxH, 1.5, 1.5, 'F');
-    sd_(46,204,113); doc.setLineWidth(0.25); doc.roundedRect(ML, cy, halfW, boxH, 1.5, 1.5, 'S');
-    doc.setFont('helvetica','bold'); doc.setFontSize(6); sc_(46,204,113);
-    doc.text('▲ BULLISH', ML+3.5, cy+5.5);
+    // Bull box
+    sf_(...BULL_BG); doc.roundedRect(ML, cy, halfW, boxH, 1.5, 1.5, 'F');
+    sd_(...BULL_BD); doc.setLineWidth(0.2); doc.roundedRect(ML, cy, halfW, boxH, 1.5, 1.5, 'S');
+    doc.setFont('helvetica','bold'); doc.setFontSize(5.5); sc_(...BULL_LBL);
+    doc.text('BULLISH', ML+3.5, cy+5.5);
 
-    // Bull chips
-    doc.setFont('courier','bold'); doc.setFontSize(7);
+    doc.setFont('courier','bold'); doc.setFontSize(6.5);
     let bx=ML+3.5, by=cy+11;
     bullT.forEach(tk=>{
-      const cw=doc.getTextWidth(tk)+4;
-      if(bx+cw>ML+halfW-2){ bx=ML+3.5; by+=5.5; }
-      sf_(25,70,48); doc.roundedRect(bx-1,by-3.8,cw+1,5,0.8,0.8,'F');
-      sc_(46,204,113); doc.text(tk,bx+1,by);
+      const cw=doc.getTextWidth(tk)+3.5;
+      if(bx+cw>ML+halfW-2){ bx=ML+3.5; by+=5.2; }
+      sf_(...BULL_CBG); doc.roundedRect(bx-0.8,by-3.6,cw+0.8,4.5,0.6,0.6,'F');
+      sc_(...BULL_CTX); doc.text(tk,bx+0.8,by);
       bx+=cw+2;
     });
-    if(!bullT.length){ sc_(74,107,94); doc.text('—',ML+3.5,cy+11); }
+    if(!bullT.length){ sc_(...SOURCE_C); doc.text('—',ML+3.5,cy+11); }
 
-    // Bear box fill + border
-    sf_(50,17,15); doc.roundedRect(bearX, cy, halfW, boxH, 1.5, 1.5, 'F');
-    sd_(224,92,75); doc.setLineWidth(0.25); doc.roundedRect(bearX, cy, halfW, boxH, 1.5, 1.5, 'S');
-    doc.setFont('helvetica','bold'); doc.setFontSize(6); sc_(224,92,75);
-    doc.text('▼ BEARISH', bearX+3.5, cy+5.5);
+    // Bear box
+    sf_(...BEAR_BG); doc.roundedRect(bearX, cy, halfW, boxH, 1.5, 1.5, 'F');
+    sd_(...BEAR_BD); doc.setLineWidth(0.2); doc.roundedRect(bearX, cy, halfW, boxH, 1.5, 1.5, 'S');
+    doc.setFont('helvetica','bold'); doc.setFontSize(5.5); sc_(...BEAR_LBL);
+    doc.text('BEARISH', bearX+3.5, cy+5.5);
 
-    // Bear chips
-    doc.setFont('courier','bold'); doc.setFontSize(7);
+    doc.setFont('courier','bold'); doc.setFontSize(6.5);
     let rx=bearX+3.5, ry=cy+11;
     bearT.forEach(tk=>{
-      const cw=doc.getTextWidth(tk)+4;
-      if(rx+cw>bearX+halfW-2){ rx=bearX+3.5; ry+=5.5; }
-      sf_(65,20,18); doc.roundedRect(rx-1,ry-3.8,cw+1,5,0.8,0.8,'F');
-      sc_(224,92,75); doc.text(tk,rx+1,ry);
+      const cw=doc.getTextWidth(tk)+3.5;
+      if(rx+cw>bearX+halfW-2){ rx=bearX+3.5; ry+=5.2; }
+      sf_(...BEAR_CBG); doc.roundedRect(rx-0.8,ry-3.6,cw+0.8,4.5,0.6,0.6,'F');
+      sc_(...BEAR_CTX); doc.text(tk,rx+0.8,ry);
       rx+=cw+2;
     });
-    if(!bearT.length){ sc_(74,107,94); doc.text('—',bearX+3.5,cy+11); }
+    if(!bearT.length){ sc_(...SOURCE_C); doc.text('—',bearX+3.5,cy+11); }
 
-    cy += boxH+7;
+    cy += boxH+8;
 
-    // ── "Puntos clave" label ───────────────────────────────────────────────────
-    doc.setFont('helvetica','bold'); doc.setFontSize(5.5); sc_(74,107,94);
+    // ── "Puntos clave" label ──────────────────────────────────────────────────
+    doc.setFont('helvetica','bold'); doc.setFontSize(5); sc_(...SEC_LBL);
     doc.text('PUNTOS CLAVE DEL EPISODIO', ML, cy);
-    const lblEndX = ML + doc.getTextWidth('PUNTOS CLAVE DEL EPISODIO') + 4;
-    sd_(40,60,50); doc.setLineWidth(0.15);
-    doc.line(lblEndX, cy-1, W-MR, cy-1);
-    cy += 5.5;
+    sd_(...DIV_C); doc.setLineWidth(0.12);
+    doc.line(ML + doc.getTextWidth('PUNTOS CLAVE DEL EPISODIO') + 4, cy-1, W-MR, cy-1);
+    cy += 6;
 
     // ── 2-column sections (paired) ────────────────────────────────────────────
     const cW2 = (CW-10)/2;
     const c1X = ML, c2X = ML+cW2+10;
 
-    // Returns {titleLines, bodyLines, height} for one section
     const measureSec = (sec) => {
       if(!sec) return {h:0};
-      doc.setFont('helvetica','bold'); doc.setFontSize(6);
-      const tl = doc.splitTextToSize((sec.titulo||'').toUpperCase(), cW2-4);
-      doc.setFont('helvetica','normal'); doc.setFontSize(8);
+      doc.setFont('helvetica','bold'); doc.setFontSize(5.5);
+      const tl = doc.splitTextToSize((sec.titulo||'').toUpperCase(), cW2-5);
+      doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
       const body = sec.resumen || ((sec.puntos||[])[0]||'');
-      const bl = doc.splitTextToSize(body, cW2-4);
-      const h = tl.length*3.4 + 2 + bl.length*4 + 6;
+      const bl = doc.splitTextToSize(body, cW2-5);
+      const h = tl.length*3.2 + 2 + bl.length*3.9 + 8;
       return {tl, bl, h};
     };
 
     const drawSec = (sec, x, startY) => {
       if(!sec) return;
       const {tl, bl} = measureSec(sec);
-      const barH = tl.length*3.4 + 2 + bl.length*4;
-      sf_(201,168,76); doc.rect(x, startY-2, 0.7, barH, 'F');
-      doc.setFont('helvetica','bold'); doc.setFontSize(6); sc_(201,168,76);
+      const barH = tl.length*3.2 + 2 + bl.length*3.9;
+      sf_(...SEC_BAR); doc.rect(x, startY-2, 0.5, barH, 'F');
+      doc.setFont('helvetica','bold'); doc.setFontSize(5.5); sc_(...SEC_TTL);
       doc.text(tl, x+3, startY);
-      doc.setFont('helvetica','normal'); doc.setFontSize(8); sc_(200,210,200);
-      doc.text(bl, x+3, startY + tl.length*3.4 + 2);
+      doc.setFont('helvetica','normal'); doc.setFontSize(7.5); sc_(...SEC_TXT);
+      doc.text(bl, x+3, startY + tl.length*3.2 + 2);
     };
 
     for(let i=0; i<secs.length; i+=2){
@@ -1905,21 +1930,21 @@ async function descargarHedgeyePDF(){
     }
 
     if(!secs.length && macro.notas_pendientes){
-      doc.setFont('helvetica','italic'); doc.setFontSize(8); sc_(122,184,154);
+      doc.setFont('helvetica','italic'); doc.setFontSize(8); sc_(...OVERLINE);
       doc.text('Notas del episodio aun no publicadas. Actualizate mas tarde.', ML, cy);
       cy += 10;
     }
 
     // ── Footer ────────────────────────────────────────────────────────────────
     const footY = H-8;
-    sd_(50,75,65); doc.setLineWidth(0.2);
+    sd_(...FOOT_LN); doc.setLineWidth(0.15);
     doc.line(ML, footY-4, W-MR, footY-4);
-    doc.setFont('helvetica','normal'); doc.setFontSize(6); sc_(55,82,70);
+    doc.setFont('helvetica','normal'); doc.setFontSize(5.5); sc_(...FOOT_TX);
     doc.text('Dashboard ExpressLine  \xb7  Wealth Management', ML, footY);
     doc.text('Hedgeye Risk Management  \xb7  Distribuci\xf3n interna', W-MR, footY, {align:'right'});
 
-    // Bottom stripe
-    sf_(201,168,76); doc.rect(0, H-2.5, W, 2.5, 'F');
+    // Bottom stripe (1mm, same as top)
+    sf_(...STRIPE); doc.rect(0, H-1, W, 1, 'F');
 
     doc.save('Hedgeye_MacroShow_'+fechaNombre+'.pdf');
 
