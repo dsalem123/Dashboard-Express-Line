@@ -1746,282 +1746,232 @@ async function descargarHedgeyePDF(){
   try {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit:'mm', format:'a4', orientation:'portrait' });
-    const W=210, H=297, ML=15, MR=15, CW=W-ML-MR;
+    const W=210, H=297, ML=18, MR=18, CW=W-ML-MR;
     const MMPT = 25.4/72;
 
-    // ── Paleta institucional ──────────────────────────────────────────────────
-    const C = {
-      bg:     [13,41,36],   hdrBg:  [9,30,26],
-      gold:   [201,168,76], goldDk: [130,100,35], goldMut:[70,55,18],
-      cream:  [232,234,223], white: [210,215,205],
-      sage:   [107,133,120], sageLt:[145,168,155], sageDk:[65,88,75],
-      divider:[30,52,44],
-      bullBg: [11,40,28],   bullBd: [28,72,46],   bullTx:[55,190,95],  bullChp:[15,55,35],
-      bearBg: [34,13,11],   bearBd: [78,28,22],   bearTx:[215,78,65],  bearChp:[46,16,13],
-      secBar: [115,90,28],  secTtl: [218,188,98], secTxt:[175,182,168],
-      execBg: [15,46,40],   execBd: [110,88,28],
-      tagBg:  [22,58,48],
-    };
-    const sf=(a)=>doc.setFillColor(...a);
-    const sd=(a)=>doc.setDrawColor(...a);
-    const sc=(a)=>doc.setTextColor(...a);
+    // Ivory Authority: fondo crema, tinta verde oscuro, oro solo en reglas
+    const CR = [236,237,227];   // cream bg
+    const DG = [13,41,36];      // dark green — tinta principal
+    const MG = [60,90,78];      // medium green — tinta secundaria
+    const LG = [105,135,120];   // light green — captions/footer
+    const GD = [201,168,76];    // gold — reglas y labels de sección
+
+    const sf = a => doc.setFillColor(...a);
+    const sd = a => doc.setDrawColor(...a);
+    const sc = a => doc.setTextColor(...a);
+
+    const fillCream = () => { sf(CR); doc.rect(0,0,W,H,'F'); };
+    const rule      = (y, lw=0.3) => { sd(GD); doc.setLineWidth(lw); doc.line(ML,y,W-MR,y); };
+
+    const bullAll = [...new Set([...(d.bullish||[]).map(x=>x.ticker||x), ...(macro.bullish||[])])];
+    const bearAll = [...new Set([...(d.bearish||[]).map(x=>x.ticker||x), ...(macro.bearish||[])])];
+    const secs    = (macro.secciones||[]).filter(s=>s.titulo&&(s.resumen||(s.puntos||[]).length));
+    const dateStr = (d.updated||'').replace(/(\d{4}-\d{2}-\d{2}).*/,'$1').trim();
+    const execSum = (macro.resumen_ejecutivo&&typeof macro.resumen_ejecutivo==='object') ? macro.resumen_ejecutivo : null;
 
     let cy=0, pageNum=1;
 
-    // ── Datos ─────────────────────────────────────────────────────────────────
-    const bullAll = [...new Set([...(d.bullish||[]).map(x=>x.ticker||x), ...(macro.bullish||[])])];
-    const bearAll = [...new Set([...(d.bearish||[]).map(x=>x.ticker||x), ...(macro.bearish||[])])];
-    const secs    = (macro.secciones||[]).filter(s => s.titulo && (s.resumen||(s.puntos||[]).length));
-    const dateStr = (d.updated||'').replace(/(\d{4}-\d{2}-\d{2}).*/,'$1').trim();
-    const execSum = (macro.resumen_ejecutivo && typeof macro.resumen_ejecutivo==='object') ? macro.resumen_ejecutivo : null;
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
-    const fillPage = () => { sf(C.bg); doc.rect(0,0,W,H,'F'); sf(C.goldMut); doc.rect(0,0,W,2,'F'); };
-
-    const pageFooter = () => {
-      const fY=H-9;
-      sd(C.divider); doc.setLineWidth(0.18); doc.line(ML,fY-3.5,W-MR,fY-3.5);
-      doc.setFont('helvetica','normal'); doc.setFontSize(5.5); sc(C.sage);
-      doc.text('Dashboard ExpressLine  ·  Wealth Management', ML, fY);
-      doc.text('Hedgeye Risk Management  ·  Distribución interna  ·  p.'+pageNum, W-MR, fY, {align:'right'});
-      sf(C.goldMut); doc.rect(0,H-2,W,2,'F');
+    const doFooter = () => {
+      const fy = H-9;
+      rule(fy-3, 0.2);
+      doc.setFont('helvetica','normal'); doc.setFontSize(6); sc(LG);
+      doc.text('ExpressLine  ·  Wealth Management', ML, fy);
+      doc.text('Hedgeye Risk Management  ·  Distribución interna  ·  p.'+pageNum, W-MR, fy, {align:'right'});
     };
 
-    const newPage = () => {
-      pageFooter(); doc.addPage(); pageNum++;
-      fillPage();
-      const mhH=13; sf(C.hdrBg); doc.rect(0,0,W,mhH,'F');
-      sf(C.gold); doc.rect(0,0,2.5,mhH,'F');
-      doc.setFont('helvetica','bold'); doc.setFontSize(7.5); sc(C.gold);
-      doc.text('HEDGEYE RESEARCH', ML+4, 6);
-      doc.setFont('helvetica','normal'); doc.setFontSize(6); sc(C.sageLt||C.sage);
-      doc.text('THE MACRO SHOW', ML+4, 11);
-      if(dateStr){ sc(C.sage); doc.text(dateStr, W-MR, 9, {align:'right'}); }
-      sd(C.goldDk); doc.setLineWidth(0.3); doc.line(0,mhH,W,mhH);
-      cy = mhH+7;
+    const nextPage = () => {
+      doFooter(); doc.addPage(); pageNum++;
+      fillCream();
+      doc.setFont('helvetica','bold'); doc.setFontSize(7); sc(LG);
+      doc.text('HEDGEYE MACRO  ·  THE MACRO SHOW', ML, 12);
+      if(dateStr){ doc.setFont('helvetica','normal'); sc(LG); doc.text(dateStr, W-MR, 12, {align:'right'}); }
+      rule(14.5, 0.2);
+      cy = 22;
     };
 
-    // ── Header página 1 ───────────────────────────────────────────────────────
-    fillPage();
-    const HDR_H=46;
-    sf(C.hdrBg); doc.rect(0,0,W,HDR_H,'F');
-    sf(C.gold); doc.rect(0,0,3.5,HDR_H,'F');
-    sf(C.goldMut); doc.rect(W-38,0,38,HDR_H,'F');
+    // ── Página 1 ──────────────────────────────────────────────────────────────
+    fillCream();
+    cy = 16;
 
-    // Overlines
-    doc.setFont('helvetica','normal'); doc.setFontSize(6.5); sc(C.sage);
-    doc.text('EXPRESS LINE  ·  WEALTH MANAGEMENT', ML+5, 9);
-    sc(C.sageDk||C.sage);
-    doc.text('HEDGEYE RISK MANAGEMENT', W-MR, 9, {align:'right'});
+    // Over-header: firma + fecha
+    doc.setFont('helvetica','normal'); doc.setFontSize(7); sc(LG);
+    doc.text('EXPRESS LINE  ·  WEALTH MANAGEMENT', ML, cy);
+    if(dateStr){ doc.text(dateStr, W-MR, cy, {align:'right'}); }
+    cy += 4;
+    rule(cy, 0.2);
+    cy += 9;
 
     // Título principal
-    doc.setFont('helvetica','bold'); doc.setFontSize(25); sc(C.cream);
-    doc.text('HEDGEYE', ML+5, 23);
-    const hw=doc.getTextWidth('HEDGEYE');
-    doc.setFont('helvetica','bold'); doc.setFontSize(25); sc(C.gold);
-    doc.text(' RESEARCH', ML+5+hw, 23);
+    doc.setFont('helvetica','bold'); doc.setFontSize(30); sc(DG);
+    doc.text('HEDGEYE MACRO', ML, cy);
+    cy += 4;
 
-    // Badge fecha
-    if(dateStr){
-      sf(C.tagBg); doc.roundedRect(W-MR-32,14,32,9,1.5,1.5,'F');
-      sd(C.goldDk); doc.setLineWidth(0.2); doc.roundedRect(W-MR-32,14,32,9,1.5,1.5,'S');
-      doc.setFont('helvetica','bold'); doc.setFontSize(7); sc(C.gold);
-      doc.text(dateStr, W-MR-16, 20, {align:'center'});
-    }
+    doc.setFont('helvetica','normal'); doc.setFontSize(10); sc(MG);
+    doc.text('The Macro Show  ·  Risk Range Signals', ML, cy);
+    cy += 7;
 
-    doc.setFont('helvetica','bold'); doc.setFontSize(7); sc(C.goldMut);
-    doc.text('THE MACRO SHOW', ML+5, 31.5);
+    // Regla oro gruesa — separador principal
+    rule(cy, 0.9);
+    cy += 6;
 
+    // Título del episodio
     if(macro.title){
-      const ep=(macro.title||'').replace(/\s*\|.*$/,'').trim();
-      const epl=doc.splitTextToSize(ep, CW-50);
-      doc.setFont('helvetica','normal'); doc.setFontSize(7.5); sc(C.sageLt||C.sage);
-      doc.text((epl[0]||'')+(epl.length>1?'\u2026':''), ML+5, 39);
+      const ep = (macro.title||'').replace(/\s*\|.*$/,'').trim();
+      doc.setFont('helvetica','italic'); doc.setFontSize(8.5);
+      const epl  = doc.splitTextToSize(ep, CW);
+      const epLH = doc.getLineHeight()*MMPT;
+      sc(MG);
+      doc.text(epl.slice(0,2), ML, cy);
+      cy += epl.slice(0,2).length * epLH + 7;
     }
 
-    sd(C.gold); doc.setLineWidth(0.4); doc.line(3.5,HDR_H,W,HDR_H);
-    cy = HDR_H + 11;
-
-    // ── Executive Summary ─────────────────────────────────────────────────────
+    // ── Resumen ejecutivo ─────────────────────────────────────────────────────
     if(execSum){
-      const tesis = execSum.tesis||'';
-      const ctx   = execSum.contexto||'';
-      const ins   = (execSum.insights||[]).slice(0,3);
-      const concl = execSum.conclusion||'';
+      const execStart = cy;
 
-      doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
-      const tL  = tesis ? doc.splitTextToSize(tesis, CW-12) : [];
-      const cL  = ctx   ? doc.splitTextToSize(ctx,   CW-12) : [];
-      doc.setFontSize(7);
-      const iLs = ins.map(x => doc.splitTextToSize('· '+x, CW-16));
-      const coL = concl ? doc.splitTextToSize(concl, CW-12) : [];
-      const LH8 = doc.getLineHeight()*MMPT;
-      doc.setFontSize(7); const LH7=doc.getLineHeight()*MMPT;
+      doc.setFont('helvetica','bold'); doc.setFontSize(6.5); sc(GD);
+      doc.text('RESUMEN EJECUTIVO', ML+5, cy);
+      cy += 4;
+      rule(cy, 0.12);
+      cy += 6;
 
-      let boxH = 12 + tL.length*LH8;
-      if(cL.length)  boxH += 3+cL.length*LH8;
-      if(ins.length) boxH += 4+iLs.reduce((a,b)=>a+b.length,0)*LH7+ins.length*2;
-      if(coL.length) boxH += 4+coL.length*LH8;
-      boxH += 6;
-
-      sf(C.execBg); doc.roundedRect(ML, cy, CW, boxH, 2.5, 2.5, 'F');
-      sd(C.execBd); doc.setLineWidth(0.3); doc.roundedRect(ML, cy, CW, boxH, 2.5, 2.5, 'S');
-      sf(C.gold); doc.roundedRect(ML, cy, 4.5, boxH, 2, 2, 'F');
-      sf(C.execBg); doc.rect(ML+2.5, cy, 2.5, boxH, 'F');
-
-      doc.setFont('helvetica','bold'); doc.setFontSize(5.5); sc(C.gold);
-      doc.text('RESUMEN EJECUTIVO', ML+8, cy+7);
-      let ey=cy+12;
-
-      if(tL.length){
-        doc.setFont('helvetica','bold'); doc.setFontSize(7.5); sc(C.cream);
-        doc.text(tL, ML+8, ey); ey+=tL.length*LH8+3;
+      if(execSum.tesis){
+        doc.setFont('helvetica','bold'); doc.setFontSize(9.5);
+        const tl  = doc.splitTextToSize(execSum.tesis, CW-8);
+        const tLH = doc.getLineHeight()*MMPT;
+        sc(DG); doc.text(tl, ML+5, cy);
+        cy += tl.length*tLH + 4;
       }
-      if(cL.length){
-        doc.setFont('helvetica','normal'); doc.setFontSize(7.5); sc(C.sageLt||C.sage);
-        doc.text(cL, ML+8, ey); ey+=cL.length*LH8+4;
+      if(execSum.contexto){
+        doc.setFont('helvetica','normal'); doc.setFontSize(8.5);
+        const cl  = doc.splitTextToSize(execSum.contexto, CW-8);
+        const cLH = doc.getLineHeight()*MMPT;
+        sc(MG); doc.text(cl, ML+5, cy);
+        cy += cl.length*cLH + 4;
       }
-      ins.forEach((txt,i)=>{
-        const bl=iLs[i];
-        sf(C.gold); doc.circle(ML+10, ey-1.5, 0.85, 'F');
-        doc.setFont('helvetica','normal'); doc.setFontSize(7); sc(C.white);
-        doc.text(bl, ML+14, ey); ey+=bl.length*LH7+2;
+      (execSum.insights||[]).slice(0,3).forEach(txt=>{
+        doc.setFont('helvetica','normal'); doc.setFontSize(8);
+        const il  = doc.splitTextToSize('·  '+txt, CW-12);
+        const iLH = doc.getLineHeight()*MMPT;
+        sc(MG); doc.text(il, ML+7, cy);
+        cy += il.length*iLH + 2;
       });
-      if(coL.length){
-        ey+=2;
-        doc.setFont('helvetica','italic'); doc.setFontSize(7); sc(C.sage);
-        doc.text(coL, ML+8, ey);
+      if(execSum.conclusion){
+        cy += 2;
+        doc.setFont('helvetica','italic'); doc.setFontSize(7.5);
+        const col  = doc.splitTextToSize(execSum.conclusion, CW-8);
+        const coLH = doc.getLineHeight()*MMPT;
+        sc(LG); doc.text(col, ML+5, cy);
+        cy += col.length*coLH;
       }
-      cy += boxH + 11;
+
+      // Acento vertical oro — único elemento de color sin relleno
+      sd(GD); doc.setLineWidth(1.2);
+      doc.line(ML+0.6, execStart-2, ML+0.6, cy+2);
+
+      cy += 11;
     }
 
     // ── Señales abiertas ──────────────────────────────────────────────────────
-    if(cy > H-65){ newPage(); }
-    doc.setFont('helvetica','bold'); doc.setFontSize(5.5); sc(C.sage);
+    if(cy > H-72){ nextPage(); }
+
+    doc.setFont('helvetica','bold'); doc.setFontSize(6.5); sc(GD);
     doc.text('SEÑALES ABIERTAS', ML, cy);
-    sd(C.divider); doc.setLineWidth(0.15);
-    doc.line(ML+doc.getTextWidth('SEÑALES ABIERTAS')+4, cy-1.5, W-MR, cy-1.5);
-    cy+=5;
-
-    const halfW=(CW-6)/2, bX2=ML+halfW+6;
-
-    const cRows=(tickers,iW)=>{
-      if(!tickers.length) return 1;
-      doc.setFont('courier','bold'); doc.setFontSize(7.5);
-      let tx=0,rows=1;
-      tickers.forEach(tk=>{ const cw=doc.getTextWidth(tk)+6; if(tx+cw>iW-10){tx=0;rows++;} tx+=cw+3; });
-      return rows;
-    };
-    const bR=cRows(bullAll,halfW), eR=cRows(bearAll,halfW);
-    const sigH=Math.max(bR,eR)*8+20;
+    cy += 3.5;
+    rule(cy, 0.2);
+    cy += 6;
 
     // LONGS
-    sf(C.bullBg); doc.roundedRect(ML,cy,halfW,sigH,2,2,'F');
-    sd(C.bullBd); doc.setLineWidth(0.25); doc.roundedRect(ML,cy,halfW,sigH,2,2,'S');
-    sf(C.bullBd); doc.rect(ML,cy,halfW,11,'F');
-    sf(C.bullBg); doc.rect(ML,cy+7,halfW,4,'F');
-    doc.setFont('helvetica','bold'); doc.setFontSize(7.5); sc(C.bullTx);
-    doc.text('\u25b2  LONGS', ML+5, cy+7.5);
-    doc.setFont('helvetica','normal'); doc.setFontSize(6); sc(C.sage);
-    doc.text(bullAll.length+' posiciones', ML+halfW-4, cy+7.5, {align:'right'});
-    let bx2=ML+5, by2=cy+17;
-    doc.setFont('courier','bold'); doc.setFontSize(7.5);
-    bullAll.forEach(tk=>{ const cw=doc.getTextWidth(tk)+6; if(bx2+cw>ML+halfW-4){bx2=ML+5;by2+=8;} sf(C.bullChp); doc.roundedRect(bx2-1,by2-4.5,cw+1,6,1,1,'F'); sc(C.bullTx); doc.text(tk,bx2+2,by2); bx2+=cw+3; });
-    if(!bullAll.length){ doc.setFont('helvetica','italic'); doc.setFontSize(7); sc(C.sage); doc.text('Sin posiciones largas activas',ML+5,cy+18); }
+    doc.setFont('helvetica','bold'); doc.setFontSize(8); sc(DG);
+    doc.text('LONGS', ML, cy);
+    doc.setFont('helvetica','normal'); doc.setFontSize(9);
+    const longStr   = bullAll.length ? bullAll.join('  ·  ') : 'Sin posiciones largas activas';
+    const longLines = doc.splitTextToSize(longStr, CW-28);
+    const longLH    = doc.getLineHeight()*MMPT;
+    sc(MG); doc.text(longLines, ML+22, cy);
+    cy += Math.max(longLines.length,1)*longLH + 4;
+
+    // Separador sutil
+    sd([210,210,200]); doc.setLineWidth(0.1); doc.line(ML,cy-1.5,W-MR,cy-1.5);
 
     // SHORTS
-    sf(C.bearBg); doc.roundedRect(bX2,cy,halfW,sigH,2,2,'F');
-    sd(C.bearBd); doc.setLineWidth(0.25); doc.roundedRect(bX2,cy,halfW,sigH,2,2,'S');
-    sf(C.bearBd); doc.rect(bX2,cy,halfW,11,'F');
-    sf(C.bearBg); doc.rect(bX2,cy+7,halfW,4,'F');
-    doc.setFont('helvetica','bold'); doc.setFontSize(7.5); sc(C.bearTx);
-    doc.text('\u25bc  SHORTS', bX2+5, cy+7.5);
-    doc.setFont('helvetica','normal'); doc.setFontSize(6); sc(C.sage);
-    doc.text(bearAll.length+' posiciones', bX2+halfW-4, cy+7.5, {align:'right'});
-    let rx2=bX2+5, ry2=cy+17;
-    doc.setFont('courier','bold'); doc.setFontSize(7.5);
-    bearAll.forEach(tk=>{ const cw=doc.getTextWidth(tk)+6; if(rx2+cw>bX2+halfW-4){rx2=bX2+5;ry2+=8;} sf(C.bearChp); doc.roundedRect(rx2-1,ry2-4.5,cw+1,6,1,1,'F'); sc(C.bearTx); doc.text(tk,rx2+2,ry2); rx2+=cw+3; });
-    if(!bearAll.length){ doc.setFont('helvetica','italic'); doc.setFontSize(7); sc(C.sage); doc.text('Sin posiciones cortas activas',bX2+5,cy+18); }
+    doc.setFont('helvetica','bold'); doc.setFontSize(8); sc(DG);
+    doc.text('SHORTS', ML, cy+1);
+    doc.setFont('helvetica','normal'); doc.setFontSize(9);
+    const shortStr   = bearAll.length ? bearAll.join('  ·  ') : 'Sin posiciones cortas activas';
+    const shortLines = doc.splitTextToSize(shortStr, CW-28);
+    const shortLH    = doc.getLineHeight()*MMPT;
+    sc(MG); doc.text(shortLines, ML+22, cy+1);
+    cy += Math.max(shortLines.length,1)*shortLH + 13;
 
-    cy += sigH + 12;
+    // ── Puntos clave del episodio ─────────────────────────────────────────────
+    if(cy > H-62){ nextPage(); }
 
-    // ── Puntos clave label ────────────────────────────────────────────────────
-    if(cy > H-50){ newPage(); }
-    doc.setFont('helvetica','bold'); doc.setFontSize(5.5); sc(C.sage);
+    rule(cy-2, 0.5);
+    cy += 2;
+    doc.setFont('helvetica','bold'); doc.setFontSize(6.5); sc(GD);
     doc.text('PUNTOS CLAVE DEL EPISODIO', ML, cy);
-    sd(C.divider); doc.setLineWidth(0.15);
-    doc.line(ML+doc.getTextWidth('PUNTOS CLAVE DEL EPISODIO')+4, cy-1.5, W-MR, cy-1.5);
-    cy+=8;
+    cy += 3.5;
+    rule(cy, 0.15);
+    cy += 7;
 
-    // ── Grid 2 columnas ───────────────────────────────────────────────────────
-    const cW2=(CW-8)/2, c1X=ML, c2X=ML+cW2+8;
-    let bodyPt=7.5, titlePt=8.5;
+    const cW2      = (CW-10)/2;
+    const c1X      = ML;
+    const c2X      = ML+cW2+10;
+    const TITLE_PT = 9;
+    const BODY_PT  = 8.5;
 
-    const mSec=(sec)=>{
-      if(!sec) return {h:0,tl:[],sl:[],p2:[],tLH:0,bLH:0};
-      doc.setFont('helvetica','bold'); doc.setFontSize(titlePt);
-      const tLH=doc.getLineHeight()*MMPT;
-      const tl=doc.splitTextToSize((sec.titulo||'').toUpperCase(), cW2-9);
-      doc.setFont('helvetica','normal'); doc.setFontSize(bodyPt);
-      const bLH=doc.getLineHeight()*MMPT;
-      const sum=sec.resumen||(sec.puntos||[])[0]||'';
-      const sl=doc.splitTextToSize(sum, cW2-9);
-      const p2src=sec.puntos&&sec.puntos.length>1?sec.puntos[1]:(sec.puntos&&sec.puntos[0]&&sec.resumen?sec.puntos[0]:'');
-      const p2=p2src?doc.splitTextToSize('· '+p2src, cW2-11):[];
-      const h=4+tl.length*tLH+2+sl.length*bLH+(p2.length?2+Math.min(p2.length,2)*bLH:0)+9;
-      return {tl,sl,p2,tLH,bLH,h};
+    const measureSec = sec => {
+      if(!sec) return 0;
+      doc.setFont('helvetica','bold'); doc.setFontSize(TITLE_PT);
+      const tLH = doc.getLineHeight()*MMPT;
+      const tl  = doc.splitTextToSize((sec.titulo||'').toUpperCase(), cW2-4);
+      doc.setFont('helvetica','normal'); doc.setFontSize(BODY_PT);
+      const bLH = doc.getLineHeight()*MMPT;
+      const sum = sec.resumen||(sec.puntos||[])[0]||'';
+      const sl  = doc.splitTextToSize(sum, cW2-4);
+      return 2 + tl.length*tLH + 2 + sl.length*bLH + 9;
     };
 
-    const pH=(i)=>Math.max(mSec(secs[i]).h, secs[i+1]?mSec(secs[i+1]).h:0);
+    const drawSec = (sec, x, startY) => {
+      if(!sec) return;
+      doc.setFont('helvetica','bold'); doc.setFontSize(TITLE_PT);
+      const tLH = doc.getLineHeight()*MMPT;
+      const tl  = doc.splitTextToSize((sec.titulo||'').toUpperCase(), cW2-4);
+      sc(DG); doc.text(tl, x, startY);
+      const sum = sec.resumen||(sec.puntos||[])[0]||'';
+      doc.setFont('helvetica','normal'); doc.setFontSize(BODY_PT);
+      const sl  = doc.splitTextToSize(sum, cW2-4);
+      sc(MG); doc.text(sl, x, startY + tl.length*tLH + 2);
+    };
 
     if(secs.length){
-      const avH=H-cy-18; let totH=0;
-      for(let i=0;i<secs.length;i+=2) totH+=pH(i);
-      if(totH>avH&&totH<avH*3){
-        const scl=Math.max(0.72,avH/totH);
-        bodyPt=Math.max(5.5,7.5*scl); titlePt=Math.max(6.0,8.5*scl);
+      for(let i=0; i<secs.length; i+=2){
+        const rowH = Math.max(measureSec(secs[i]), secs[i+1] ? measureSec(secs[i+1]) : 0);
+        if(cy+rowH > H-18){ nextPage(); }
+        drawSec(secs[i], c1X, cy);
+        if(secs[i+1]) drawSec(secs[i+1], c2X, cy);
+        cy += rowH;
+        if(i+2 < secs.length){
+          sd([210,210,200]); doc.setLineWidth(0.1);
+          doc.line(ML, cy-3, W-MR, cy-3);
+          cy += 1;
+        }
       }
+    } else if(macro.notas_pendientes){
+      doc.setFont('helvetica','italic'); doc.setFontSize(9); sc(LG);
+      doc.text('Notas del episodio aún no publicadas. Actualizáte más tarde.', ML, cy);
+      cy += 12;
     }
 
-    const drawSec=(sec,x,startY)=>{
-      if(!sec) return;
-      const {tl,sl,p2,tLH,bLH}=mSec(sec);
-      const barH=tl.length*tLH+2+sl.length*bLH+(p2.length?2+Math.min(p2.length,2)*bLH:0)+1;
-      sf(C.secBar); doc.rect(x, startY-2, 2.5, barH, 'F');
-      doc.setFont('helvetica','bold'); doc.setFontSize(titlePt); sc(C.secTtl);
-      doc.text(tl, x+6, startY);
-      let ty=startY+tl.length*tLH+2;
-      doc.setFont('helvetica','normal'); doc.setFontSize(bodyPt); sc(C.secTxt);
-      doc.text(sl, x+6, ty);
-      ty+=sl.length*bLH+2;
-      if(p2.length){
-        doc.setFont('helvetica','normal'); doc.setFontSize(Math.max(5.5,bodyPt-0.5)); sc(C.sage);
-        doc.text(p2.slice(0,2), x+6, ty);
-      }
-    };
-
-    for(let i=0;i<secs.length;i+=2){
-      const ph2=pH(i);
-      if(cy+ph2>H-18) newPage();
-      drawSec(secs[i],   c1X, cy);
-      drawSec(secs[i+1], c2X, cy);
-      cy+=ph2;
-    }
-
-    if(!secs.length && macro.notas_pendientes){
-      doc.setFont('helvetica','italic'); doc.setFontSize(8); sc(C.sage);
-      doc.text('Notas del episodio aún no publicadas. Actualizate más tarde.', ML, cy);
-      cy+=12;
-    }
-
-    pageFooter();
+    doFooter();
     doc.save('Hedgeye_MacroShow_'+fechaNom+'.pdf');
 
   } catch(e){
     console.error('PDF error:', e);
     alert('Error PDF: '+(e.message||String(e)));
   } finally {
-    if(btn){ btn.disabled=false; btn.textContent='\u2b07 Descargar PDF'; }
+    if(btn){ btn.disabled=false; btn.textContent='⬇ Descargar PDF'; }
   }
 }
 
