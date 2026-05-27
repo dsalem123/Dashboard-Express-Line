@@ -1749,19 +1749,26 @@ async function descargarHedgeyePDF(){
     const W=210, H=297, ML=18, MR=18, CW=W-ML-MR;
     const MMPT = 25.4/72;
 
-    // Ivory Authority: fondo crema, tinta verde oscuro, oro solo en reglas
-    const CR = [236,237,227];   // cream bg
-    const DG = [13,41,36];      // dark green — tinta principal
-    const MG = [60,90,78];      // medium green — tinta secundaria
-    const LG = [105,135,120];   // light green — captions/footer
-    const GD = [201,168,76];    // gold — reglas y labels de sección
+    // Dark Institutional palette
+    const BG  = [11,34,30];       // fondo oscuro profundo
+    const BG2 = [16,45,40];       // fondo secundario (ligeramente más claro)
+    const CR  = [232,234,223];    // cream — texto principal
+    const CR2 = [170,178,168];    // cream apagado — texto secundario
+    const SAG = [95,125,112];     // sage — captions / footer
+    const GD  = [201,168,76];     // gold — reglas y labels
+    const GD2 = [130,100,35];     // gold oscuro — reglas finas
+    const GRN = [46,204,113];     // verde — LONGS
+    const GRN2= [20,90,50];       // verde oscuro — fondo chip long
+    const RED = [231,76,60];      // rojo — SHORTS
+    const RED2= [80,22,18];       // rojo oscuro — fondo chip short
 
     const sf = a => doc.setFillColor(...a);
     const sd = a => doc.setDrawColor(...a);
     const sc = a => doc.setTextColor(...a);
 
-    const fillCream = () => { sf(CR); doc.rect(0,0,W,H,'F'); };
-    const rule      = (y, lw=0.3) => { sd(GD); doc.setLineWidth(lw); doc.line(ML,y,W-MR,y); };
+    const fillBg   = () => { sf(BG); doc.rect(0,0,W,H,'F'); };
+    const rule     = (y, lw=0.3) => { sd(GD); doc.setLineWidth(lw); doc.line(ML,y,W-MR,y); };
+    const ruleSubt = (y) => { sd(GD2); doc.setLineWidth(0.12); doc.line(ML,y,W-MR,y); };
 
     const bullAll = [...new Set([...(d.bullish||[]).map(x=>x.ticker||x), ...(macro.bullish||[])])];
     const bearAll = [...new Set([...(d.bearish||[]).map(x=>x.ticker||x), ...(macro.bearish||[])])];
@@ -1772,55 +1779,58 @@ async function descargarHedgeyePDF(){
     let cy=0, pageNum=1;
 
     const doFooter = () => {
-      const fy = H-9;
-      rule(fy-3, 0.2);
-      doc.setFont('helvetica','normal'); doc.setFontSize(6); sc(LG);
+      const fy=H-9;
+      ruleSubt(fy-3);
+      doc.setFont('helvetica','normal'); doc.setFontSize(6); sc(SAG);
       doc.text('ExpressLine  ·  Wealth Management', ML, fy);
       doc.text('Hedgeye Risk Management  ·  Distribución interna  ·  p.'+pageNum, W-MR, fy, {align:'right'});
     };
 
     const nextPage = () => {
       doFooter(); doc.addPage(); pageNum++;
-      fillCream();
-      doc.setFont('helvetica','bold'); doc.setFontSize(7); sc(LG);
+      fillBg();
+      doc.setFont('helvetica','bold'); doc.setFontSize(7); sc(SAG);
       doc.text('HEDGEYE MACRO  ·  THE MACRO SHOW', ML, 12);
-      if(dateStr){ doc.setFont('helvetica','normal'); sc(LG); doc.text(dateStr, W-MR, 12, {align:'right'}); }
-      rule(14.5, 0.2);
+      if(dateStr){ doc.setFont('helvetica','normal'); sc(SAG); doc.text(dateStr, W-MR, 12, {align:'right'}); }
+      ruleSubt(14.5);
       cy = 22;
     };
 
-    // ── Página 1 ──────────────────────────────────────────────────────────────
-    fillCream();
-    cy = 16;
+    // ── Página 1 — Header ─────────────────────────────────────────────────────
+    fillBg();
+    cy = 15;
 
-    // Over-header: firma + fecha
-    doc.setFont('helvetica','normal'); doc.setFontSize(7); sc(LG);
+    // Franja superior: firma + fecha
+    doc.setFont('helvetica','normal'); doc.setFontSize(7); sc(SAG);
     doc.text('EXPRESS LINE  ·  WEALTH MANAGEMENT', ML, cy);
     if(dateStr){ doc.text(dateStr, W-MR, cy, {align:'right'}); }
     cy += 4;
-    rule(cy, 0.2);
+    rule(cy, 0.25);
     cy += 9;
 
     // Título principal
-    doc.setFont('helvetica','bold'); doc.setFontSize(30); sc(DG);
-    doc.text('HEDGEYE MACRO', ML, cy);
+    doc.setFont('helvetica','bold'); doc.setFontSize(30); sc(CR);
+    doc.text('HEDGEYE', ML, cy);
+    const hw = doc.getTextWidth('HEDGEYE');
+    doc.setFont('helvetica','bold'); doc.setFontSize(30); sc(GD);
+    doc.text(' MACRO', ML+hw, cy);
     cy += 4;
 
-    doc.setFont('helvetica','normal'); doc.setFontSize(10); sc(MG);
+    doc.setFont('helvetica','normal'); doc.setFontSize(10); sc(CR2);
     doc.text('The Macro Show  ·  Risk Range Signals', ML, cy);
     cy += 7;
 
-    // Regla oro gruesa — separador principal
-    rule(cy, 0.9);
+    // Regla oro gruesa
+    rule(cy, 0.85);
     cy += 6;
 
-    // Título del episodio
+    // Título episodio
     if(macro.title){
       const ep = (macro.title||'').replace(/\s*\|.*$/,'').trim();
       doc.setFont('helvetica','italic'); doc.setFontSize(8.5);
       const epl  = doc.splitTextToSize(ep, CW);
       const epLH = doc.getLineHeight()*MMPT;
-      sc(MG);
+      sc(CR2);
       doc.text(epl.slice(0,2), ML, cy);
       cy += epl.slice(0,2).length * epLH + 7;
     }
@@ -1832,28 +1842,28 @@ async function descargarHedgeyePDF(){
       doc.setFont('helvetica','bold'); doc.setFontSize(6.5); sc(GD);
       doc.text('RESUMEN EJECUTIVO', ML+5, cy);
       cy += 4;
-      rule(cy, 0.12);
+      ruleSubt(cy);
       cy += 6;
 
       if(execSum.tesis){
         doc.setFont('helvetica','bold'); doc.setFontSize(9.5);
         const tl  = doc.splitTextToSize(execSum.tesis, CW-8);
         const tLH = doc.getLineHeight()*MMPT;
-        sc(DG); doc.text(tl, ML+5, cy);
+        sc(CR); doc.text(tl, ML+5, cy);
         cy += tl.length*tLH + 4;
       }
       if(execSum.contexto){
         doc.setFont('helvetica','normal'); doc.setFontSize(8.5);
         const cl  = doc.splitTextToSize(execSum.contexto, CW-8);
         const cLH = doc.getLineHeight()*MMPT;
-        sc(MG); doc.text(cl, ML+5, cy);
+        sc(CR2); doc.text(cl, ML+5, cy);
         cy += cl.length*cLH + 4;
       }
       (execSum.insights||[]).slice(0,3).forEach(txt=>{
         doc.setFont('helvetica','normal'); doc.setFontSize(8);
         const il  = doc.splitTextToSize('·  '+txt, CW-12);
         const iLH = doc.getLineHeight()*MMPT;
-        sc(MG); doc.text(il, ML+7, cy);
+        sc(CR2); doc.text(il, ML+7, cy);
         cy += il.length*iLH + 2;
       });
       if(execSum.conclusion){
@@ -1861,48 +1871,50 @@ async function descargarHedgeyePDF(){
         doc.setFont('helvetica','italic'); doc.setFontSize(7.5);
         const col  = doc.splitTextToSize(execSum.conclusion, CW-8);
         const coLH = doc.getLineHeight()*MMPT;
-        sc(LG); doc.text(col, ML+5, cy);
+        sc(SAG); doc.text(col, ML+5, cy);
         cy += col.length*coLH;
       }
 
-      // Acento vertical oro — único elemento de color sin relleno
+      // Acento vertical dorado
       sd(GD); doc.setLineWidth(1.2);
       doc.line(ML+0.6, execStart-2, ML+0.6, cy+2);
-
       cy += 11;
     }
 
-    // ── Señales abiertas ──────────────────────────────────────────────────────
-    if(cy > H-72){ nextPage(); }
+    // ── Señales: LONGS (verde) + SHORTS (rojo) ────────────────────────────────
+    if(cy > H-75){ nextPage(); }
 
     doc.setFont('helvetica','bold'); doc.setFontSize(6.5); sc(GD);
     doc.text('SEÑALES ABIERTAS', ML, cy);
     cy += 3.5;
     rule(cy, 0.2);
-    cy += 6;
+    cy += 7;
 
-    // LONGS
-    doc.setFont('helvetica','bold'); doc.setFontSize(8); sc(DG);
-    doc.text('LONGS', ML, cy);
-    doc.setFont('helvetica','normal'); doc.setFontSize(9);
-    const longStr   = bullAll.length ? bullAll.join('  ·  ') : 'Sin posiciones largas activas';
-    const longLines = doc.splitTextToSize(longStr, CW-28);
-    const longLH    = doc.getLineHeight()*MMPT;
-    sc(MG); doc.text(longLines, ML+22, cy);
-    cy += Math.max(longLines.length,1)*longLH + 4;
+    const halfW = (CW-8)/2;
 
-    // Separador sutil
-    sd([210,210,200]); doc.setLineWidth(0.1); doc.line(ML,cy-1.5,W-MR,cy-1.5);
+    // Bloque LONGS
+    const drawSignals = (tickers, color, colorDark, label, x, arrow) => {
+      // Header del bloque
+      sf(colorDark); doc.rect(x, cy-2, halfW, 10, 'F');
+      doc.setFont('helvetica','bold'); doc.setFontSize(8.5); sc(color);
+      doc.text(arrow+'  '+label, x+5, cy+4.5);
+      doc.setFont('helvetica','normal'); doc.setFontSize(7); sc(color);
+      doc.text(tickers.length+' posiciones', x+halfW-4, cy+4.5, {align:'right'});
 
-    // SHORTS
-    doc.setFont('helvetica','bold'); doc.setFontSize(8); sc(DG);
-    doc.text('SHORTS', ML, cy+1);
-    doc.setFont('helvetica','normal'); doc.setFontSize(9);
-    const shortStr   = bearAll.length ? bearAll.join('  ·  ') : 'Sin posiciones cortas activas';
-    const shortLines = doc.splitTextToSize(shortStr, CW-28);
-    const shortLH    = doc.getLineHeight()*MMPT;
-    sc(MG); doc.text(shortLines, ML+22, cy+1);
-    cy += Math.max(shortLines.length,1)*shortLH + 13;
+      // Tickers como texto separado por ·
+      const tkStr   = tickers.length ? tickers.join('  ·  ') : 'Sin posiciones activas';
+      doc.setFont('courier','bold'); doc.setFontSize(8.5);
+      const tkLines = doc.splitTextToSize(tkStr, halfW-10);
+      const tkLH    = doc.getLineHeight()*MMPT;
+      sc(color);
+      doc.text(tkLines, x+5, cy+15);
+      return Math.max(tkLines.length,1)*tkLH + 20;
+    };
+
+    const longH  = drawSignals(bullAll, GRN, GRN2, 'LONGS',  ML,      '▲');
+    const shortH = drawSignals(bearAll, RED, RED2, 'SHORTS', ML+halfW+8, '▼');
+
+    cy += Math.max(longH, shortH) + 8;
 
     // ── Puntos clave del episodio ─────────────────────────────────────────────
     if(cy > H-62){ nextPage(); }
@@ -1912,7 +1924,7 @@ async function descargarHedgeyePDF(){
     doc.setFont('helvetica','bold'); doc.setFontSize(6.5); sc(GD);
     doc.text('PUNTOS CLAVE DEL EPISODIO', ML, cy);
     cy += 3.5;
-    rule(cy, 0.15);
+    ruleSubt(cy);
     cy += 7;
 
     const cW2      = (CW-10)/2;
@@ -1938,11 +1950,11 @@ async function descargarHedgeyePDF(){
       doc.setFont('helvetica','bold'); doc.setFontSize(TITLE_PT);
       const tLH = doc.getLineHeight()*MMPT;
       const tl  = doc.splitTextToSize((sec.titulo||'').toUpperCase(), cW2-4);
-      sc(DG); doc.text(tl, x, startY);
+      sc(GD); doc.text(tl, x, startY);
       const sum = sec.resumen||(sec.puntos||[])[0]||'';
       doc.setFont('helvetica','normal'); doc.setFontSize(BODY_PT);
       const sl  = doc.splitTextToSize(sum, cW2-4);
-      sc(MG); doc.text(sl, x, startY + tl.length*tLH + 2);
+      sc(CR2); doc.text(sl, x, startY + tl.length*tLH + 2);
     };
 
     if(secs.length){
@@ -1953,13 +1965,13 @@ async function descargarHedgeyePDF(){
         if(secs[i+1]) drawSec(secs[i+1], c2X, cy);
         cy += rowH;
         if(i+2 < secs.length){
-          sd([210,210,200]); doc.setLineWidth(0.1);
+          sd([30,55,48]); doc.setLineWidth(0.1);
           doc.line(ML, cy-3, W-MR, cy-3);
           cy += 1;
         }
       }
     } else if(macro.notas_pendientes){
-      doc.setFont('helvetica','italic'); doc.setFontSize(9); sc(LG);
+      doc.setFont('helvetica','italic'); doc.setFontSize(9); sc(SAG);
       doc.text('Notas del episodio aún no publicadas. Actualizáte más tarde.', ML, cy);
       cy += 12;
     }
