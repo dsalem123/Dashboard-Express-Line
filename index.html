@@ -1750,25 +1750,24 @@ async function descargarHedgeyePDF(){
     const MMPT = 25.4/72;
 
     // Dark Institutional palette
-    const BG  = [11,34,30];       // fondo oscuro profundo
-    const BG2 = [16,45,40];       // fondo secundario (ligeramente más claro)
-    const CR  = [232,234,223];    // cream — texto principal
-    const CR2 = [170,178,168];    // cream apagado — texto secundario
-    const SAG = [95,125,112];     // sage — captions / footer
-    const GD  = [201,168,76];     // gold — reglas y labels
-    const GD2 = [130,100,35];     // gold oscuro — reglas finas
-    const GRN = [46,204,113];     // verde — LONGS
-    const GRN2= [20,90,50];       // verde oscuro — fondo chip long
-    const RED = [231,76,60];      // rojo — SHORTS
-    const RED2= [80,22,18];       // rojo oscuro — fondo chip short
+    const BG   = [11,34,30];
+    const CR   = [232,234,223];
+    const CR2  = [165,175,165];
+    const SAG  = [90,120,108];
+    const GD   = [201,168,76];
+    const GD2  = [120,92,28];
+    const GRN  = [46,185,100];
+    const GRN2 = [14,62,35];
+    const RED  = [220,68,52];
+    const RED2 = [68,16,12];
 
     const sf = a => doc.setFillColor(...a);
     const sd = a => doc.setDrawColor(...a);
     const sc = a => doc.setTextColor(...a);
 
-    const fillBg   = () => { sf(BG); doc.rect(0,0,W,H,'F'); };
-    const rule     = (y, lw=0.3) => { sd(GD); doc.setLineWidth(lw); doc.line(ML,y,W-MR,y); };
-    const ruleSubt = (y) => { sd(GD2); doc.setLineWidth(0.12); doc.line(ML,y,W-MR,y); };
+    const fillBg = () => { sf(BG); doc.rect(0,0,W,H,'F'); };
+    const rule   = (y, lw=0.3) => { sd(GD);  doc.setLineWidth(lw); doc.line(ML,y,W-MR,y); };
+    const ruleD  = (y)         => { sd(GD2); doc.setLineWidth(0.1); doc.line(ML,y,W-MR,y); };
 
     const bullAll = [...new Set([...(d.bullish||[]).map(x=>x.ticker||x), ...(macro.bullish||[])])];
     const bearAll = [...new Set([...(d.bearish||[]).map(x=>x.ticker||x), ...(macro.bearish||[])])];
@@ -1780,158 +1779,154 @@ async function descargarHedgeyePDF(){
 
     const doFooter = () => {
       const fy=H-9;
-      ruleSubt(fy-3);
+      ruleD(fy-3);
       doc.setFont('helvetica','normal'); doc.setFontSize(6); sc(SAG);
-      doc.text('ExpressLine  ·  Wealth Management', ML, fy);
-      doc.text('Hedgeye Risk Management  ·  Distribución interna  ·  p.'+pageNum, W-MR, fy, {align:'right'});
+      doc.text('ExpressLine  -  Wealth Management', ML, fy);
+      doc.text('Hedgeye Risk Management  -  Distribucion interna  -  p.'+pageNum, W-MR, fy, {align:'right'});
     };
 
     const nextPage = () => {
       doFooter(); doc.addPage(); pageNum++;
       fillBg();
       doc.setFont('helvetica','bold'); doc.setFontSize(7); sc(SAG);
-      doc.text('HEDGEYE MACRO  ·  THE MACRO SHOW', ML, 12);
+      doc.text('HEDGEYE MACRO  -  THE MACRO SHOW', ML, 12);
       if(dateStr){ doc.setFont('helvetica','normal'); sc(SAG); doc.text(dateStr, W-MR, 12, {align:'right'}); }
-      ruleSubt(14.5);
+      ruleD(14.5);
       cy = 22;
     };
 
-    // ── Página 1 — Header ─────────────────────────────────────────────────────
+    // ── Pagina 1 — Header ─────────────────────────────────────────────────────
     fillBg();
-    cy = 15;
+    cy = 14;
 
-    // Franja superior: firma + fecha
     doc.setFont('helvetica','normal'); doc.setFontSize(7); sc(SAG);
-    doc.text('EXPRESS LINE  ·  WEALTH MANAGEMENT', ML, cy);
+    doc.text('EXPRESS LINE  -  WEALTH MANAGEMENT', ML, cy);
     if(dateStr){ doc.text(dateStr, W-MR, cy, {align:'right'}); }
     cy += 4;
     rule(cy, 0.25);
-    cy += 9;
+    cy += 8;
 
-    // Título principal
-    doc.setFont('helvetica','bold'); doc.setFontSize(30); sc(CR);
+    // Titulo
+    doc.setFont('helvetica','bold'); doc.setFontSize(28); sc(CR);
     doc.text('HEDGEYE', ML, cy);
     const hw = doc.getTextWidth('HEDGEYE');
-    doc.setFont('helvetica','bold'); doc.setFontSize(30); sc(GD);
-    doc.text(' MACRO', ML+hw, cy);
+    sc(GD); doc.text(' MACRO', ML+hw, cy);
     cy += 4;
 
-    doc.setFont('helvetica','normal'); doc.setFontSize(10); sc(CR2);
-    doc.text('The Macro Show  ·  Risk Range Signals', ML, cy);
-    cy += 7;
-
-    // Regla oro gruesa
-    rule(cy, 0.85);
+    doc.setFont('helvetica','normal'); doc.setFontSize(9.5); sc(CR2);
+    doc.text('The Macro Show  -  Risk Range Signals', ML, cy);
     cy += 6;
 
-    // Título episodio
+    rule(cy, 0.8);
+    cy += 5;
+
     if(macro.title){
       const ep = (macro.title||'').replace(/\s*\|.*$/,'').trim();
-      doc.setFont('helvetica','italic'); doc.setFontSize(8.5);
+      doc.setFont('helvetica','italic'); doc.setFontSize(8);
       const epl  = doc.splitTextToSize(ep, CW);
       const epLH = doc.getLineHeight()*MMPT;
-      sc(CR2);
-      doc.text(epl.slice(0,2), ML, cy);
-      cy += epl.slice(0,2).length * epLH + 7;
+      sc(CR2); doc.text(epl.slice(0,2), ML, cy);
+      cy += epl.slice(0,2).length * epLH + 5;
     }
 
     // ── Resumen ejecutivo ─────────────────────────────────────────────────────
     if(execSum){
       const execStart = cy;
-
       doc.setFont('helvetica','bold'); doc.setFontSize(6.5); sc(GD);
       doc.text('RESUMEN EJECUTIVO', ML+5, cy);
-      cy += 4;
-      ruleSubt(cy);
-      cy += 6;
+      cy += 4; ruleD(cy); cy += 5;
 
       if(execSum.tesis){
-        doc.setFont('helvetica','bold'); doc.setFontSize(9.5);
+        doc.setFont('helvetica','bold'); doc.setFontSize(9);
         const tl  = doc.splitTextToSize(execSum.tesis, CW-8);
         const tLH = doc.getLineHeight()*MMPT;
-        sc(CR); doc.text(tl, ML+5, cy);
-        cy += tl.length*tLH + 4;
+        sc(CR); doc.text(tl.slice(0,3), ML+5, cy);
+        cy += Math.min(tl.length,3)*tLH + 3;
       }
       if(execSum.contexto){
-        doc.setFont('helvetica','normal'); doc.setFontSize(8.5);
+        doc.setFont('helvetica','normal'); doc.setFontSize(8);
         const cl  = doc.splitTextToSize(execSum.contexto, CW-8);
         const cLH = doc.getLineHeight()*MMPT;
-        sc(CR2); doc.text(cl, ML+5, cy);
-        cy += cl.length*cLH + 4;
+        sc(CR2); doc.text(cl.slice(0,2), ML+5, cy);
+        cy += Math.min(cl.length,2)*cLH + 3;
       }
-      (execSum.insights||[]).slice(0,3).forEach(txt=>{
-        doc.setFont('helvetica','normal'); doc.setFontSize(8);
-        const il  = doc.splitTextToSize('·  '+txt, CW-12);
-        const iLH = doc.getLineHeight()*MMPT;
-        sc(CR2); doc.text(il, ML+7, cy);
-        cy += il.length*iLH + 2;
-      });
       if(execSum.conclusion){
-        cy += 2;
         doc.setFont('helvetica','italic'); doc.setFontSize(7.5);
         const col  = doc.splitTextToSize(execSum.conclusion, CW-8);
         const coLH = doc.getLineHeight()*MMPT;
-        sc(SAG); doc.text(col, ML+5, cy);
-        cy += col.length*coLH;
+        sc(SAG); doc.text(col.slice(0,2), ML+5, cy);
+        cy += Math.min(col.length,2)*coLH;
       }
-
-      // Acento vertical dorado
       sd(GD); doc.setLineWidth(1.2);
       doc.line(ML+0.6, execStart-2, ML+0.6, cy+2);
-      cy += 11;
+      cy += 8;
     }
 
-    // ── Señales: LONGS (verde) + SHORTS (rojo) ────────────────────────────────
-    if(cy > H-75){ nextPage(); }
+    // ── Senales: LONGS (verde) + SHORTS (rojo) ────────────────────────────────
+    if(cy > H-80){ nextPage(); }
 
     doc.setFont('helvetica','bold'); doc.setFontSize(6.5); sc(GD);
-    doc.text('SEÑALES ABIERTAS', ML, cy);
-    cy += 3.5;
+    doc.text('SENALES ABIERTAS', ML, cy);
+    cy += 3;
     rule(cy, 0.2);
-    cy += 7;
+    cy += 5;
 
     const halfW = (CW-8)/2;
 
-    // Bloque LONGS
-    const drawSignals = (tickers, color, colorDark, label, x, arrow) => {
-      // Header del bloque
-      sf(colorDark); doc.rect(x, cy-2, halfW, 10, 'F');
-      doc.setFont('helvetica','bold'); doc.setFontSize(8.5); sc(color);
-      doc.text(arrow+'  '+label, x+5, cy+4.5);
-      doc.setFont('helvetica','normal'); doc.setFontSize(7); sc(color);
-      doc.text(tickers.length+' posiciones', x+halfW-4, cy+4.5, {align:'right'});
-
-      // Tickers como texto separado por ·
-      const tkStr   = tickers.length ? tickers.join('  ·  ') : 'Sin posiciones activas';
-      doc.setFont('courier','bold'); doc.setFontSize(8.5);
-      const tkLines = doc.splitTextToSize(tkStr, halfW-10);
+    const drawSignalBlock = (tickers, color, colorDk, label, x) => {
+      const HDR = 9;
+      sf(colorDk); doc.rect(x, cy, halfW, HDR, 'F');
+      doc.setFont('helvetica','bold'); doc.setFontSize(8); sc(color);
+      doc.text(label, x+5, cy+6);
+      doc.setFont('helvetica','normal'); doc.setFontSize(6.5); sc(color);
+      doc.text(tickers.length+' pos.', x+halfW-4, cy+6, {align:'right'});
+      doc.setFont('courier','bold'); doc.setFontSize(8);
+      const tkStr   = tickers.length ? tickers.join('  .  ') : 'Sin posiciones activas';
+      const tkLines = doc.splitTextToSize(tkStr, halfW-8);
       const tkLH    = doc.getLineHeight()*MMPT;
-      sc(color);
-      doc.text(tkLines, x+5, cy+15);
-      return Math.max(tkLines.length,1)*tkLH + 20;
+      sc(color); doc.text(tkLines, x+4, cy+HDR+6);
+      return HDR + Math.max(tkLines.length,1)*tkLH + 8;
     };
 
-    const longH  = drawSignals(bullAll, GRN, GRN2, 'LONGS',  ML,      '▲');
-    const shortH = drawSignals(bearAll, RED, RED2, 'SHORTS', ML+halfW+8, '▼');
+    const lH = drawSignalBlock(bullAll, GRN, GRN2, 'LONGS',  ML);
+    const sH = drawSignalBlock(bearAll, RED, RED2, 'SHORTS', ML+halfW+8);
+    cy += Math.max(lH, sH) + 6;
 
-    cy += Math.max(longH, shortH) + 8;
+    // ── Puntos clave ──────────────────────────────────────────────────────────
+    if(cy > H-65){ nextPage(); }
 
-    // ── Puntos clave del episodio ─────────────────────────────────────────────
-    if(cy > H-62){ nextPage(); }
-
-    rule(cy-2, 0.5);
+    rule(cy-1, 0.5);
     cy += 2;
     doc.setFont('helvetica','bold'); doc.setFontSize(6.5); sc(GD);
     doc.text('PUNTOS CLAVE DEL EPISODIO', ML, cy);
-    cy += 3.5;
-    ruleSubt(cy);
-    cy += 7;
+    cy += 3;
+    ruleD(cy);
+    cy += 6;
 
-    const cW2      = (CW-10)/2;
-    const c1X      = ML;
-    const c2X      = ML+cW2+10;
-    const TITLE_PT = 9;
-    const BODY_PT  = 8.5;
+    const cW2 = (CW-10)/2, c1X=ML, c2X=ML+cW2+10;
+
+    // Auto-escala: si hay muchas secciones, achica la fuente para que entren en 1 pagina
+    const avH = H - cy - 15;
+    let TITLE_PT = 8.5, BODY_PT = 8, MAX_BODY_LINES = 3;
+
+    const estRow = () => {
+      doc.setFont('helvetica','bold'); doc.setFontSize(TITLE_PT);
+      const tLH = doc.getLineHeight()*MMPT;
+      doc.setFont('helvetica','normal'); doc.setFontSize(BODY_PT);
+      const bLH = doc.getLineHeight()*MMPT;
+      return tLH + MAX_BODY_LINES*bLH + 7;
+    };
+
+    const nRows = Math.ceil(secs.length/2);
+    if(nRows > 0){
+      let totEst = nRows * estRow();
+      if(totEst > avH){
+        const scale = Math.max(0.7, avH/totEst);
+        TITLE_PT = Math.max(6.5, 8.5*scale);
+        BODY_PT  = Math.max(6,   8*scale);
+        MAX_BODY_LINES = totEst > avH*1.5 ? 2 : 3;
+      }
+    }
 
     const measureSec = sec => {
       if(!sec) return 0;
@@ -1942,7 +1937,7 @@ async function descargarHedgeyePDF(){
       const bLH = doc.getLineHeight()*MMPT;
       const sum = sec.resumen||(sec.puntos||[])[0]||'';
       const sl  = doc.splitTextToSize(sum, cW2-4);
-      return 2 + tl.length*tLH + 2 + sl.length*bLH + 9;
+      return tl.length*tLH + 2 + Math.min(sl.length,MAX_BODY_LINES)*bLH + 7;
     };
 
     const drawSec = (sec, x, startY) => {
@@ -1954,26 +1949,22 @@ async function descargarHedgeyePDF(){
       const sum = sec.resumen||(sec.puntos||[])[0]||'';
       doc.setFont('helvetica','normal'); doc.setFontSize(BODY_PT);
       const sl  = doc.splitTextToSize(sum, cW2-4);
-      sc(CR2); doc.text(sl, x, startY + tl.length*tLH + 2);
+      sc(CR2); doc.text(sl.slice(0,MAX_BODY_LINES), x, startY + tl.length*tLH + 2);
     };
 
     if(secs.length){
       for(let i=0; i<secs.length; i+=2){
         const rowH = Math.max(measureSec(secs[i]), secs[i+1] ? measureSec(secs[i+1]) : 0);
-        if(cy+rowH > H-18){ nextPage(); }
+        if(cy+rowH > H-15){ nextPage(); }
         drawSec(secs[i], c1X, cy);
         if(secs[i+1]) drawSec(secs[i+1], c2X, cy);
         cy += rowH;
-        if(i+2 < secs.length){
-          sd([30,55,48]); doc.setLineWidth(0.1);
-          doc.line(ML, cy-3, W-MR, cy-3);
-          cy += 1;
-        }
+        if(i+2 < secs.length){ ruleD(cy-2); }
       }
     } else if(macro.notas_pendientes){
       doc.setFont('helvetica','italic'); doc.setFontSize(9); sc(SAG);
-      doc.text('Notas del episodio aún no publicadas. Actualizáte más tarde.', ML, cy);
-      cy += 12;
+      doc.text('Notas del episodio aun no publicadas.', ML, cy);
+      cy += 10;
     }
 
     doFooter();
@@ -1983,7 +1974,7 @@ async function descargarHedgeyePDF(){
     console.error('PDF error:', e);
     alert('Error PDF: '+(e.message||String(e)));
   } finally {
-    if(btn){ btn.disabled=false; btn.textContent='⬇ Descargar PDF'; }
+    if(btn){ btn.disabled=false; btn.textContent='Descargar PDF'; }
   }
 }
 
