@@ -1734,256 +1734,294 @@ function _pdfBullets(puntos, maxBullets) {
 }
 
 async function descargarHedgeyePDF(){
-  if(!window.jspdf){
-    alert('Libreria jsPDF no cargada. Refrescar la pagina.'); return;
-  }
+  if(!window.jspdf){ alert('Libreria jsPDF no cargada. Refrescar la página.'); return; }
   const d = window._hedgeyeData || (typeof HG_STATIC_DATA!=='undefined' ? HG_STATIC_DATA : null);
-  if(!d || !d.macro_show){ alert('Sin datos Hedgeye. Actualizate primero.'); return; }
+  if(!d || !d.macro_show){ alert('Sin datos Hedgeye. Actualizá primero.'); return; }
 
-  const macro = d.macro_show||{};
-  const fechaNombre = (d.updated||'hedgeye').replace(/\s+.*/,'').replace(/[: ]/g,'-');
-  const btn = document.getElementById('hg-pdf-btn');
-  if(btn){ btn.disabled=true; btn.textContent='Generando...'; }
+  const macro    = d.macro_show || {};
+  const fechaNom = (d.updated||'hedgeye').replace(/\s+.*/,'').replace(/[: ]/g,'-');
+  const btn      = document.getElementById('hg-pdf-btn');
+  if(btn){ btn.disabled=true; btn.textContent='Generando PDF...'; }
 
   try {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit:'mm', format:'a4', orientation:'portrait' });
+    const W=210, H=297, ML=15, MR=15, CW=W-ML-MR;
+    const MMPT = 25.4/72;
 
-    const W=210, H=297, ML=14, MR=14, CW=W-ML-MR;
-
-    const sf_ = (r,g,b) => doc.setFillColor(r,g,b);
-    const sd_ = (r,g,b) => doc.setDrawColor(r,g,b);
-    const sc_ = (r,g,b) => doc.setTextColor(r,g,b);
-
-    let cy = 0;
-
-    // ── Palette (muted / brand-aligned) ──────────────────────────────────────
-    // Stripes: very dark gold, thin
-    const STRIPE   = [82,66,26];
-    // Header
-    const OVERLINE = [72,108,88];
-    const TITLE_C  = [228,230,220];
-    const DATE_C   = [148,154,140];
-    const SUBMACRO = [148,120,46];   // "THE MACRO SHOW" — muted gold
-    const SOURCE_C = [52,76,62];
-    // Divider
-    const DIV_C    = [48,68,55];
-    // Bull
-    const BULL_BG  = [13,43,32];
-    const BULL_BD  = [28,68,46];
-    const BULL_LBL = [52,125,76];
-    const BULL_CBG = [17,52,37];
-    const BULL_CTX = [52,138,80];
-    // Bear
-    const BEAR_BG  = [26,13,12];
-    const BEAR_BD  = [65,28,24];
-    const BEAR_LBL = [138,56,48];
-    const BEAR_CBG = [36,15,14];
-    const BEAR_CTX = [148,60,50];
-    // Sections
-    const SEC_LBL  = [52,76,62];
-    const SEC_BAR  = [72,58,22];     // accent bar — very dark gold
-    const SEC_TTL  = [162,132,50];   // section title — muted gold
-    const SEC_TXT  = [172,178,166];  // body text
-    // Footer
-    const FOOT_LN  = [38,56,46];
-    const FOOT_TX  = [48,70,58];
-
-    const fillPage = () => {
-      sf_(13,41,36); doc.rect(0,0,W,H,'F');
-      sf_(...STRIPE); doc.rect(0,0,W,1,'F');
+    // ── Paleta institucional ──────────────────────────────────────────────────
+    const C = {
+      bg:     [13,41,36],   hdrBg:  [9,30,26],
+      gold:   [201,168,76], goldDk: [130,100,35], goldMut:[70,55,18],
+      cream:  [232,234,223], white: [210,215,205],
+      sage:   [107,133,120], sageLt:[145,168,155], sageDk:[65,88,75],
+      divider:[30,52,44],
+      bullBg: [11,40,28],   bullBd: [28,72,46],   bullTx:[55,190,95],  bullChp:[15,55,35],
+      bearBg: [34,13,11],   bearBd: [78,28,22],   bearTx:[215,78,65],  bearChp:[46,16,13],
+      secBar: [115,90,28],  secTtl: [218,188,98], secTxt:[175,182,168],
+      execBg: [15,46,40],   execBd: [110,88,28],
+      tagBg:  [22,58,48],
     };
-    const newPage = () => { doc.addPage(); fillPage(); cy=8; };
+    const sf=(a)=>doc.setFillColor(...a);
+    const sd=(a)=>doc.setDrawColor(...a);
+    const sc=(a)=>doc.setTextColor(...a);
 
-    // Data
-    const bullT = [...new Set([...(d.bullish||[]).map(x=>x.ticker||x), ...(macro.bullish||[])])];
-    const bearT = [...new Set([...(d.bearish||[]).map(x=>x.ticker||x), ...(macro.bearish||[])])];
-    const secs  = (macro.secciones||[]).filter(s=>s.resumen||(s.puntos||[]).length);
-    const dateStr = (d.updated||'').replace(/\s+\d+:\d+.*$/,'').trim();
+    let cy=0, pageNum=1;
 
-    // ── Page 1
+    // ── Datos ─────────────────────────────────────────────────────────────────
+    const bullAll = [...new Set([...(d.bullish||[]).map(x=>x.ticker||x), ...(macro.bullish||[])])];
+    const bearAll = [...new Set([...(d.bearish||[]).map(x=>x.ticker||x), ...(macro.bearish||[])])];
+    const secs    = (macro.secciones||[]).filter(s => s.titulo && (s.resumen||(s.puntos||[]).length));
+    const dateStr = (d.updated||'').replace(/(\d{4}-\d{2}-\d{2}).*/,'$1').trim();
+    const execSum = (macro.resumen_ejecutivo && typeof macro.resumen_ejecutivo==='object') ? macro.resumen_ejecutivo : null;
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    const fillPage = () => { sf(C.bg); doc.rect(0,0,W,H,'F'); sf(C.goldMut); doc.rect(0,0,W,2,'F'); };
+
+    const pageFooter = () => {
+      const fY=H-9;
+      sd(C.divider); doc.setLineWidth(0.18); doc.line(ML,fY-3.5,W-MR,fY-3.5);
+      doc.setFont('helvetica','normal'); doc.setFontSize(5.5); sc(C.sage);
+      doc.text('Dashboard ExpressLine  ·  Wealth Management', ML, fY);
+      doc.text('Hedgeye Risk Management  ·  Distribución interna  ·  p.'+pageNum, W-MR, fY, {align:'right'});
+      sf(C.goldMut); doc.rect(0,H-2,W,2,'F');
+    };
+
+    const newPage = () => {
+      pageFooter(); doc.addPage(); pageNum++;
+      fillPage();
+      const mhH=13; sf(C.hdrBg); doc.rect(0,0,W,mhH,'F');
+      sf(C.gold); doc.rect(0,0,2.5,mhH,'F');
+      doc.setFont('helvetica','bold'); doc.setFontSize(7.5); sc(C.gold);
+      doc.text('HEDGEYE RESEARCH', ML+4, 6);
+      doc.setFont('helvetica','normal'); doc.setFontSize(6); sc(C.sageLt||C.sage);
+      doc.text('THE MACRO SHOW', ML+4, 11);
+      if(dateStr){ sc(C.sage); doc.text(dateStr, W-MR, 9, {align:'right'}); }
+      sd(C.goldDk); doc.setLineWidth(0.3); doc.line(0,mhH,W,mhH);
+      cy = mhH+7;
+    };
+
+    // ── Header página 1 ───────────────────────────────────────────────────────
     fillPage();
-    cy = 10;
+    const HDR_H=46;
+    sf(C.hdrBg); doc.rect(0,0,W,HDR_H,'F');
+    sf(C.gold); doc.rect(0,0,3.5,HDR_H,'F');
+    sf(C.goldMut); doc.rect(W-38,0,38,HDR_H,'F');
 
-    // Overline
-    doc.setFont('helvetica','normal'); doc.setFontSize(6.5); sc_(...OVERLINE);
-    doc.text('EXPRESS LINE  \xb7  WEALTH MANAGEMENT', ML, cy);
+    // Overlines
+    doc.setFont('helvetica','normal'); doc.setFontSize(6.5); sc(C.sage);
+    doc.text('EXPRESS LINE  ·  WEALTH MANAGEMENT', ML+5, 9);
+    sc(C.sageDk||C.sage);
+    doc.text('HEDGEYE RISK MANAGEMENT', W-MR, 9, {align:'right'});
 
-    // Main title + date
-    cy += 8;
-    doc.setFont('helvetica','bold'); doc.setFontSize(24); sc_(...TITLE_C);
-    doc.text('HEDGEYE RESEARCH', ML, cy);
+    // Título principal
+    doc.setFont('helvetica','bold'); doc.setFontSize(25); sc(C.cream);
+    doc.text('HEDGEYE', ML+5, 23);
+    const hw=doc.getTextWidth('HEDGEYE');
+    doc.setFont('helvetica','bold'); doc.setFontSize(25); sc(C.gold);
+    doc.text(' RESEARCH', ML+5+hw, 23);
+
+    // Badge fecha
     if(dateStr){
-      doc.setFont('helvetica','bold'); doc.setFontSize(10); sc_(...DATE_C);
-      doc.text(dateStr, W-MR, cy, {align:'right'});
+      sf(C.tagBg); doc.roundedRect(W-MR-32,14,32,9,1.5,1.5,'F');
+      sd(C.goldDk); doc.setLineWidth(0.2); doc.roundedRect(W-MR-32,14,32,9,1.5,1.5,'S');
+      doc.setFont('helvetica','bold'); doc.setFontSize(7); sc(C.gold);
+      doc.text(dateStr, W-MR-16, 20, {align:'center'});
     }
 
-    // Sub-label + source
-    cy += 6;
-    doc.setFont('helvetica','bold'); doc.setFontSize(7.5); sc_(...SUBMACRO);
-    doc.text('THE MACRO SHOW', ML, cy);
-    doc.setFont('helvetica','normal'); doc.setFontSize(6); sc_(...SOURCE_C);
-    doc.text('HEDGEYE RISK MANAGEMENT', W-MR, cy, {align:'right'});
+    doc.setFont('helvetica','bold'); doc.setFontSize(7); sc(C.goldMut);
+    doc.text('THE MACRO SHOW', ML+5, 31.5);
 
-    // Divider
-    cy += 6;
-    sd_(...DIV_C); doc.setLineWidth(0.15);
-    doc.line(ML, cy, W-MR, cy);
-    cy += 8;
+    if(macro.title){
+      const ep=(macro.title||'').replace(/\s*\|.*$/,'').trim();
+      const epl=doc.splitTextToSize(ep, CW-50);
+      doc.setFont('helvetica','normal'); doc.setFontSize(7.5); sc(C.sageLt||C.sage);
+      doc.text((epl[0]||'')+(epl.length>1?'\u2026':''), ML+5, 39);
+    }
 
-    // ── Bull / Bear boxes ─────────────────────────────────────────────────────
-    const halfW = (CW-6)/2;
-    const bearX  = ML+halfW+6;
+    sd(C.gold); doc.setLineWidth(0.4); doc.line(3.5,HDR_H,W,HDR_H);
+    cy = HDR_H + 11;
 
-    const chipRowCount = (tickers, boxInnerW) => {
-      if(!tickers.length) return 1;
-      doc.setFont('courier','bold'); doc.setFontSize(8);
-      let tx=0, rows=1;
-      tickers.forEach(tk=>{
-        const cw=doc.getTextWidth(tk)+4;
-        if(tx+cw>boxInnerW){ tx=0; rows++; }
-        tx+=cw+2.5;
+    // ── Executive Summary ─────────────────────────────────────────────────────
+    if(execSum){
+      const tesis = execSum.tesis||'';
+      const ctx   = execSum.contexto||'';
+      const ins   = (execSum.insights||[]).slice(0,3);
+      const concl = execSum.conclusion||'';
+
+      doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
+      const tL  = tesis ? doc.splitTextToSize(tesis, CW-12) : [];
+      const cL  = ctx   ? doc.splitTextToSize(ctx,   CW-12) : [];
+      doc.setFontSize(7);
+      const iLs = ins.map(x => doc.splitTextToSize('· '+x, CW-16));
+      const coL = concl ? doc.splitTextToSize(concl, CW-12) : [];
+      const LH8 = doc.getLineHeight()*MMPT;
+      doc.setFontSize(7); const LH7=doc.getLineHeight()*MMPT;
+
+      let boxH = 12 + tL.length*LH8;
+      if(cL.length)  boxH += 3+cL.length*LH8;
+      if(ins.length) boxH += 4+iLs.reduce((a,b)=>a+b.length,0)*LH7+ins.length*2;
+      if(coL.length) boxH += 4+coL.length*LH8;
+      boxH += 6;
+
+      sf(C.execBg); doc.roundedRect(ML, cy, CW, boxH, 2.5, 2.5, 'F');
+      sd(C.execBd); doc.setLineWidth(0.3); doc.roundedRect(ML, cy, CW, boxH, 2.5, 2.5, 'S');
+      sf(C.gold); doc.roundedRect(ML, cy, 4.5, boxH, 2, 2, 'F');
+      sf(C.execBg); doc.rect(ML+2.5, cy, 2.5, boxH, 'F');
+
+      doc.setFont('helvetica','bold'); doc.setFontSize(5.5); sc(C.gold);
+      doc.text('RESUMEN EJECUTIVO', ML+8, cy+7);
+      let ey=cy+12;
+
+      if(tL.length){
+        doc.setFont('helvetica','bold'); doc.setFontSize(7.5); sc(C.cream);
+        doc.text(tL, ML+8, ey); ey+=tL.length*LH8+3;
+      }
+      if(cL.length){
+        doc.setFont('helvetica','normal'); doc.setFontSize(7.5); sc(C.sageLt||C.sage);
+        doc.text(cL, ML+8, ey); ey+=cL.length*LH8+4;
+      }
+      ins.forEach((txt,i)=>{
+        const bl=iLs[i];
+        sf(C.gold); doc.circle(ML+10, ey-1.5, 0.85, 'F');
+        doc.setFont('helvetica','normal'); doc.setFontSize(7); sc(C.white);
+        doc.text(bl, ML+14, ey); ey+=bl.length*LH7+2;
       });
+      if(coL.length){
+        ey+=2;
+        doc.setFont('helvetica','italic'); doc.setFontSize(7); sc(C.sage);
+        doc.text(coL, ML+8, ey);
+      }
+      cy += boxH + 11;
+    }
+
+    // ── Señales abiertas ──────────────────────────────────────────────────────
+    if(cy > H-65){ newPage(); }
+    doc.setFont('helvetica','bold'); doc.setFontSize(5.5); sc(C.sage);
+    doc.text('SEÑALES ABIERTAS', ML, cy);
+    sd(C.divider); doc.setLineWidth(0.15);
+    doc.line(ML+doc.getTextWidth('SEÑALES ABIERTAS')+4, cy-1.5, W-MR, cy-1.5);
+    cy+=5;
+
+    const halfW=(CW-6)/2, bX2=ML+halfW+6;
+
+    const cRows=(tickers,iW)=>{
+      if(!tickers.length) return 1;
+      doc.setFont('courier','bold'); doc.setFontSize(7.5);
+      let tx=0,rows=1;
+      tickers.forEach(tk=>{ const cw=doc.getTextWidth(tk)+6; if(tx+cw>iW-10){tx=0;rows++;} tx+=cw+3; });
       return rows;
     };
-    const bRows = chipRowCount(bullT, halfW-8);
-    const eRows = chipRowCount(bearT, halfW-8);
-    const boxH  = Math.max(bRows, eRows)*6.5 + 15;
+    const bR=cRows(bullAll,halfW), eR=cRows(bearAll,halfW);
+    const sigH=Math.max(bR,eR)*8+20;
 
-    // Bull box
-    sf_(...BULL_BG); doc.roundedRect(ML, cy, halfW, boxH, 1.5, 1.5, 'F');
-    sd_(...BULL_BD); doc.setLineWidth(0.2); doc.roundedRect(ML, cy, halfW, boxH, 1.5, 1.5, 'S');
-    doc.setFont('helvetica','bold'); doc.setFontSize(7); sc_(...BULL_LBL);
-    doc.text('BULLISH', ML+4, cy+7);
-    doc.setFont('courier','bold'); doc.setFontSize(8);
-    let bx=ML+4, by=cy+14;
-    bullT.forEach(tk=>{
-      const cw=doc.getTextWidth(tk)+4;
-      if(bx+cw>ML+halfW-3){ bx=ML+4; by+=6.5; }
-      sf_(...BULL_CBG); doc.roundedRect(bx-1,by-4.2,cw+1,5.5,0.8,0.8,'F');
-      sc_(...BULL_CTX); doc.text(tk,bx+1,by);
-      bx+=cw+2.5;
-    });
-    if(!bullT.length){ sc_(...SOURCE_C); doc.text('—',ML+4,cy+14); }
+    // LONGS
+    sf(C.bullBg); doc.roundedRect(ML,cy,halfW,sigH,2,2,'F');
+    sd(C.bullBd); doc.setLineWidth(0.25); doc.roundedRect(ML,cy,halfW,sigH,2,2,'S');
+    sf(C.bullBd); doc.rect(ML,cy,halfW,11,'F');
+    sf(C.bullBg); doc.rect(ML,cy+7,halfW,4,'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(7.5); sc(C.bullTx);
+    doc.text('\u25b2  LONGS', ML+5, cy+7.5);
+    doc.setFont('helvetica','normal'); doc.setFontSize(6); sc(C.sage);
+    doc.text(bullAll.length+' posiciones', ML+halfW-4, cy+7.5, {align:'right'});
+    let bx2=ML+5, by2=cy+17;
+    doc.setFont('courier','bold'); doc.setFontSize(7.5);
+    bullAll.forEach(tk=>{ const cw=doc.getTextWidth(tk)+6; if(bx2+cw>ML+halfW-4){bx2=ML+5;by2+=8;} sf(C.bullChp); doc.roundedRect(bx2-1,by2-4.5,cw+1,6,1,1,'F'); sc(C.bullTx); doc.text(tk,bx2+2,by2); bx2+=cw+3; });
+    if(!bullAll.length){ doc.setFont('helvetica','italic'); doc.setFontSize(7); sc(C.sage); doc.text('Sin posiciones largas activas',ML+5,cy+18); }
 
-    // Bear box
-    sf_(...BEAR_BG); doc.roundedRect(bearX, cy, halfW, boxH, 1.5, 1.5, 'F');
-    sd_(...BEAR_BD); doc.setLineWidth(0.2); doc.roundedRect(bearX, cy, halfW, boxH, 1.5, 1.5, 'S');
-    doc.setFont('helvetica','bold'); doc.setFontSize(7); sc_(...BEAR_LBL);
-    doc.text('BEARISH', bearX+4, cy+7);
-    doc.setFont('courier','bold'); doc.setFontSize(8);
-    let rx=bearX+4, ry=cy+14;
-    bearT.forEach(tk=>{
-      const cw=doc.getTextWidth(tk)+4;
-      if(rx+cw>bearX+halfW-3){ rx=bearX+4; ry+=6.5; }
-      sf_(...BEAR_CBG); doc.roundedRect(rx-1,ry-4.2,cw+1,5.5,0.8,0.8,'F');
-      sc_(...BEAR_CTX); doc.text(tk,rx+1,ry);
-      rx+=cw+2.5;
-    });
-    if(!bearT.length){ sc_(...SOURCE_C); doc.text('—',bearX+4,cy+14); }
+    // SHORTS
+    sf(C.bearBg); doc.roundedRect(bX2,cy,halfW,sigH,2,2,'F');
+    sd(C.bearBd); doc.setLineWidth(0.25); doc.roundedRect(bX2,cy,halfW,sigH,2,2,'S');
+    sf(C.bearBd); doc.rect(bX2,cy,halfW,11,'F');
+    sf(C.bearBg); doc.rect(bX2,cy+7,halfW,4,'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(7.5); sc(C.bearTx);
+    doc.text('\u25bc  SHORTS', bX2+5, cy+7.5);
+    doc.setFont('helvetica','normal'); doc.setFontSize(6); sc(C.sage);
+    doc.text(bearAll.length+' posiciones', bX2+halfW-4, cy+7.5, {align:'right'});
+    let rx2=bX2+5, ry2=cy+17;
+    doc.setFont('courier','bold'); doc.setFontSize(7.5);
+    bearAll.forEach(tk=>{ const cw=doc.getTextWidth(tk)+6; if(rx2+cw>bX2+halfW-4){rx2=bX2+5;ry2+=8;} sf(C.bearChp); doc.roundedRect(rx2-1,ry2-4.5,cw+1,6,1,1,'F'); sc(C.bearTx); doc.text(tk,rx2+2,ry2); rx2+=cw+3; });
+    if(!bearAll.length){ doc.setFont('helvetica','italic'); doc.setFontSize(7); sc(C.sage); doc.text('Sin posiciones cortas activas',bX2+5,cy+18); }
 
-    cy += boxH+8;
+    cy += sigH + 12;
 
-    // ── "Puntos clave" label ──────────────────────────────────────────────────
-    doc.setFont('helvetica','bold'); doc.setFontSize(5.5); sc_(...SEC_LBL);
+    // ── Puntos clave label ────────────────────────────────────────────────────
+    if(cy > H-50){ newPage(); }
+    doc.setFont('helvetica','bold'); doc.setFontSize(5.5); sc(C.sage);
     doc.text('PUNTOS CLAVE DEL EPISODIO', ML, cy);
-    sd_(...DIV_C); doc.setLineWidth(0.12);
-    doc.line(ML + doc.getTextWidth('PUNTOS CLAVE DEL EPISODIO') + 4, cy-1, W-MR, cy-1);
-    cy += 7;
+    sd(C.divider); doc.setLineWidth(0.15);
+    doc.line(ML+doc.getTextWidth('PUNTOS CLAVE DEL EPISODIO')+4, cy-1.5, W-MR, cy-1.5);
+    cy+=8;
 
-    // ── Auto-fit: usar altura real de jsPDF, búsqueda binaria ────────────────
-    const cW2 = (CW-10)/2;
-    const c1X = ML, c2X = ML+cW2+10;
-    const availH = H - cy - 12;
-    const mmPt = 25.4/72; // pt → mm
+    // ── Grid 2 columnas ───────────────────────────────────────────────────────
+    const cW2=(CW-8)/2, c1X=ML, c2X=ML+cW2+8;
+    let bodyPt=7.5, titlePt=8.5;
 
-    let bodyPt = 7.5, titlePt = 8.2;
-
-    // measureSec usa doc.getLineHeight() — altura exacta de jsPDF, no estimada
-    const measureSec = (sec) => {
-      if(!sec) return {h:0, tl:[], bl:[], tLH:0, bLH:0};
+    const mSec=(sec)=>{
+      if(!sec) return {h:0,tl:[],sl:[],p2:[],tLH:0,bLH:0};
       doc.setFont('helvetica','bold'); doc.setFontSize(titlePt);
-      const tLH = doc.getLineHeight() * mmPt;
-      const tl  = doc.splitTextToSize((sec.titulo||'').toUpperCase(), cW2-5);
+      const tLH=doc.getLineHeight()*MMPT;
+      const tl=doc.splitTextToSize((sec.titulo||'').toUpperCase(), cW2-9);
       doc.setFont('helvetica','normal'); doc.setFontSize(bodyPt);
-      const bLH = doc.getLineHeight() * mmPt;
-      const bl  = doc.splitTextToSize(sec.resumen||((sec.puntos||[])[0]||''), cW2-5);
-      return {tl, bl, tLH, bLH, h: tl.length*tLH + 2 + bl.length*bLH + 8};
+      const bLH=doc.getLineHeight()*MMPT;
+      const sum=sec.resumen||(sec.puntos||[])[0]||'';
+      const sl=doc.splitTextToSize(sum, cW2-9);
+      const p2src=sec.puntos&&sec.puntos.length>1?sec.puntos[1]:(sec.puntos&&sec.puntos[0]&&sec.resumen?sec.puntos[0]:'');
+      const p2=p2src?doc.splitTextToSize('· '+p2src, cW2-11):[];
+      const h=4+tl.length*tLH+2+sl.length*bLH+(p2.length?2+Math.min(p2.length,2)*bLH:0)+9;
+      return {tl,sl,p2,tLH,bLH,h};
     };
 
-    const pairH = (i) => Math.max(
-      measureSec(secs[i]).h,
-      secs[i+1] ? measureSec(secs[i+1]).h : 0
-    );
+    const pH=(i)=>Math.max(mSec(secs[i]).h, secs[i+1]?mSec(secs[i+1]).h:0);
 
-    if(secs.length > 0){
-      let totalH = 0;
-      for(let i=0; i<secs.length; i+=2) totalH += pairH(i);
-
-      if(totalH > 0){
-        const rawScale = availH / totalH;
-        if(rawScale < 1){
-          // Demasiado texto: escalar para abajo
-          bodyPt  = Math.max(6,   bodyPt  * Math.max(0.70, rawScale));
-          titlePt = Math.max(6.5, titlePt * Math.max(0.70, rawScale));
-        } else if(rawScale > 1.04){
-          // Sobra espacio: búsqueda binaria, 7 iteraciones converge a <1% error
-          let lo=1.0, hi=Math.min(3.5, rawScale);
-          for(let iter=0; iter<8; iter++){
-            const mid=(lo+hi)/2;
-            bodyPt=7.5*mid; titlePt=8.2*mid;
-            let h2=0;
-            for(let j=0; j<secs.length; j+=2) h2+=pairH(j);
-            if(h2 <= availH*0.98) lo=mid; else hi=mid;
-          }
-          bodyPt  = Math.min(18, Math.max(6,   7.5*lo));
-          titlePt = Math.min(20, Math.max(6.5, 8.2*lo));
-        }
+    if(secs.length){
+      const avH=H-cy-18; let totH=0;
+      for(let i=0;i<secs.length;i+=2) totH+=pH(i);
+      if(totH>avH&&totH<avH*3){
+        const scl=Math.max(0.72,avH/totH);
+        bodyPt=Math.max(5.5,7.5*scl); titlePt=Math.max(6.0,8.5*scl);
       }
     }
 
-    const drawSec = (sec, x, startY) => {
+    const drawSec=(sec,x,startY)=>{
       if(!sec) return;
-      const {tl, bl, tLH, bLH} = measureSec(sec);
-      sf_(...SEC_BAR); doc.rect(x, startY-2, 0.5, tl.length*tLH+2+bl.length*bLH, 'F');
-      doc.setFont('helvetica','bold'); doc.setFontSize(titlePt); sc_(...SEC_TTL);
-      doc.text(tl, x+3, startY);
-      doc.setFont('helvetica','normal'); doc.setFontSize(bodyPt); sc_(...SEC_TXT);
-      doc.text(bl, x+3, startY + tl.length*tLH + 2);
+      const {tl,sl,p2,tLH,bLH}=mSec(sec);
+      const barH=tl.length*tLH+2+sl.length*bLH+(p2.length?2+Math.min(p2.length,2)*bLH:0)+1;
+      sf(C.secBar); doc.rect(x, startY-2, 2.5, barH, 'F');
+      doc.setFont('helvetica','bold'); doc.setFontSize(titlePt); sc(C.secTtl);
+      doc.text(tl, x+6, startY);
+      let ty=startY+tl.length*tLH+2;
+      doc.setFont('helvetica','normal'); doc.setFontSize(bodyPt); sc(C.secTxt);
+      doc.text(sl, x+6, ty);
+      ty+=sl.length*bLH+2;
+      if(p2.length){
+        doc.setFont('helvetica','normal'); doc.setFontSize(Math.max(5.5,bodyPt-0.5)); sc(C.sage);
+        doc.text(p2.slice(0,2), x+6, ty);
+      }
     };
 
-    for(let i=0; i<secs.length; i+=2){
-      const ph = pairH(i);
-      if(cy + ph > H-16) newPage();
+    for(let i=0;i<secs.length;i+=2){
+      const ph2=pH(i);
+      if(cy+ph2>H-18) newPage();
       drawSec(secs[i],   c1X, cy);
       drawSec(secs[i+1], c2X, cy);
-      cy += ph;
+      cy+=ph2;
     }
 
     if(!secs.length && macro.notas_pendientes){
-      doc.setFont('helvetica','italic'); doc.setFontSize(8); sc_(...OVERLINE);
-      doc.text('Notas del episodio aun no publicadas. Actualizate mas tarde.', ML, cy);
-      cy += 10;
+      doc.setFont('helvetica','italic'); doc.setFontSize(8); sc(C.sage);
+      doc.text('Notas del episodio aún no publicadas. Actualizate más tarde.', ML, cy);
+      cy+=12;
     }
 
-    // ── Footer ────────────────────────────────────────────────────────────────
-    const footY = H-8;
-    sd_(...FOOT_LN); doc.setLineWidth(0.15);
-    doc.line(ML, footY-4, W-MR, footY-4);
-    doc.setFont('helvetica','normal'); doc.setFontSize(5.5); sc_(...FOOT_TX);
-    doc.text('Dashboard ExpressLine  \xb7  Wealth Management', ML, footY);
-    doc.text('Hedgeye Risk Management  \xb7  Distribuci\xf3n interna', W-MR, footY, {align:'right'});
-
-    // Bottom stripe (1mm, same as top)
-    sf_(...STRIPE); doc.rect(0, H-1, W, 1, 'F');
-
-    doc.save('Hedgeye_MacroShow_'+fechaNombre+'.pdf');
+    pageFooter();
+    doc.save('Hedgeye_MacroShow_'+fechaNom+'.pdf');
 
   } catch(e){
     console.error('PDF error:', e);
     alert('Error PDF: '+(e.message||String(e)));
   } finally {
-    if(btn){ btn.disabled=false; btn.textContent='⬇ Descargar PDF'; }
+    if(btn){ btn.disabled=false; btn.textContent='\u2b07 Descargar PDF'; }
   }
 }
 
@@ -2026,6 +2064,19 @@ function renderHedgeyeData(d){
       </div>`
     : '';
 
+  // Executive summary (desde Claude)
+  const execSum = macro.resumen_ejecutivo && typeof macro.resumen_ejecutivo==='object' ? macro.resumen_ejecutivo : null;
+  const execBlock = execSum
+    ? `<div style="background:rgba(15,46,40,.8);border:1px solid rgba(130,100,35,.5);border-radius:8px;padding:14px 16px;margin-bottom:18px;position:relative;overflow:hidden;">
+        <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:#C9A84C;border-radius:3px 0 0 3px;"></div>
+        <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#C9A84C;text-transform:uppercase;margin-bottom:10px;padding-left:6px;">Resumen Ejecutivo</div>
+        ${execSum.tesis?`<div style="font-size:13px;font-weight:600;color:#E8EAE0;line-height:1.5;margin-bottom:10px;padding-left:6px;">${execSum.tesis}</div>`:''}
+        ${execSum.contexto?`<div style="font-size:12px;color:#91A898;line-height:1.4;margin-bottom:10px;padding-left:6px;">${execSum.contexto}</div>`:''}
+        ${(execSum.insights||[]).length?`<div style="display:flex;flex-direction:column;gap:6px;padding-left:6px;margin-bottom:10px;">${(execSum.insights||[]).map(i=>`<div style="display:flex;gap:8px;align-items:flex-start;"><div style="width:5px;height:5px;border-radius:50%;background:#C9A84C;flex-shrink:0;margin-top:5px;"></div><div style="font-size:12px;color:#C8CCBE;line-height:1.4;">${i}</div></div>`).join('')}</div>`:''}
+        ${execSum.conclusion?`<div style="font-size:11px;font-style:italic;color:#6B8578;padding-left:6px;border-top:1px solid rgba(201,168,76,.15);padding-top:8px;margin-top:4px;">${execSum.conclusion}</div>`:''}
+      </div>`
+    : '';
+
   // Secciones estructuradas del episodio
   const secciones = macro.secciones||[];
   const resumenSection = macro.notas_pendientes
@@ -2037,8 +2088,9 @@ function renderHedgeyeData(d){
     : secciones.length
     ? secciones.map(sec=>
         `<div style="margin-bottom:16px;">
-          <div style="font-size:10px;font-weight:700;letter-spacing:1px;color:#C9A84C;text-transform:uppercase;margin-bottom:7px;border-left:2px solid #C9A84C;padding-left:8px;">${sec.titulo}</div>
-          ${(sec.puntos||[]).map(p=>`<div class="hg-bullet"><div class="hg-bullet-dot"></div><div>${p}</div></div>`).join('')}
+          <div style="font-size:10px;font-weight:700;letter-spacing:1px;color:#C9A84C;text-transform:uppercase;margin-bottom:6px;border-left:2px solid #C9A84C;padding-left:8px;">${sec.titulo}</div>
+          ${sec.resumen?`<div style="font-size:12px;color:#C8CCBE;line-height:1.5;margin-bottom:6px;padding-left:10px;">${sec.resumen}</div>`:''}
+          ${(sec.puntos||[]).slice(0,sec.resumen?1:3).map(p=>`<div class="hg-bullet"><div class="hg-bullet-dot"></div><div>${p}</div></div>`).join('')}
         </div>`
       ).join('')
     : (macro.bullets&&macro.bullets.length
@@ -2051,6 +2103,7 @@ function renderHedgeyeData(d){
         <div class="hg-macro-ep-title" style="margin-bottom:0;">${macro.title}</div>
         <button id="hg-pdf-btn" onclick="descargarHedgeyePDF()" style="background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.3);color:#C9A84C;border-radius:5px;padding:6px 14px;font-size:11px;font-family:Inter,sans-serif;cursor:pointer;letter-spacing:1px;text-transform:uppercase;white-space:nowrap;flex-shrink:0;">⬇ Descargar PDF</button>
       </div>`
+      + execBlock
       + macroTldr
       + resumenSection
     : `<div class="hg-empty">Sin datos de Macro Show${d.error?' — '+d.error:''}</div>`;

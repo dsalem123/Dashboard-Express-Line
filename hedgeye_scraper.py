@@ -6,51 +6,90 @@ import json, os, sys, datetime, time, re
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
+# ── Traducción fallback (Google Translate) ────────────────────────────────────
 try:
     from deep_translator import GoogleTranslator
-    _translator = GoogleTranslator(source='en', target='es')
-    def traducir(txt):
+    _gt = GoogleTranslator(source='en', target='es')
+    def _traducir_google(txt):
         if not txt or not txt.strip(): return txt
-        try: return _translator.translate(txt)
+        try: return _gt.translate(txt)
         except: return txt
 except ImportError:
-    def traducir(txt): return txt
+    def _traducir_google(txt): return txt
 
-def generar_resumen_ai(titulo, bullets, bull_tickers, bear_tickers, api_key):
-    """Genera un resumen estructurado en español usando Claude API."""
+# ── Procesamiento con Claude (traducción + resúmenes + executive summary) ─────
+def procesar_con_claude(titulo, secciones_raw, bull_tickers, bear_tickers, api_key):
+    """
+    Un solo call a Claude que:
+    1. Traduce al español con jerga financiera profesional
+    2. Elimina atribuciones ("Keith dijo que...") — comienza directo con el punto
+    3. Genera resumen de 1-2 oraciones por sección
+    4. Genera executive summary estructurado
+
+    Returns: (titulo_es, secciones_es, resumen_ejecutivo) o (None, None, None) si falla.
+    """
     try:
-        import anthropic
+        import anthropic, json as _j
         client = anthropic.Anthropic(api_key=api_key)
-        contenido_raw = '\n'.join(f'- {b}' for b in bullets)
-        bull_str = ', '.join(bull_tickers)
-        bear_str = ', '.join(bear_tickers) if bear_tickers else 'ninguna'
-        prompt = f"""Sos un analista financiero experto. Analizá el siguiente resumen del Macro Show de Hedgeye (Keith McCullough) y generá un resumen ejecutivo completo en español para un asesor de wealth management.
 
-Episodio: {titulo}
-Posiciones Bullish: {bull_str}
-Posiciones Bearish: {bear_str}
+        payload = {
+            "titulo": titulo,
+            "secciones": [{"titulo": s["titulo"], "puntos": s["puntos"]} for s in secciones_raw],
+            "bull_tickers": bull_tickers[:15],
+            "bear_tickers": bear_tickers[:15],
+        }
 
-Contenido del episodio:
-{contenido_raw}
-
-Generá un resumen ejecutivo estructurado con:
-1. **Visión macro del mercado** (2-3 oraciones sobre el entorno macro actual según Keith)
-2. **Tesis principal** (la idea central del episodio en 1-2 oraciones)
-3. **Posiciones clave y por qué** (explica brevemente por qué está bull/bear en los activos principales)
-4. **Señales de alerta** (riesgos o cambios que mencionó)
-5. **Conclusión para el asesor** (qué implica esto para la cartera)
-
-Usá un tono profesional y concreto. Máximo 400 palabras."""
+        prompt = (
+            "Sos un chief macro strategist de una firma institucional de wealth management. "
+            "Procesá el siguiente contenido del Macro Show de Hedgeye y respondé ÚNICAMENTE con JSON válido.\n\n"
+            "TAREAS:\n"
+            "1. Traducí al español profesional institucional\n"
+            "2. Eliminá TODA atribución de sujeto: 'Keith dijo que X' → 'X'; 'Señaló que Y' → 'Y'; 'McCullough destacó Z' → 'Z'\n"
+            "3. Títulos de sección: 4-7 palabras, analíticos, en mayúsculas, sin sujeto\n"
+            "4. Por cada sección generá un 'resumen' de 1-2 oraciones que sintetice los puntos clave con implicación práctica\n"
+            "5. Generá un 'resumen_ejecutivo' macro del episodio completo\n\n"
+            "TERMINOLOGÍA: usá jerga financiera profesional: corto/largo, rendimiento, tasa, rango de riesgo, señal de Tendencia/Comercio, "
+            "impulso/momentum, sobreextendido, corrección, catalizador, posicionamiento, Quad 1/2/3/4. "
+            "Preservá siempre: tickers (TLT, SPY, NVDA...), 'Quad N', números, ETFs.\n\n"
+            "FORMATO (JSON estricto, sin markdown, sin texto extra):\n"
+            '{"titulo":"...","secciones":[{"titulo":"...","puntos":["..."],"resumen":"1-2 oraciones"}],'
+            '"resumen_ejecutivo":{"tesis":"mensaje macro central 1-2 oraciones",'
+            '"contexto":"condiciones de mercado actuales 1 oración",'
+            '"insights":["insight accionable 1","insight accionable 2","insight accionable 3"],'
+            '"conclusion":"implicación concreta para gestión de portfolios 1 oración"}}\n\n'
+            "CONTENIDO:\n" + _j.dumps(payload, ensure_ascii=False)
+        )
 
         msg = client.messages.create(
             model='claude-haiku-4-5-20251001',
-            max_tokens=800,
+            max_tokens=6000,
             messages=[{'role': 'user', 'content': prompt}]
         )
-        return msg.content[0].text
+
+        resp = msg.content[0].text.strip()
+        if resp.startswith('```'):
+            resp = re.sub(r'^```\w*\n?', '', resp)
+            resp = re.sub(r'\n?```$', '', resp.strip())
+
+        result = _j.loads(resp)
+
+        titulo_es = result.get('titulo', titulo)
+        secciones_es = []
+        for i, sec in enumerate(result.get('secciones', [])):
+            orig = secciones_raw[i] if i < len(secciones_raw) else {}
+            secciones_es.append({
+                'titulo':  sec.get('titulo',  orig.get('titulo', '')),
+                'puntos':  sec.get('puntos',  orig.get('puntos', [])),
+                'resumen': sec.get('resumen', ''),
+            })
+
+        resumen_ejecutivo = result.get('resumen_ejecutivo', None)
+        print(f"  Claude: {len(secciones_es)} secciones, exec summary OK", flush=True)
+        return titulo_es, secciones_es, resumen_ejecutivo
+
     except Exception as e:
-        print(f"  AI summary error: {e}", flush=True)
-        return None
+        print(f"  Claude procesamiento error: {e}", flush=True)
+        return None, None, None
 
 import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
@@ -418,22 +457,37 @@ try:
         if is_livestream_only:
             print("WARN: Articulo solo tiene livestream, notas no publicadas aun.", flush=True)
 
-        print("Traduciendo contenido al espanol...", flush=True)
-        secciones_es = []
-        for sec in secciones_raw:
-            titulo_sec = traducir(sec['titulo'])
-            puntos_es  = [traducir(p) for p in sec['puntos']]
-            secciones_es.append({'titulo': titulo_sec, 'puntos': puntos_es})
+        # ── Procesamiento: Claude primero, fallback Google Translate ─────────────
+        api_key = cfg.get('anthropic_api_key') or os.environ.get('ANTHROPIC_API_KEY', '')
+        titulo_es, secciones_es, resumen_ejecutivo = None, None, None
+
+        if api_key and not is_livestream_only and secciones_raw:
+            print("Procesando con Claude (traducción + resúmenes + executive summary)...", flush=True)
+            titulo_es, secciones_es, resumen_ejecutivo = procesar_con_claude(
+                titulo, secciones_raw, macro_bull, macro_bear, api_key
+            )
+
+        if not secciones_es:
+            print("Traduciendo con Google Translate (fallback)...", flush=True)
+            titulo_es = _traducir_google(titulo)
+            secciones_es = []
+            for sec in secciones_raw:
+                secciones_es.append({
+                    'titulo':  _traducir_google(sec['titulo']),
+                    'puntos':  [_traducir_google(p) for p in sec['puntos']],
+                    'resumen': '',
+                })
 
         data['macro_show'] = {
-            'title':          traducir(titulo),
-            'date':           de.get_text(strip=True) if de else '',
-            'bullets':        [],
-            'secciones':      secciones_es,
-            'bullish':        macro_bull,
-            'bearish':        macro_bear,
-            'resumen_ai':     None,
-            'notas_pendientes': is_livestream_only,
+            'title':               titulo_es or titulo,
+            'date':                de.get_text(strip=True) if de else '',
+            'bullets':             [],
+            'secciones':           secciones_es,
+            'bullish':             macro_bull,
+            'bearish':             macro_bear,
+            'resumen_ai':          None,
+            'resumen_ejecutivo':   resumen_ejecutivo,
+            'notas_pendientes':    is_livestream_only,
         }
         print(f"Macro: '{data['macro_show']['title']}'", flush=True)
         print(f"Macro Bull tickers: {macro_bull}", flush=True)
