@@ -110,33 +110,6 @@ def _resumir_seccion(puntos):
 def ts():
     return datetime.datetime.now().strftime('%H:%M:%S')
 
-# ── HTML helpers ──────────────────────────────────────────────────────────────
-
-def update_html_files(state_json, hg_json=None):
-    for fname in ['crm_offshore_cambios.html', 'index.html']:
-        path = os.path.join(BASE, fname)
-        if not os.path.exists(path):
-            continue
-        with open(path, 'r', encoding='utf-8') as f:
-            content = f.read()
-        updated = re.sub(
-            r'<script type="application/json" id="crm-snapshot">[\s\S]*?<\/script>',
-            f'<script type="application/json" id="crm-snapshot">{state_json}</script>',
-            content, count=1
-        )
-        if hg_json:
-            updated = re.sub(
-                r'const HG_STATIC_DATA = (?:null|\{[\s\S]*?\});',
-                f'const HG_STATIC_DATA = {hg_json};',
-                updated, count=1
-            )
-        if updated == content:
-            print(f'  AVISO: no se encontro crm-snapshot en {fname}')
-            continue
-        with open(path, 'w', encoding='utf-8') as f:
-            f.write(updated)
-        print(f'[{ts()}] {fname} actualizado')
-
 # ── git push ──────────────────────────────────────────────────────────────────
 
 def git_push(msg):
