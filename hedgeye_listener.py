@@ -20,6 +20,13 @@ TOPIC = 'crm-hg-dsalem123-offshore'
 PORT  = 5055
 BASE  = os.path.dirname(os.path.abspath(__file__))
 
+# Git puede no estar en PATH cuando el proceso viene de Task Scheduler
+_GIT = (
+    r'C:\Users\usuario\Downloads\PortableGit\mingw64\bin\git.exe'
+    if os.path.exists(r'C:\Users\usuario\Downloads\PortableGit\mingw64\bin\git.exe')
+    else 'git'
+)
+
 # ── Resumen de secciones (misma lógica que hedgeye_server.py) ─────────────────
 
 _TS_RE = re.compile(r'\s*\(\d+:\d+(?:[,\s]+\d+:\d+)*\)\s*$')
@@ -114,27 +121,27 @@ def ts():
 
 def git_push(msg):
     os.chdir(BASE)
-    subprocess.run(['git', 'add', 'crm_offshore_cambios.html', 'index.html'])
-    r = subprocess.run(['git', 'commit', '-m', msg], capture_output=True, text=True)
+    subprocess.run([_GIT, 'add', 'crm_offshore_cambios.html', 'index.html'])
+    r = subprocess.run([_GIT, 'commit', '-m', msg], capture_output=True, text=True)
     if 'nothing to commit' in r.stdout:
         print(f'[{ts()}] Sin cambios nuevos')
         return
-    r2 = subprocess.run(['git', 'push'], capture_output=True, text=True)
+    r2 = subprocess.run([_GIT, 'push'], capture_output=True, text=True)
     if r2.returncode == 0:
         print(f'[{ts()}] Push OK — Vercel actualiza en ~30 segundos')
         return
     # Push rechazado — el remoto está adelante, hacer fetch + merge + re-push
     print(f'[{ts()}] Push rechazado, haciendo merge con remoto...')
-    subprocess.run(['git', 'fetch'])
-    merge = subprocess.run(['git', 'merge', 'origin/master', '--no-edit'], capture_output=True, text=True)
+    subprocess.run([_GIT, 'fetch'])
+    merge = subprocess.run([_GIT, 'merge', 'origin/master', '--no-edit'], capture_output=True, text=True)
     if merge.returncode != 0:
         # Conflicto en merge — usar crm_offshore_cambios.html como fuente de verdad
         print(f'[{ts()}] Conflicto en merge — resolviendo con crm_offshore_cambios.html')
         import shutil
         shutil.copy('crm_offshore_cambios.html', 'index.html')
-        subprocess.run(['git', 'add', 'crm_offshore_cambios.html', 'index.html'])
-        subprocess.run(['git', 'commit', '-m', f'{msg} (merge conflict resolved)'])
-    r3 = subprocess.run(['git', 'push'])
+        subprocess.run([_GIT, 'add', 'crm_offshore_cambios.html', 'index.html'])
+        subprocess.run([_GIT, 'commit', '-m', f'{msg} (merge conflict resolved)'])
+    r3 = subprocess.run([_GIT, 'push'])
     if r3.returncode == 0:
         print(f'[{ts()}] Push OK (tras merge) — Vercel actualiza en ~30 segundos')
     else:
