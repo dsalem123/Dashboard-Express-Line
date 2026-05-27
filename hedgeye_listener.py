@@ -155,12 +155,23 @@ def handle_hedgeye_trigger():
     if result.returncode != 0:
         print(f'[{ts()}] Scraper fallo'); return
     print(f'[{ts()}] Scraper OK')
+
+    # Procesamiento AI con Claude Code (traducción institucional + resumen ejecutivo)
+    ai_script = os.path.join(BASE, 'ai_process.py')
+    if os.path.exists(ai_script):
+        print(f'[{ts()}] Procesando con Claude Code AI...')
+        ai_result = subprocess.run([sys.executable, ai_script], timeout=450)
+        if ai_result.returncode == 0:
+            print(f'[{ts()}] Claude Code AI: OK')
+        else:
+            print(f'[{ts()}] Claude Code AI: fallo — usando datos del scraper (Google Translate)')
+
     data_file = os.path.join(BASE, 'hedgeye_data.json')
     hg_json = None
     if os.path.exists(data_file):
         with open(data_file, 'r', encoding='utf-8') as f:
             data = json.load(f)
-        # Calcular resúmenes por sección y guardarlos en el JSON
+        # Fallback: calcular resúmenes básicos para secciones sin resumen AI
         secciones = data.get('macro_show', {}).get('secciones', [])
         changed = False
         for sec in secciones:
@@ -170,7 +181,7 @@ def handle_hedgeye_trigger():
         if changed:
             with open(data_file, 'w', encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False)
-            print(f'[{ts()}] Resúmenes calculados para {len(secciones)} secciones')
+            print(f'[{ts()}] Resúmenes fallback calculados para {len(secciones)} secciones')
         hg_json = json.dumps(data, ensure_ascii=False)
     update_html_files(state_json=None, hg_json=hg_json)
     git_push(f'Hedgeye update {datetime.datetime.now().strftime("%Y-%m-%d %H:%M")}')
