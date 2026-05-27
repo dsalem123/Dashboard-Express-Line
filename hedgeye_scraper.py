@@ -100,6 +100,7 @@ from bs4 import BeautifulSoup
 BASE = os.path.dirname(os.path.abspath(__file__))
 CFG  = os.path.join(BASE, 'hedgeye_config.json')
 DATA = os.path.join(BASE, 'hedgeye_data.json')
+RAW  = os.path.join(BASE, 'hedgeye_raw.json')   # data cruda en inglés para AI posterior
 DBG  = os.path.join(BASE, 'hedgeye_debug')
 os.makedirs(DBG, exist_ok=True)
 
@@ -457,7 +458,25 @@ try:
         if is_livestream_only:
             print("WARN: Articulo solo tiene livestream, notas no publicadas aun.", flush=True)
 
-        # ── Procesamiento: Claude primero, fallback Google Translate ─────────────
+        # ── Guardar raw (inglés) para procesamiento AI posterior con Claude Code ──
+        raw_data = {
+            "updated":    data["updated"],
+            "bullish":    data["bullish"],
+            "bearish":    data["bearish"],
+            "macro_show": {
+                "title":    titulo,
+                "date":     de.get_text(strip=True) if de else '',
+                "secciones": secciones_raw,
+                "bullish":  macro_bull,
+                "bearish":  macro_bear,
+                "notas_pendientes": is_livestream_only,
+            }
+        }
+        with open(RAW, 'w', encoding='utf-8') as f:
+            json.dump(raw_data, f, ensure_ascii=False, indent=2)
+        print(f"Raw data guardada -> hedgeye_raw.json ({len(secciones_raw)} secciones)", flush=True)
+
+        # ── Procesamiento: Claude API primero, fallback Google Translate ──────────
         api_key = cfg.get('anthropic_api_key') or os.environ.get('ANTHROPIC_API_KEY', '')
         titulo_es, secciones_es, resumen_ejecutivo = None, None, None
 
