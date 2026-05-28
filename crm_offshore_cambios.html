@@ -3345,7 +3345,7 @@ function reuGeneratePDF(meetingId){
   var notes=[]; try{notes=JSON.parse(localStorage.getItem('crm_act_'+meeting.clientId)||'[]');}catch(e){}
   var stage=document.getElementById('reu-pdf-stage');
   if(!stage){stage=document.createElement('div');stage.id='reu-pdf-stage';document.body.appendChild(stage);}
-  stage.innerHTML=reuBuildPDFHTML(meeting,client,holdings,hgSig,notes);
+  stage.innerHTML=reuBuildPDFHTML(meeting,client,holdings,hgSig,notes,pfolClient);
   showToast('Generando informe...');
   // Allow DOM to paint before capturing
   setTimeout(function(){
@@ -3378,7 +3378,7 @@ function reuGeneratePDF(meetingId){
   },200);
 }
 
-function reuBuildPDFHTML(meeting,client,holdings,hgSig,notes){
+function reuBuildPDFHTML(meeting,client,holdings,hgSig,notes,pfolMeta){
   var dateObj=new Date(meeting.date+'T12:00:00');
   var months=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   var wdays=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
@@ -3413,13 +3413,22 @@ function reuBuildPDFHTML(meeting,client,holdings,hgSig,notes){
   }).join('');
 
   // ── Holdings calculations ──
-  var totMV=0,totCost=0,hasCost=false;
+  var totMV=0,totCost=0,totMVwithCost=0,hasCost=false;
   holdings.forEach(function(h){
     totMV+=parseFloat(h.marketValue)||0;
-    if(h.totalCost!=null){totCost+=parseFloat(h.totalCost)||0;hasCost=true;}
+    if(h.totalCost!=null){totCost+=parseFloat(h.totalCost)||0;totMVwithCost+=parseFloat(h.marketValue)||0;hasCost=true;}
   });
-  var totGain=hasCost?totMV-totCost:null;
-  var totGainPct=(hasCost&&totCost>0)?totGain/totCost*100:null;
+  // Use portfolio-level unrealizedGain/totalValue when available — matches what portfolios section shows
+  var totGain, totGainPct;
+  if(pfolMeta&&pfolMeta.unrealizedGain!=null){
+    totGain=pfolMeta.unrealizedGain;
+    var pfTotVal=pfolMeta.totalValue||totMV;
+    totGainPct=pfTotVal>0?totGain/pfTotVal*100:null;
+  } else {
+    totGain=hasCost?totMVwithCost-totCost:null;
+    totGainPct=(hasCost&&totCost>0)?totGain/totCost*100:null;
+  }
+  if(pfolMeta&&pfolMeta.totalValue) totMV=pfolMeta.totalValue;
   var gainColor=totGain!=null?(totGain>=0?GREEN:RED):CREAM;
 
   // ── Performance KPIs ──
