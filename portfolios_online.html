@@ -534,7 +534,8 @@ function renderDetail(id){
   toggleClientEdit(false);
   const gp=c.unrealizedGain||0, cls=gp>=0?'pos':'neg', sign=gp>=0?'+':'';
   const knownCost=c.holdings.filter(h=>h.totalCost!=null).reduce((s,h)=>s+h.totalCost,0);
-  const gpPct=knownCost>0?(gp/knownCost*100).toFixed(2):'—';
+  const gainOnCost=c.holdings.filter(h=>h.totalCost!=null).reduce((s,h)=>s+(h.unrealizedGain!=null?h.unrealizedGain:((h.marketValue||0)-h.totalCost)),0);
+  const gpPct=knownCost>0?(gainOnCost/knownCost*100).toFixed(2):'—';
   document.getElementById('detail-metrics').innerHTML=`
     <div class="d-metric"><div class="d-metric-label">Valor total</div><div class="d-metric-val">${fmt(c.totalValue)}</div></div>
     <div class="d-metric"><div class="d-metric-label">Cash disponible</div><div class="d-metric-val neutral">${fmt(c.cashAvailable)}</div></div>
@@ -551,7 +552,8 @@ function renderHoldings(id){
   const knownGain=c.holdings.filter(h=>h.unrealizedGain!=null).reduce((s,h)=>s+h.unrealizedGain,0);
   const knownCost=c.holdings.filter(h=>h.totalCost!=null).reduce((s,h)=>s+h.totalCost,0);
   const displayGain=c.unrealizedGain!=null?c.unrealizedGain:knownGain;
-  const gpPct=knownCost>0?(displayGain/knownCost*100):0;
+  const gainOnCost=c.holdings.filter(h=>h.totalCost!=null).reduce((s,h)=>s+(h.unrealizedGain!=null?h.unrealizedGain:((h.marketValue||0)-h.totalCost)),0);
+  const gpPct=knownCost>0?(gainOnCost/knownCost*100):0;
   document.getElementById('perf-grid').innerHTML=`
     <div class="perf-card"><div class="perf-label">Valor cartera</div><div class="perf-val">${fmt(total)}</div></div>
     <div class="perf-card"><div class="perf-label">G/P total (USD)</div><div class="perf-val ${displayGain>=0?'pos':'neg'}">${displayGain>=0?'+':''}${fmt(displayGain)}</div></div>
