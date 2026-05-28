@@ -1094,7 +1094,7 @@ function showToastUndo(msg,undoFn,commitFn){
   t._timer=setTimeout(()=>{t.classList.remove('show');t.style.pointerEvents='none';if(!t._undone&&commitFn)commitFn();delete _undoFns[fid];},5000);
 }
 // ─── SUPABASE REALTIME SYNC ──────────────────────────────────────────────────
-var _sb=null,_sbReady=false,_sbLastPull=0,_sbPulling=false;
+var _sb=null,_sbReady=false,_sbLastPull=0,_sbPulling=false,_sbConnected=false,_sbEverConnected=false;
 
 function _initSupabase(){
   try{
@@ -1163,7 +1163,11 @@ function _sbSubscribe(){
     _sb.channel('crm-rt')
       .on('postgres_changes',{event:'*',schema:'public',table:'clients'},function(){_sbPull(true);})
       .on('postgres_changes',{event:'*',schema:'public',table:'leads'},function(){_sbPull(true);})
-      .subscribe(function(s){console.log('[SB] rt:',s);});
+      .subscribe(function(s){
+        console.log('[SB] rt:',s);
+        if(s==='SUBSCRIBED'){_sbConnected=true;_sbEverConnected=true;updateSyncStatus();}
+        else if(s==='CHANNEL_ERROR'||s==='TIMED_OUT'||s==='CLOSED'){_sbConnected=false;updateSyncStatus();}
+      });
   }catch(e){console.warn('[SB] sub:',e);}
 }
 
@@ -2389,7 +2393,10 @@ function updateSyncStatus(){
   var el=document.getElementById('sync-status');
   if(!el)return;
   var parts=[];
-  if(typeof _sbReady!=='undefined'&&_sbReady)parts.push('<span style="display:inline-flex;align-items:center;gap:3px;"><span style="width:6px;height:6px;border-radius:50%;background:#21A055;display:inline-block;"></span><span style="color:#21A055;font-size:10px;">Realtime</span></span>');
+  if(typeof _sbReady!=='undefined'&&_sbReady){
+    if(_sbConnected)parts.push('<span style="display:inline-flex;align-items:center;gap:3px;"><span style="width:6px;height:6px;border-radius:50%;background:#21A055;display:inline-block;"></span><span style="color:#21A055;font-size:10px;">Realtime</span></span>');
+    else if(_sbEverConnected)parts.push('<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(185,50,38,.15);border:1px solid rgba(185,50,38,.4);border-radius:4px;padding:2px 7px;"><span style="width:6px;height:6px;border-radius:50%;background:#c0392b;display:inline-block;flex-shrink:0;"></span><span style="color:#f5a5a5;font-size:10px;font-weight:700;letter-spacing:.5px;">SIN CONEXIÓN</span></span>');
+  }
   var ts=parseInt(localStorage.getItem('_sync_ts')||'0');
   if(ts){var mins=Math.floor((Date.now()-ts)/60000);var color=mins<10?'#A8DABB':mins<60?'#C9A84C':'#6B8578';var txt=mins<1?'Vercel: ahora':mins<60?'Vercel: '+mins+'m':'Vercel: '+Math.floor(mins/60)+'h';parts.push('<span style="color:'+color+'">'+txt+'</span>');}
   el.innerHTML=parts.join('<span style="color:#3A5A45;margin:0 4px;">·</span>');
