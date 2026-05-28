@@ -1815,10 +1815,6 @@ async function descargarHedgeyePDF(){
   const secs   = (macro.secciones||[]).filter(s=>s.titulo);
   const dateS  = (d.updated||'').slice(0,10);
   const title  = macro.title||'';
-  const execsum = macro.resumen_ejecutivo || {
-    tesis:'Sin resumen ejecutivo.', contexto:'', insights:[], conclusion:''
-  };
-
   // Pagina 1
   fillPageBg();
 
@@ -1846,23 +1842,26 @@ async function descargarHedgeyePDF(){
     cy += 4;
   }
 
-  // Resumen Ejecutivo — sin linea dorada arriba
-  sectionLabel(cy,'RESUMEN EJECUTIVO'); cy+=5;
-  const execTop = cy;
+  // Resumen Ejecutivo — solo si hay datos reales
+  if(macro.resumen_ejecutivo){
+    const execsum = macro.resumen_ejecutivo;
+    sectionLabel(cy,'RESUMEN EJECUTIVO'); cy+=5;
+    const execTop = cy;
 
-  const tesis = clean(execsum.tesis||'');
-  const ctx   = clean(execsum.contexto||'');
-  const ins   = (execsum.insights||[]).slice(0,3).map(clean);
-  const concl = clean(execsum.conclusion||'');
+    const tesis = clean(execsum.tesis||'');
+    const ctx   = clean(execsum.contexto||'');
+    const ins   = (execsum.insights||[]).slice(0,3).map(clean);
+    const concl = clean(execsum.conclusion||'');
 
-  if(tesis){ cy = multiTxt(ML+5,cy,CW-6,4.6,tesis,'helvetica','bold',9,TXT); cy+=2; }
-  if(ctx)  { cy = multiTxt(ML+5,cy,CW-6,4,ctx,'helvetica','normal',8,TXT2); cy+=2; }
-  for(const it of ins){ cy = multiTxt(ML+7,cy,CW-10,3.8,'-  '+it,'helvetica','normal',7.5,TXT2); cy+=1.5; }
-  if(concl){ cy+=1; cy = multiTxt(ML+5,cy,CW-6,3.5,concl,'helvetica','italic',7,TXT3); }
+    if(tesis){ cy = multiTxt(ML+5,cy,CW-6,4.6,tesis,'helvetica','bold',9,TXT); cy+=2; }
+    if(ctx)  { cy = multiTxt(ML+5,cy,CW-6,4,ctx,'helvetica','normal',8,TXT2); cy+=2; }
+    for(const it of ins){ cy = multiTxt(ML+7,cy,CW-10,3.8,'-  '+it,'helvetica','normal',7.5,TXT2); cy+=1.5; }
+    if(concl){ cy+=1; cy = multiTxt(ML+5,cy,CW-6,3.5,concl,'helvetica','italic',7,TXT3); }
 
-  setDraw(GD); doc.setLineWidth(1.3);
-  doc.line(ML+1, execTop-1, ML+1, cy+1);
-  cy+=6;
+    setDraw(GD); doc.setLineWidth(1.3);
+    doc.line(ML+1, execTop-1, ML+1, cy+1);
+    cy+=6;
+  }
 
   // Senales — una linea de separacion
   goldRule(cy,0.4); cy+=4;
