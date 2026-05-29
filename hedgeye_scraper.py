@@ -289,7 +289,7 @@ try:
     options.add_argument('--disable-dev-shm-usage')
     options.add_argument('--no-sandbox')
     # Siempre non-headless: headless falla en Windows Y Cloudflare Turnstile lo detecta
-    driver = uc.Chrome(options=options, headless=False, version_main=148)
+    driver = uc.Chrome(options=options, headless=False, version_main=None)
 
     # Deshabilitar window.print() para evitar dialogos de impresion
     driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
