@@ -1168,9 +1168,13 @@ async function _loginSubmit(){
 async function _logout(){
   if(!_sb)return;
   await _sb.auth.signOut();
-  _showLogin('');
+  var btn=document.getElementById('login-btn');
+  if(btn){btn.disabled=false;btn.textContent='Ingresar';}
+  var err=document.getElementById('login-error');
+  if(err) err.textContent='';
   document.getElementById('login-email').value='';
   document.getElementById('login-password').value='';
+  _showLogin('');
 }
 
 function _initSupabase(){
