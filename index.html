@@ -2593,7 +2593,11 @@ function guardarProximoContacto(){
 }
 
 renderMgr();render();
-_initSupabase();
+(function _waitSB(attempts){
+  if(typeof window.supabase!=='undefined'){_initSupabase();return;}
+  if(attempts>20){console.warn('[SB] SDK no cargó tras 2s');return;}
+  setTimeout(function(){_waitSB(attempts+1);},100);
+})(0);
 // El pull inicial lo dispara _initSupabase() tras verificar sesión auth
 if(sessionStorage.getItem('_hgReload')){
   sessionStorage.removeItem('_hgReload');
