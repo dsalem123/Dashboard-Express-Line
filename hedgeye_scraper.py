@@ -277,9 +277,40 @@ def parse_macro_tldr(html):
 
     return bull_tickers, bear_tickers
 
+def _detect_chrome_version():
+    """Devuelve el major version de Chrome instalado (int) o None si no se puede detectar."""
+    import subprocess, re, winreg
+    # 1. Registry (más rápido y confiable en Windows)
+    for hive, path in [
+        (winreg.HKEY_CURRENT_USER,  r'Software\Google\Chrome\BLBeacon'),
+        (winreg.HKEY_LOCAL_MACHINE, r'SOFTWARE\Google\Chrome\BLBeacon'),
+        (winreg.HKEY_LOCAL_MACHINE, r'SOFTWARE\WOW6432Node\Google\Chrome\BLBeacon'),
+    ]:
+        try:
+            key = winreg.OpenKey(hive, path)
+            ver = winreg.QueryValueEx(key, 'version')[0]
+            return int(ver.split('.')[0])
+        except Exception:
+            pass
+    # 2. Ejecutable directo
+    for exe in [
+        r'C:\Program Files\Google\Chrome\Application\chrome.exe',
+        r'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe',
+    ]:
+        if os.path.exists(exe):
+            try:
+                r = subprocess.run([exe, '--version'], capture_output=True, text=True, timeout=5)
+                m = re.search(r'(\d+)\.', r.stdout)
+                if m:
+                    return int(m.group(1))
+            except Exception:
+                pass
+    return None
+
 driver = None
 try:
-    print("Iniciando Chrome (undetected)...", flush=True)
+    chrome_ver = _detect_chrome_version()
+    print(f"Iniciando Chrome (undetected, version={chrome_ver})...", flush=True)
     COOKIES_FILE = os.path.join(BASE, 'hedgeye_cookies.json')
     has_cookies = os.path.exists(COOKIES_FILE)
 
@@ -289,7 +320,7 @@ try:
     options.add_argument('--disable-dev-shm-usage')
     options.add_argument('--no-sandbox')
     # Siempre non-headless: headless falla en Windows Y Cloudflare Turnstile lo detecta
-    driver = uc.Chrome(options=options, headless=False, version_main=None)
+    driver = uc.Chrome(options=options, headless=False, version_main=chrome_ver)
 
     # Deshabilitar window.print() para evitar dialogos de impresion
     driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
