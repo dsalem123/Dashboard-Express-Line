@@ -6,3 +6,26 @@ hedgeye_debug/
 __pycache__/
 *.pyc
 add_snapshot.py
+
+# Scripts de parcheo / one-shot (ya aplicados a los HTML)
+patch_*.py
+fix_*.py
+
+# Scripts de build/debug temporales
+build_*.py
+calc_*.py
+validate_*.py
+gen_*.py
+rebuild_*.py
+
+# Scripts de test y chequeo
+test_*.py
+check_*.py
+show_*.py
+
+# Archivos temporales / debug privados
+_*.py
+_*.html
+_*.js
+_*.pdf
+cartera_debug.html
