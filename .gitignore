@@ -1,5 +1,7 @@
 hedgeye_cookies.json
+hedgeye_config.json
 hedgeye_data.json
+hedgeye_raw.json
 hedgeye_debug/
 __pycache__/
 *.pyc
