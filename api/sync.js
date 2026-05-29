@@ -7,6 +7,18 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).end();
 
+  // Verificar sesión Supabase
+  const authHeader = req.headers['authorization'] || '';
+  const userToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+  if (!userToken) return res.status(401).json({ error: 'No autenticado' });
+  const sbVerify = await fetch('https://mgbjvbwqspeumpwprbbt.supabase.co/auth/v1/user', {
+    headers: {
+      'Authorization': `Bearer ${userToken}`,
+      'apikey': process.env.SUPABASE_ANON_KEY || 'sb_publishable_q4-FOP1jGSrEiu06LMfnDA_Q6q8sxh8',
+    }
+  });
+  if (!sbVerify.ok) return res.status(401).json({ error: 'Sesión inválida o expirada' });
+
   const token = process.env.GITHUB_TOKEN;
   if (!token) return res.status(500).json({ error: 'GITHUB_TOKEN no configurado' });
 

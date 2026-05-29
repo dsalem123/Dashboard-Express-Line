@@ -1390,7 +1390,7 @@ function triggerHedgeyeUpdate(btn){
   });
 }
 
-function congelarSnapshot(btn){
+async function congelarSnapshot(btn){
   var orig=btn?btn.innerHTML:null;
   function setBtnState(icon,txt){
     if(!btn) return;
@@ -1425,10 +1425,12 @@ function congelarSnapshot(btn){
     (typeof HG_STATIC_DATA!=='undefined'&&HG_STATIC_DATA?HG_STATIC_DATA:null)||
     (function(){try{var x=localStorage.getItem('hg_data');return x?JSON.parse(x):null;}catch(e){return null;}}());
   if(hgData) state._hgData=hgData;
+  var sbToken='';
+  try{if(_sb){var ses=await _sb.auth.getSession();sbToken=ses?.data?.session?.access_token||'';}}catch(e){}
   setBtnState('spin','Sincronizando...');
   fetch('/api/sync',{
     method:'POST',
-    headers:{'Content-Type':'application/json'},
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+sbToken},
     body:JSON.stringify(state),
     signal:AbortSignal.timeout(15000)
   }).then(function(r){
