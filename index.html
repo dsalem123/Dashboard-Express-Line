@@ -1089,6 +1089,7 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
 
 
 <script>
+function reuEsc(s){if(s==null)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 const MANAGERS={1001:{abbr:'TB',full:'Tomi Bein'},1002:{abbr:'IPR',full:'IPR'},1003:{abbr:'JG',full:'John'},1004:{abbr:'FJ',full:'Fede Jabbaz'}};
 const EMPTY_EXTRA={comercial:'',sociedad:'',tipoFee:'',pctFee:'',aum:'',seguimiento:'',ultimoContacto:'',riesgo:'',plazo:'',mail:'',telefono:'',detalles:'',numCuenta:''};
 // ── Defaults (datos iniciales hardcodeados) ──
