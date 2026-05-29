@@ -1092,21 +1092,8 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
 function reuEsc(s){if(s==null)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 const MANAGERS={1001:{abbr:'TB',full:'Tomi Bein'},1002:{abbr:'IPR',full:'IPR'},1003:{abbr:'JG',full:'John'},1004:{abbr:'FJ',full:'Fede Jabbaz'}};
 const EMPTY_EXTRA={comercial:'',sociedad:'',tipoFee:'',pctFee:'',aum:'',seguimiento:'',ultimoContacto:'',riesgo:'',plazo:'',mail:'',telefono:'',detalles:'',numCuenta:''};
-// ── Defaults (datos iniciales hardcodeados) ──
-const DEFAULT_CLIENTS=[
-  {id:1,nombre:'ARVE HOLDINGS LTD',comitente:1001,broker:'Insigneo',custodio:'Pershing',mgrNum:1001,comercial:'John Gandolfo',sociedad:'',tipoFee:'Brokerage',pctFee:'0.50%',seguimiento:'Semanal',ultimoContacto:'2025-11-04',riesgo:'Conservador',plazo:'Largo',mail:'',telefono:'+5493874810247',detalles:'Agustina Escudero es el contacto, ella se ocupa de la parte comercial, la sociedad es de las hermanas.'},
-  {id:2,nombre:'PEPS ASSET VENTURES CORP.',comitente:1002,broker:'Pro Capital',custodio:'Pershing',mgrNum:1002,comercial:'John Gandolfo',sociedad:'NEVIS NBCD',tipoFee:'',pctFee:'',seguimiento:'',ultimoContacto:'',riesgo:'Conservador',plazo:'Largo',mail:'',telefono:'',detalles:''},
-  {id:3,nombre:'CIVELEDA CORP.',comitente:1003,broker:'Insigneo',custodio:'Pershing',mgrNum:1004,comercial:'Federico Jabbaz',sociedad:'NEVIS NBST',tipoFee:'Brokerage',pctFee:'0.20%',seguimiento:'Mensual',ultimoContacto:'2025-07-25',riesgo:'Moderado',plazo:'Corto',mail:'',telefono:'+5491165398056',detalles:'Se va a operar bastante la cuenta el.'},
-  {id:4,nombre:"RONALDO JOSE O'TOOLE",comitente:1004,broker:'Insigneo',custodio:'Pershing',mgrNum:1003,...EMPTY_EXTRA},
-];
-const DEFAULT_LEADS=[
-  'BENPORAT','CAZFE','TOVAR CLARYSABEL','GIMENEZ EZEQUIEL','MUZIO DIEGO','SAGRAMOSO GIOVANNI',
-  'SANTAMARIA PEDRO','BECU INES','BECU AGUSTINA','PASSANISI JOSE LUIS','GANDOLFO CRISTIAN',
-  'SORIA MANUEL','GAGLIANO ALEJANDRO','FERNANDEZ FEDERICO','SEAI LUCIANA','ALCACER IGNACIO',
-  'VIDELA LISANDRO','AYERZA LUCAS','CHIESA JUAN JOSE','CHIESA SANTIAGO','PATRON URIBURU JUAN',
-  'MORCILLO NICOLAS','SHAW GUSTAVO','PELTEMBURG ALEJANDRO','MELINSKY ERNESTO','TRIGAS MANUEL',
-  'OCAMPO MARTIN','FERNANDEZ MATIAS','BELLONI MARIA INES','MAZZEA LEO','ZUBILLAGA FACUNDO'
-].map((n,i)=>({id:100+i,nombre:n,estado:'Nuevo',notas:''}));;
+const DEFAULT_CLIENTS=[];
+const DEFAULT_LEADS=[];
 
 // ── Persistencia localStorage ──
 function debounce(fn,ms){var t;return function(){clearTimeout(t);t=setTimeout(fn,ms);};}
