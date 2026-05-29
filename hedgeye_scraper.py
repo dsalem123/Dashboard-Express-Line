@@ -196,17 +196,74 @@ def parse_positions(html):
 
 def parse_macro_sections(html):
     """Extrae secciones del articulo Macro Show.
-    Soporta dos formatos:
+    Soporta tres formatos:
       - Keith: h6 + ul/li
-      - Ryan/otros: h3.text-black + parrafos p con bullet punto
+      - Ryan/otros: h3.text-black + parrafos p con bullet •
+      - AI Summary: h3 MAIN SUMMARY + <p><strong>Titulo</strong>• bullet...</p>
     """
     soup = BeautifulSoup(html, 'html.parser')
     content = soup.select_one('#content') or soup
     sections = []
-    cur_title, cur_pts = None, []
-
-    SKIP_H3 = ['TL;DR', 'Summary has been', 'Access The Macro', 'MAIN SUMMARY', 'Market and Macro']
     TS_RE = re.compile(r'\s*\(\d+:\d+[–\-]\d+:\d+(?:,\s*\d+:\d+[–\-]\d+:\d+)*\)\s*$')
+    SKIP_TEXT = ['reflect commentary', 'access today', 'CLICK HERE', 'enhanced by AI',
+                 'may contain errors', 'access the macro', 'watch on-demand']
+
+    def _clean(t):
+        t = TS_RE.sub('', t).strip()
+        t = re.sub(r'\s{2,}', ' ', t).strip()
+        return t
+
+    def _ok_bullet(t):
+        tl = t.lower()
+        return 30 < len(t) < 700 and not any(s in tl for s in SKIP_TEXT)
+
+    # ── Formato AI Summary (MAIN SUMMARY h3 + p>strong) ──────────────────────
+    main_h3 = None
+    for h3 in content.find_all('h3'):
+        if 'MAIN SUMMARY' in h3.get_text():
+            main_h3 = h3
+            break
+
+    if main_h3:
+        cur_title, cur_pts = None, []
+        STOP = ['Summary has been', 'enhanced by AI']
+        for el in main_h3.find_next_siblings():
+            if el.name in ('h3', 'h4') and any(s in el.get_text() for s in STOP):
+                break
+            if el.name != 'p':
+                continue
+            strong = el.find('strong')
+            full_text = el.get_text(separator='•', strip=True)
+            if strong:
+                strong_txt = strong.get_text(strip=True)
+                # Guardar sección previa
+                if cur_title and cur_pts:
+                    sections.append({'titulo': cur_title, 'puntos': cur_pts})
+                cur_title = strong_txt
+                cur_pts = []
+                # Bullets mezclados en el mismo <p> después del título
+                remainder = full_text[len(strong_txt):].strip().lstrip('•').strip()
+                if remainder:
+                    for chunk in remainder.split('•'):
+                        pt = _clean(chunk)
+                        if _ok_bullet(pt):
+                            cur_pts.append(pt)
+            elif full_text.strip():
+                # <p> sin strong: puede ser bullet(s) o título sin negrita
+                raw = full_text.strip()
+                if raw.startswith('•') or (cur_title and not any(raw.startswith(s) for s in ['CLICK', 'The summary'])):
+                    for chunk in raw.split('•'):
+                        pt = _clean(chunk)
+                        if _ok_bullet(pt):
+                            cur_pts.append(pt)
+        if cur_title and cur_pts:
+            sections.append({'titulo': cur_title, 'puntos': cur_pts})
+        if sections:
+            return sections
+
+    # ── Formatos clásicos: h6+ul o h3+p ──────────────────────────────────────
+    cur_title, cur_pts = None, []
+    SKIP_H3 = ['TL;DR', 'Summary has been', 'Access The Macro', 'MAIN SUMMARY', 'Market and Macro']
 
     for el in content.find_all(['h3', 'h6', 'ul', 'p']):
         tag = el.name
@@ -216,31 +273,21 @@ def parse_macro_sections(html):
             if cur_title and cur_pts:
                 sections.append({'titulo': cur_title, 'puntos': cur_pts})
             if tag == 'h3' and (any(s in text for s in SKIP_H3) or len(text) < 5):
-                cur_title = None
-                cur_pts = []
+                cur_title = None; cur_pts = []
             else:
-                cur_title = text
-                cur_pts = []
+                cur_title = text; cur_pts = []
 
         elif tag == 'ul' and cur_title:
-            # Formato Keith: ul > li
             for li in el.select('li'):
-                pt = li.get_text(separator=' ', strip=True)
-                pt = TS_RE.sub('', pt).strip()
-                if 30 < len(pt) < 700:
+                pt = _clean(li.get_text(separator=' ', strip=True))
+                if _ok_bullet(pt):
                     cur_pts.append(pt)
 
         elif tag == 'p' and cur_title:
-            # Saltar <p> anidados dentro de <li> — ya procesados por el handler de ul
             if el.parent and el.parent.name in ('li', 'ul'):
                 continue
-            # Formato Ryan: parrafos sueltos con bullet •
-            pt = re.sub(r'^[•·\-]\s*', '', text).strip()
-            pt = TS_RE.sub('', pt).strip()
-            if (30 < len(pt) < 700
-                    and 'reflect commentary' not in pt.lower()
-                    and 'access today' not in pt.lower()
-                    and 'CLICK HERE' not in pt):
+            pt = _clean(re.sub(r'^[•·\-]\s*', '', text))
+            if _ok_bullet(pt):
                 cur_pts.append(pt)
 
     if cur_title and cur_pts:
