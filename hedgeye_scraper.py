@@ -328,36 +328,61 @@ try:
     if not logged_in:
         print("Navegando al login...", flush=True)
         driver.get('https://accounts.hedgeye.com/users/sign_in')
-        time.sleep(4)
+        wait_for_page(driver, 60)
+        time.sleep(3)
         dbg('01_login.html', driver.page_source)
         print(f"Login URL: {driver.current_url}", flush=True)
 
         from selenium.webdriver.common.keys import Keys
+
+        # Usar send_keys real (no execute_script) para disparar eventos DOM del form
         email_sel = '#user_email, input[name="user[email]"], input[type="email"]'
-        email = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, email_sel)))
-        driver.execute_script("arguments[0].value = arguments[1];", email, cfg['email'])
-        email.click(); email.send_keys(Keys.END); time.sleep(0.3)
-        print("Email llenado", flush=True)
+        email = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, email_sel)))
+        email.click(); time.sleep(0.3)
+        email.clear(); time.sleep(0.2)
+        email.send_keys(cfg['email']); time.sleep(0.3)
+        print(f"Email llenado: {cfg['email'][:20]}...", flush=True)
 
         pwd_sel = '#user_password, input[name="user[password]"], input[type="password"]'
-        pwd = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, pwd_sel)))
-        driver.execute_script("arguments[0].value = arguments[1];", pwd, cfg['password'])
-        pwd.click(); pwd.send_keys(Keys.END); time.sleep(0.5)
+        pwd = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, pwd_sel)))
+        pwd.click(); time.sleep(0.3)
+        pwd.clear(); time.sleep(0.2)
+        pwd.send_keys(cfg['password']); time.sleep(0.5)
         print("Password llenado", flush=True)
 
-        for sel in ['input[name="commit"]', 'input[type="submit"]', 'button[type="submit"]', 'button']:
+        dbg('01b_filled.html', driver.page_source)
+
+        # Click submit por ID específico primero, fallback a otros selectores
+        submitted = False
+        for sel in ['#se-be-login-submit', 'input[name="commit"]', 'input[type="submit"]', 'button[type="submit"]']:
             try:
                 btn = driver.find_element(By.CSS_SELECTOR, sel)
-                if btn.is_displayed():
-                    driver.execute_script("arguments[0].click();", btn)
-                    print(f"Submit via: {sel}", flush=True); break
+                if btn.is_displayed() and btn.is_enabled():
+                    btn.click()
+                    print(f"Submit via: {sel}", flush=True)
+                    submitted = True
+                    break
             except: pass
+        if not submitted:
+            # Fallback: Enter en el campo de password
+            pwd.send_keys(Keys.RETURN)
+            print("Submit via Keys.RETURN", flush=True)
 
-        time.sleep(6)
+        # Esperar Cloudflare challenge si aparece, luego dar tiempo al login
+        time.sleep(3)
+        wait_for_page(driver, 90)
+        time.sleep(10)
         print(f"Post-login URL: {driver.current_url}", flush=True)
+        dbg('02_after_login.html', driver.page_source)
 
-        if 'sign_in' in driver.current_url:
-            data['error'] = 'Login failed - verificar credenciales en hedgeye_config.json'
+        # Verificar si el login falló (redirigió de vuelta a sign_in o a accounts)
+        cur = driver.current_url
+        if 'sign_in' in cur or ('accounts.hedgeye.com' in cur and 'app.hedgeye.com' not in cur):
+            # Borrar cookies corruptas para que el próximo intento haga login limpio
+            if os.path.exists(COOKIES_FILE):
+                os.remove(COOKIES_FILE)
+                print("Cookies borradas — próximo scrape reintentará login", flush=True)
+            data['error'] = f'Login failed (URL: {cur}) - verificar credenciales en hedgeye_config.json'
             driver.quit(); save(); sys.exit(1)
 
         with open(COOKIES_FILE, 'w') as f:
