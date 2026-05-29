@@ -1372,7 +1372,7 @@ function triggerHedgeyeUpdate(btn){
   btn.innerHTML='&#x23F3; Enviando...';
   fetch('https://ntfy.sh/crm-hg-dsalem123-offshore',{
     method:'POST',
-    body:'update',
+    body:'ELhg2026xK9f',
     headers:{'Title':'Actualizar Hedgeye','Priority':'high','Tags':'hedgeye'}
   }).then(function(r){
     if(r.ok){
@@ -1877,7 +1877,7 @@ function hedgeyeRefresh(){
 function hedgeyeActualizar(){
   const btn=document.getElementById('hg-refresh-btn');
   btn.disabled=true; btn.textContent='Enviando señal...';
-  fetch('https://ntfy.sh/crm-hg-dsalem123-offshore',{method:'POST',body:'update',headers:{'Title':'Actualizar Hedgeye','Priority':'high','Tags':'hedgeye'}})
+  fetch('https://ntfy.sh/crm-hg-dsalem123-offshore',{method:'POST',body:'ELhg2026xK9f',headers:{'Title':'Actualizar Hedgeye','Priority':'high','Tags':'hedgeye'}})
     .then(r=>{ if(r.ok) showToast('Señal enviada — el scraper va a correr en tu PC'); })
     .catch(()=>{});
   fetch(HG_API+'/api/status',{signal:AbortSignal.timeout(2000)})

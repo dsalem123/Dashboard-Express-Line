@@ -16,8 +16,9 @@ except ImportError:
     subprocess.run([sys.executable, '-m', 'pip', 'install', 'requests'], check=True)
     import requests
 
-TOPIC = 'crm-hg-dsalem123-offshore'
-PORT  = 5055
+TOPIC          = 'crm-hg-dsalem123-offshore'
+NTFY_SECRET    = 'ELhg2026xK9f'  # debe coincidir con el body enviado desde el dashboard
+PORT           = 5055
 BASE  = os.path.dirname(os.path.abspath(__file__))
 
 # Git puede no estar en PATH cuando el proceso viene de Task Scheduler
@@ -272,6 +273,9 @@ def listen_ntfy():
                         try:
                             msg = json.loads(line)
                             if msg.get('event') == 'message':
+                                if msg.get('message', '').strip() != NTFY_SECRET:
+                                    print(f'[{ts()}] Mensaje ntfy ignorado (secreto incorrecto)')
+                                    continue
                                 print(f'\n[{ts()}] Trigger Hedgeye recibido!')
                                 handle_hedgeye_trigger()
                                 print(f'\nEsperando proximo trigger...')
