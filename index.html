@@ -614,6 +614,7 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
             <th class="sortable" data-sort="plazo" onclick="sortBy('plazo')">Plazo</th>
             <th class="sortable" data-sort="seguimiento" onclick="sortBy('seguimiento')">Seguimiento</th>
             <th class="sortable" data-sort="ultimoContacto" onclick="sortBy('ultimoContacto')">Último contacto</th>
+            <th class="sortable" data-sort="proximoContacto" onclick="sortBy('proximoContacto')">Próximo contacto</th>
             <th class="sortable" data-sort="mail" onclick="sortBy('mail')">Mail</th>
             <th class="sortable" data-sort="telefono" onclick="sortBy('telefono')">Teléfono</th>
             <th title="Comentario"></th><th title="Acciones"></th>
@@ -1531,7 +1532,9 @@ function switchTab(tab,el){
   render();
 }
 
-function statusClass(s){return s==='Nuevo'?'s-nuevo':s==='Contactado'?'s-contactado':s==='En Proceso'?'s-proceso':'s-interesado';}
+var STATUS_VALID=['Nuevo','Contactado','Interesado','En Proceso'];
+function _proxColor(d){if(!d)return 'var(--vg)';var diff=Math.floor((new Date(d)-new Date())/86400000);return diff<0?'#e74c3c':diff===0?'var(--gold)':'var(--mint)';}
+function statusClass(s){return s==='Nuevo'?'s-nuevo':s==='Contactado'?'s-contactado':s==='En Proceso'?'s-proceso':s==='Interesado'?'s-interesado':'s-nuevo';}
 
 var sortCol=null,sortDir=1,sortColL=null,sortDirL=1;
 function sortBy(col){
@@ -1575,6 +1578,7 @@ function render(){
     <td class="mono" contenteditable="true" data-key="c-${c.id}-plazo">${reuEsc(c.plazo||'')}</td>
     <td class="mono" contenteditable="true" data-key="c-${c.id}-seguimiento">${reuEsc(c.seguimiento||'')}</td>
     <td class="mono" contenteditable="true" data-key="c-${c.id}-ultimoContacto">${reuEsc(c.ultimoContacto||'')}</td>
+    <td class="mono" style="cursor:pointer;" onclick="openPerfil(${c.id})" title="Editar en Perfil 360"><span style="color:${_proxColor(c.proximoContacto)};font-size:11px;">${c.proximoContacto||'—'}</span></td>
     <td class="mono" contenteditable="true" data-key="c-${c.id}-mail">${reuEsc(c.mail||'')}</td>
     <td class="mono" contenteditable="true" data-key="c-${c.id}-telefono">${reuEsc(c.telefono||'')}</td>
     <td style="text-align:center;"><button class="btn-act" onclick="verDetalle(${c.id})" title="${c.detalles?'Ver comentario':'Agregar comentario'}" style="font-size:15px;border:none;background:none;cursor:pointer;padding:2px 6px;opacity:${c.detalles?'1':'.35'};">💬</button></td>
@@ -1582,7 +1586,7 @@ function render(){
       <button class="btn-act btn-perfil" onclick="openPerfil(${c.id})" title="Perfil 360">Perfil</button>
       <button class="btn-act btn-save-row" onclick="saveRow(${c.id})" title="Guardar cambios">✓</button>
       <button class="btn-act btn-del" onclick="delClient(${c.id})">Eliminar</button>
-    </div></td></tr>`).join(''):`<tr><td colspan="19" class="empty">${clients.length===0?'No hay clientes registrados — hacé click en <strong style="color:var(--mint)">+ Nuevo cliente</strong> para agregar uno.':'Sin resultados para la búsqueda actual.'}</td></tr>`;
+    </div></td></tr>`).join(''):`<tr><td colspan="20" class="empty">${clients.length===0?'No hay clientes registrados — hacé click en <strong style="color:var(--mint)">+ Nuevo cliente</strong> para agregar uno.':'Sin resultados para la búsqueda actual.'}</td></tr>`;
   var fl=leads.filter(l=>l.nombre.toLowerCase().includes(q)||l.estado.toLowerCase().includes(q));
   var STATUS_ORDER={'En Proceso':0,'Interesado':1,'Contactado':2,'Nuevo':3};
   if(sortColL){
@@ -1933,9 +1937,9 @@ function _pdfBullets(puntos, maxBullets) {
 }
 
 async function descargarHedgeyePDF(){
-  if(!window.jspdf){ alert('Libreria jsPDF no cargada. Refrescar la pagina.'); return; }
+  if(!window.jspdf){ showToast('Librería jsPDF no cargada — refrescá la página.',true); return; }
   const d = window._hedgeyeData || (typeof HG_STATIC_DATA!=='undefined' ? HG_STATIC_DATA : null);
-  if(!d){ alert('Sin datos Hedgeye.'); return; }
+  if(!d){ showToast('Sin datos Hedgeye disponibles.',true); return; }
 
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit:'mm', format:'a4' });
@@ -2302,7 +2306,7 @@ function save(){
     const n=document.getElementById('f-lead-nombre').value.trim();
     const e=document.getElementById('f-lead-estado').value;
     const no=document.getElementById('f-lead-notas').value.trim();
-    if(!n){alert('Ingresá el nombre');return;}
+    if(!n){showToast('Ingresá el nombre del lead.',true);return;}
     if(editId){const l=leads.find(x=>x.id===editId);l.nombre=n;l.estado=e;l.notas=no;}
     else leads.push({id:nextLead++,nombre:n,estado:e,notas:no});
   } else {
@@ -2312,7 +2316,7 @@ function save(){
     const br=document.getElementById('f-broker').value;
     const cu=document.getElementById('f-custodio').value;
     const extra={numCuenta:document.getElementById('f-numcuenta').value.trim(),nombreContacto:document.getElementById('f-nombre-contacto').value.trim(),comercial:document.getElementById('f-comercial').value.trim(),sociedad:document.getElementById('f-sociedad').value.trim(),tipoFee:document.getElementById('f-tipofee').value.trim(),pctFee:document.getElementById('f-pctfee').value.trim(),aum:document.getElementById('f-aum').value.trim(),seguimiento:document.getElementById('f-seguimiento').value.trim(),ultimoContacto:document.getElementById('f-ultimocontacto').value,riesgo:document.getElementById('f-riesgo').value.trim(),plazo:document.getElementById('f-plazo').value.trim(),mail:document.getElementById('f-mail').value.trim(),telefono:document.getElementById('f-telefono').value.trim(),detalles:document.getElementById('f-detalles').value.trim()};
-    if(!n||!co||!mn){alert('Completá nombre, comitente y manager');return;}
+    if(!n||!co||!mn){showToast('Completá nombre, comitente y manager.',true);return;}
     if(editId){const c=clients.find(x=>x.id===editId);c.nombre=n;c.comitente=co;c.mgrNum=parseInt(mn);c.broker=br;c.custodio=cu;Object.assign(c,extra);}
     else{
       clients.push({id:nextId++,nombre:n,comitente:parseInt(co)||co,broker:br||'—',custodio:cu||'—',mgrNum:parseInt(mn),...extra});
@@ -2379,6 +2383,7 @@ function convertLead(id){
   document.getElementById('f-mgr').value='';
   document.getElementById('f-broker').value='';
   document.getElementById('f-custodio').value='';
+  document.getElementById('f-detalles').value=l.notas||'';
   document.getElementById('btn-save').onclick=function(){
     const n=document.getElementById('f-nombre').value.trim();
     const co=document.getElementById('f-comitente').value.trim();
@@ -2386,7 +2391,7 @@ function convertLead(id){
     const br=document.getElementById('f-broker').value;
     const cu=document.getElementById('f-custodio').value;
     const extra={numCuenta:document.getElementById('f-numcuenta').value.trim(),nombreContacto:document.getElementById('f-nombre-contacto').value.trim(),comercial:document.getElementById('f-comercial').value.trim(),sociedad:document.getElementById('f-sociedad').value.trim(),tipoFee:document.getElementById('f-tipofee').value.trim(),pctFee:document.getElementById('f-pctfee').value.trim(),aum:document.getElementById('f-aum').value.trim(),seguimiento:document.getElementById('f-seguimiento').value.trim(),ultimoContacto:document.getElementById('f-ultimocontacto').value,riesgo:document.getElementById('f-riesgo').value.trim(),plazo:document.getElementById('f-plazo').value.trim(),mail:document.getElementById('f-mail').value.trim(),telefono:document.getElementById('f-telefono').value.trim(),detalles:document.getElementById('f-detalles').value.trim()};
-    if(!n||!co||!mn){alert('Completá nombre, comitente y manager');return;}
+    if(!n||!co||!mn){showToast('Completá nombre, comitente y manager.',true);return;}
     clients.push({id:nextId++,nombre:n,comitente:parseInt(co)||co,broker:br||'—',custodio:cu||'—',mgrNum:parseInt(mn),...extra});
     leads=leads.filter(x=>x.id!==id);
     var _mgr=MANAGERS[parseInt(mn)]?MANAGERS[parseInt(mn)].abbr:mn;
@@ -2447,6 +2452,9 @@ function saveLeadRow(id){
     const el=document.querySelector('[data-key="l-'+id+'-'+f+'"]');
     if(el){const v=el.textContent.trim();l[f]=v==='—'?'':v;}
   });
+  if(!STATUS_VALID.includes(l.estado)) l.estado='Nuevo';
+  const badgeEl=document.querySelector('[data-key="l-'+id+'-estado"]');
+  if(badgeEl) badgeEl.className='badge-status '+statusClass(l.estado);
   l.lastModified=Date.now();
   saveToStorage();
   updateAutoAUM();
@@ -3289,8 +3297,6 @@ function mktDrawSVG(el,closes,timestamps,tf){
 // ════════════════════════════════════════════════════════════
 var REU={meetings:[],calYear:0,calMonth:0};
 
-function reuEsc(s){if(s==null)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-
 function initReuniones(){
   try{REU.meetings=JSON.parse(localStorage.getItem('crm_reuniones')||'[]');}catch(e){REU.meetings=[];}
   var now=new Date(); REU.calYear=now.getFullYear(); REU.calMonth=now.getMonth();
@@ -3389,7 +3395,7 @@ function reuCloseModal(){var bg=document.getElementById('reu-modal-bg');if(bg)bg
 
 function reuSaveMeeting(clientId,clientName){
   var de=document.getElementById('reu-inp-date'),te=document.getElementById('reu-inp-time'),ae=document.getElementById('reu-inp-agenda');
-  if(!de||!de.value){alert('Seleccioná una fecha');return null;}
+  if(!de||!de.value){showToast('Seleccioná una fecha para la reunión.',true);return null;}
   var m={id:'r_'+Date.now(),clientId:clientId,clientName:clientName,date:de.value,time:te?te.value:'',agenda:ae?ae.value.trim():'',createdAt:new Date().toISOString()};
   REU.meetings.push(m); reuSave(); reuCloseModal(); reuRender();
   showToast('Reunión agendada con '+clientName);
@@ -3681,13 +3687,11 @@ function reuBuildPDFHTML(meeting,client,holdings,hgSig,notes,pfolMeta){
 var PROP={proposals:[],activeId:null};
 var PROP_COLORS=['#A8DABB','#C9A84C','#5B9BD5','#F59E0B','#8B5CF6','#EF4444','#14B8A6','#F97316','#EC4899','#84CC16'];
 
-function propEsc(s){return s==null?'':String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-
 function initPropuesta(){
   try{PROP.proposals=JSON.parse(localStorage.getItem('crm_propuestas')||'[]');}catch(e){PROP.proposals=[];}
   var clients=[];try{clients=JSON.parse(localStorage.getItem('crm_clients')||'[]');}catch(e){}
   var dl=document.getElementById('prop-client-list');
-  if(dl){dl.innerHTML=clients.map(function(c){return '<option value="'+propEsc(c.nombre)+'">';}).join('');}
+  if(dl){dl.innerHTML=clients.map(function(c){return '<option value="'+reuEsc(c.nombre)+'">';}).join('');}
   propRenderSidebar();
   if(PROP.activeId) propRenderEditor();
 }
@@ -3711,9 +3715,9 @@ function propRenderSidebar(filterClient){
   }
   el.innerHTML=list.map(function(p){
     var total=p.assets.reduce(function(s,a){return s+(parseFloat(a.pct)||0);},0);
-    return '<div class="prop-list-item'+(p.id===PROP.activeId?' active':'')+'" onclick="propSelect(\''+propEsc(p.id)+'\')">'+
-      '<div class="prop-list-name">'+propEsc(p.name)+'</div>'+
-      '<div class="prop-list-client">'+propEsc(p.clientName||'Sin cliente')+'</div>'+
+    return '<div class="prop-list-item'+(p.id===PROP.activeId?' active':'')+'" onclick="propSelect(\''+reuEsc(p.id)+'\')">'+
+      '<div class="prop-list-name">'+reuEsc(p.name)+'</div>'+
+      '<div class="prop-list-client">'+reuEsc(p.clientName||'Sin cliente')+'</div>'+
       '<div class="prop-list-total">'+total.toFixed(1)+'%</div>'+
     '</div>';
   }).join('');
@@ -3772,10 +3776,10 @@ function propRenderComp(){
     return '<tr class="prop-comp-row">'+
       '<td><span class="prop-comp-dot" style="background:'+col+';"></span></td>'+
       '<td><span class="prop-comp-num">'+(i+1)+'</span></td>'+
-      '<td><input class="prop-comp-name-inp" type="text" value="'+propEsc(a.name||'')+'" placeholder="Activo o ticker..."'+
+      '<td><input class="prop-comp-name-inp" type="text" value="'+reuEsc(a.name||'')+'" placeholder="Activo o ticker..."'+
         ' onchange="propUpdateAsset('+i+',\'name\',this.value)"></td>'+
       '<td><div class="prop-pct-wrap">'+
-        '<input class="prop-comp-pct-inp" type="number" min="0" max="100" step="0.1" value="'+propEsc(String(a.pct||''))+'"'+
+        '<input class="prop-comp-pct-inp" type="number" min="0" max="100" step="0.1" value="'+reuEsc(String(a.pct||''))+'"'+
         ' placeholder="0" onchange="propUpdateAsset('+i+',\'pct\',this.value)">'+
         '<span class="prop-comp-pct-sym">%</span>'+
       '</div></td>'+
@@ -3869,7 +3873,7 @@ function propRenderChart(){
   leg.innerHTML='<div style="margin-top:10px;">'+valid.map(function(a,i){
     return '<div style="display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:1px solid rgba(168,218,187,.05);">'+
       '<div style="width:8px;height:8px;border-radius:2px;background:'+PROP_COLORS[i%PROP_COLORS.length]+';flex-shrink:0;"></div>'+
-      '<div style="flex:1;font-size:10px;color:var(--cream);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+propEsc(a.name||'—')+'</div>'+
+      '<div style="flex:1;font-size:10px;color:var(--cream);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+reuEsc(a.name||'—')+'</div>'+
       '<div style="font-size:10px;font-weight:700;color:var(--gold);">'+a.pct+'%</div>'+
     '</div>';
   }).join('')+'</div>';
@@ -4004,7 +4008,7 @@ function propBuildPDFHTML(p){
     return '<tr>'+
       '<td style="padding:8px 10px;'+tdS+'"><div style="width:10px;height:10px;border-radius:2px;background:'+col+';"></div></td>'+
       '<td style="padding:8px 10px;font-size:10px;color:'+MUTED+';font-weight:600;'+tdS+'">'+(i+1)+'</td>'+
-      '<td style="padding:8px 10px;font-size:12px;color:'+CREAM+';'+tdS+'">'+propEsc(a.name)+'</td>'+
+      '<td style="padding:8px 10px;font-size:12px;color:'+CREAM+';'+tdS+'">'+reuEsc(a.name)+'</td>'+
       '<td style="padding:8px 10px;font-size:14px;font-weight:700;color:'+CREAM+';text-align:right;font-family:\'Playfair Display\',serif;'+tdS+'">'+a.pct+'%</td>'+
     '</tr>';
   }).join('');
@@ -4023,12 +4027,12 @@ function propBuildPDFHTML(p){
   '<div style="height:1px;background:'+BORDER+';margin-bottom:26px;margin-top:20px;"></div>';
   html+='<div style="margin-bottom:8px;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:'+MUTED+';">Cliente</div>'+
     '<div style="font-family:\'Playfair Display\',serif;font-size:26px;color:'+CREAM+';font-weight:600;">'+(p.clientName||'—').toUpperCase()+'</div>'+
-    '<div style="font-size:13px;color:'+GOLD+';margin-top:5px;letter-spacing:.5px;">'+propEsc(p.name)+'</div>'+
+    '<div style="font-size:13px;color:'+GOLD+';margin-top:5px;letter-spacing:.5px;">'+reuEsc(p.name)+'</div>'+
     '<div style="width:50px;height:2px;background:'+GOLD+';margin-top:10px;margin-bottom:22px;"></div>';
   if(p.description){
     html+='<div style="background:'+CARD+';border-radius:8px;padding:18px 22px;margin-bottom:20px;">'+
       '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:'+GOLD+';margin-bottom:10px;">Descripción</div>'+
-      '<div style="font-size:12px;color:'+CREAM+';line-height:1.8;">'+propEsc(p.description).replace(/\n/g,'<br>')+'</div>'+
+      '<div style="font-size:12px;color:'+CREAM+';line-height:1.8;">'+reuEsc(p.description).replace(/\n/g,'<br>')+'</div>'+
     '</div>';
   }
   html+='<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;"><tr>'+
