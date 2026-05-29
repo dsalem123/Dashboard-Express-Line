@@ -489,6 +489,9 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
 .sync-dead-txt{color:var(--err-light);font-size:10px;font-weight:700;letter-spacing:.5px;}
 /* ── empty state ── */
 .empty-state{padding:24px;color:var(--vg);font-size:12px;text-align:center;line-height:1.6;}
+/* ── nav pending badge ── */
+.nav-pending{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--gold);margin-left:6px;vertical-align:middle;flex-shrink:0;}
+.sidebar.collapsed .nav-pending{position:absolute;top:6px;right:6px;margin-left:0;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -534,7 +537,7 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
   </button>
   <nav class="sidebar-nav">
     <button class="nav-item active" onclick="showPage('clientes-leads',this)"><span class="nav-item-icon">👤</span><span class="nav-item-text">Clientes / Leads</span></button>
-    <button class="nav-item" onclick="showPage('portfolios',this)"><span class="nav-item-icon">🌐</span><span class="nav-item-text">Portfolios ONLINE</span></button>
+    <button class="nav-item" id="nav-portfolios" onclick="showPage('portfolios',this)"><span class="nav-item-icon">🌐</span><span class="nav-item-text">Portfolios ONLINE</span></button>
     <button class="nav-item" onclick="showPage('mercado',this);initMercado()"><span class="nav-item-icon">📈</span><span class="nav-item-text">Mercado</span></button>
     <button class="nav-item" onclick="showPage('cartera',this)"><span class="nav-item-icon">💼</span><span class="nav-item-text">Cartera modelo</span></button>
     <button class="nav-item" onclick="showPage('propuesta',this);initPropuesta()"><span class="nav-item-icon">📋</span><span class="nav-item-text">Propuesta de Cartera</span></button>
@@ -1756,7 +1759,7 @@ function showPage(id,el){
     var _pfr=document.getElementById('portfolios-frame');
     if(_pfr&&_pfr.contentWindow) setTimeout(function(){
       _pfr.contentWindow.postMessage({type:'crm_clients_data',clients:_buildCrmPayload()},'*');
-      if(_pfolAddQueue.length){_pfolAddQueue.forEach(function(m){_pfr.contentWindow.postMessage(m,'*');});_pfolAddQueue=[];}
+      if(_pfolAddQueue.length){_pfolAddQueue.forEach(function(m){_pfr.contentWindow.postMessage(m,'*');});_pfolAddQueue=[];_updatePfolBadge();}
     },300);
   }
   if(id==='apertura'&&window._reloadKanban) window._reloadKanban();
@@ -1780,6 +1783,16 @@ function _buildCrmPayload(){
 }
 // ── PORTFOLIOS postMessage bridge ──────────────────────────────────────
 var _pfolAddQueue=[];
+function _updatePfolBadge(){
+  var btn=document.getElementById('nav-portfolios');
+  if(!btn) return;
+  var existing=btn.querySelector('.nav-pending');
+  if(_pfolAddQueue.length>0){
+    if(!existing){var d=document.createElement('span');d.className='nav-pending';d.title=_pfolAddQueue.length+' cliente(s) pendiente(s) de agregar a Portfolios';btn.appendChild(d);}
+  } else {
+    if(existing) existing.remove();
+  }
+}
 window.addEventListener('message',function(ev){
   if(!ev.data) return;
   if(ev.data.type==='pfol_save'){
@@ -1795,7 +1808,7 @@ window.addEventListener('message',function(ev){
     if(fr&&fr.contentWindow){
       fr.contentWindow.postMessage({type:'pfol_data',d:d},'*');
       fr.contentWindow.postMessage({type:'crm_clients_data',clients:_buildCrmPayload()},'*');
-      if(_pfolAddQueue.length){setTimeout(function(){_pfolAddQueue.forEach(function(m){fr.contentWindow.postMessage(m,'*');});_pfolAddQueue=[];},80);}
+      if(_pfolAddQueue.length){setTimeout(function(){_pfolAddQueue.forEach(function(m){fr.contentWindow.postMessage(m,'*');});_pfolAddQueue=[];_updatePfolBadge();},80);}
     }
   }
 });
@@ -2336,6 +2349,7 @@ function save(){
       clients.push({id:nextId++,nombre:n,comitente:parseInt(co)||co,broker:br||'—',custodio:cu||'—',mgrNum:parseInt(mn),...extra});
       var _mgr=MANAGERS[parseInt(mn)]?MANAGERS[parseInt(mn)].abbr:mn;
       _pfolAddQueue.push({type:'pfol_add_client',name:n,accountNo:extra.numCuenta||'',manager:_mgr});
+      _updatePfolBadge();
     }
   }
   (function(){var _t=editType==='lead'?leads:clients;var _id=editId||(editType==='lead'?nextLead-1:nextId-1);var _r=_t.find(function(x){return x.id===_id;});if(_r)_r.lastModified=Date.now();})();
@@ -2410,6 +2424,7 @@ function convertLead(id){
     leads=leads.filter(x=>x.id!==id);
     var _mgr=MANAGERS[parseInt(mn)]?MANAGERS[parseInt(mn)].abbr:mn;
     _pfolAddQueue.push({type:'pfol_add_client',name:n,accountNo:extra.numCuenta||'',manager:_mgr});
+    _updatePfolBadge();
     saveToStorage();
     try{var _dl=JSON.parse(localStorage.getItem('_deletedLeadIds')||'[]');if(!_dl.includes(id))_dl.push(id);localStorage.setItem('_deletedLeadIds',JSON.stringify(_dl));}catch(e){}
     closeModal();
