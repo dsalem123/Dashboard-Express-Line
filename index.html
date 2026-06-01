@@ -539,6 +539,17 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
 /* ── export / historial toolbar buttons ── */
 .btn-toolbar{background:transparent;border:1px solid rgba(168,218,187,.25);border-radius:6px;color:var(--mint);font-size:11px;font-weight:600;font-family:'Inter',sans-serif;letter-spacing:.5px;padding:6px 12px;cursor:pointer;transition:all .15s;white-space:nowrap;}
 .btn-toolbar:hover{border-color:var(--mint);background:rgba(168,218,187,.06);}
+/* ── filtros avanzados ── */
+.filter-row{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:center;}
+.filter-row.hidden{display:none;}
+.filter-sel{background:rgba(0,0,0,.25);border:1px solid rgba(168,218,187,.2);border-radius:6px;color:var(--vg);font-size:11px;font-family:'Inter',sans-serif;padding:5px 8px;cursor:pointer;flex:1;min-width:80px;max-width:140px;}
+.filter-sel:focus{outline:none;border-color:var(--mint);}
+.filter-sel.active{border-color:var(--gold);color:var(--cream);}
+.filter-sel option{background:#0D2924;color:var(--cream);}
+.btn-filter-clear{background:transparent;border:1px solid rgba(201,168,76,.3);border-radius:6px;color:var(--gold);font-size:10px;font-weight:600;font-family:'Inter',sans-serif;padding:5px 10px;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.btn-filter-clear:hover{background:rgba(201,168,76,.1);}
+.btn-filter-clear.hidden{display:none;}
+.filter-count{font-size:10px;color:var(--vg);margin-left:2px;white-space:nowrap;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -668,6 +679,14 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
     </div>
     <div class="search-row">
       <input type="text" id="search" placeholder="Buscar..." oninput="_renderDebounced()" />
+    </div>
+    <div class="filter-row" id="filter-row">
+      <select id="f-filter-mgr"    class="filter-sel" onchange="_setFilter('mgrNum',this.value)"><option value="">Manager</option></select>
+      <select id="f-filter-broker" class="filter-sel" onchange="_setFilter('broker',this.value)"><option value="">Broker</option></select>
+      <select id="f-filter-cust"   class="filter-sel" onchange="_setFilter('custodio',this.value)"><option value="">Custodio</option></select>
+      <select id="f-filter-riesgo" class="filter-sel" onchange="_setFilter('riesgo',this.value)"><option value="">Riesgo</option></select>
+      <button class="btn-filter-clear hidden" id="btn-filter-clear" onclick="_clearFilters()">✕ Limpiar</button>
+      <span class="filter-count" id="filter-count"></span>
     </div>
     <div id="view-clientes">
       <div class="table-wrap">
@@ -1622,6 +1641,8 @@ function switchTab(tab,el){
   el.classList.add('active');
   document.getElementById('view-clientes').style.display=tab==='clientes'?'':'none';
   document.getElementById('view-leads').style.display=tab==='leads'?'':'none';
+  var filterRow=document.getElementById('filter-row');
+  if(filterRow)filterRow.classList.toggle('hidden',tab==='leads');
   document.getElementById('search').value='';
   render();
 }
@@ -1751,6 +1772,47 @@ function _downloadFile(content,mime,filename){
   setTimeout(function(){URL.revokeObjectURL(url);a.remove();},1000);
 }
 
+// ── FILTROS AVANZADOS ────────────────────────────────────────────────────────
+var _filters={mgrNum:'',broker:'',custodio:'',riesgo:''};
+function _setFilter(key,val){_filters[key]=val;_updateFilterUI();render();}
+function _clearFilters(){
+  Object.keys(_filters).forEach(function(k){_filters[k]='';});
+  ['f-filter-mgr','f-filter-broker','f-filter-cust','f-filter-riesgo'].forEach(function(id){var s=document.getElementById(id);if(s)s.value='';});
+  _updateFilterUI();render();
+}
+function _updateFilterUI(){
+  var anyActive=Object.values(_filters).some(function(v){return v!=='';});
+  var clearBtn=document.getElementById('btn-filter-clear');
+  if(clearBtn)clearBtn.classList.toggle('hidden',!anyActive);
+  ['f-filter-mgr','f-filter-broker','f-filter-cust','f-filter-riesgo'].forEach(function(id){var s=document.getElementById(id);if(s)s.classList.toggle('active',s.value!=='');});
+}
+function _populateFilters(){
+  var mgr=document.getElementById('f-filter-mgr');
+  var bkr=document.getElementById('f-filter-broker');
+  var cst=document.getElementById('f-filter-cust');
+  var rsg=document.getElementById('f-filter-riesgo');
+  if(!mgr)return;
+  var mgrs=[],brokers=[],custodios=[],riesgos=[];
+  clients.forEach(function(c){
+    var mn=String(c.mgrNum||'');
+    if(mn){var lbl=MANAGERS[parseInt(mn)]?MANAGERS[parseInt(mn)].abbr:mn;if(!mgrs.find(function(x){return x.val===mn;}))mgrs.push({val:mn,lbl:lbl});}
+    if(c.broker&&c.broker!=='—'&&!brokers.includes(c.broker))brokers.push(c.broker);
+    if(c.custodio&&c.custodio!=='—'&&!custodios.includes(c.custodio))custodios.push(c.custodio);
+    if(c.riesgo&&!riesgos.includes(c.riesgo))riesgos.push(c.riesgo);
+  });
+  function fill(sel,items,isObj){
+    var cur=sel.value;
+    var ph=sel.options[0].text;
+    sel.innerHTML='<option value="">'+ph+'</option>';
+    (isObj?mgrs.sort(function(a,b){return a.lbl.localeCompare(b.lbl);}):items.sort()).forEach(function(o){
+      var v=isObj?o.val:o,l=isObj?o.lbl:o;
+      var opt=document.createElement('option');opt.value=v;opt.textContent=l;sel.appendChild(opt);
+    });
+    if(cur&&sel.querySelector('option[value="'+cur+'"]'))sel.value=cur;
+  }
+  fill(mgr,mgrs,true);fill(bkr,brokers,false);fill(cst,custodios,false);fill(rsg,riesgos,false);
+}
+
 var sortCol=null,sortDir=1,sortColL=null,sortDirL=1;
 function sortBy(col){
   if(sortCol===col){sortDir*=-1;}else{sortCol=col;sortDir=1;}
@@ -1763,7 +1825,14 @@ function sortByLead(col){
 
 function render(){
   const q=document.getElementById('search').value.toLowerCase();
-  var fc=clients.filter(c=>[c.nombre,String(c.comitente),c.broker,c.custodio,c.numCuenta||'',c.nombreContacto||'',c.comercial||'',c.sociedad||'',c.mail||'',c.telefono||'',c.aum||''].some(v=>v.toLowerCase().includes(q)));
+  var fc=clients.filter(function(c){
+    if(![c.nombre,String(c.comitente),c.broker,c.custodio,c.numCuenta||'',c.nombreContacto||'',c.comercial||'',c.sociedad||'',c.mail||'',c.telefono||'',c.aum||''].some(function(v){return v.toLowerCase().includes(q);})) return false;
+    if(_filters.mgrNum&&String(c.mgrNum)!==_filters.mgrNum) return false;
+    if(_filters.broker&&c.broker!==_filters.broker) return false;
+    if(_filters.custodio&&c.custodio!==_filters.custodio) return false;
+    if(_filters.riesgo&&c.riesgo!==_filters.riesgo) return false;
+    return true;
+  });
   if(sortCol){
     fc.sort(function(a,b){
       var av=String(a[sortCol]||'').toLowerCase(), bv=String(b[sortCol]||'').toLowerCase();
@@ -1848,6 +1917,9 @@ function render(){
   localStorage.setItem('st-total',clients.length);
   localStorage.setItem('st-leads',leads.length);
   updateAutoAUM();
+  _populateFilters();
+  var _fcEl=document.getElementById('filter-count');
+  if(_fcEl){var _tot=clients.length;_fcEl.textContent=(fc.length<_tot&&Object.values(_filters).some(function(v){return v!=='';}))?fc.length+' de '+_tot:'';};
   renderAlertasVencimiento();
   initLeadsDnd();
 }
