@@ -646,15 +646,15 @@ select.pf-edit-input option{background:#0D2924;}
     </svg>
   </button>
   <nav class="sidebar-nav">
-    <button class="nav-item" onclick="gsrOpen()" style="color:var(--vg);border-left-color:transparent!important;"><span class="nav-item-icon">🔍</span><span class="nav-item-text">Buscar <span style="font-size:9px;opacity:.5;background:rgba(168,218,187,.08);border:1px solid rgba(168,218,187,.15);border-radius:3px;padding:1px 5px;font-family:'Inter';">Ctrl+K</span></span></button>
+    <button class="nav-item" onclick="gsrOpen()" style="color:var(--vg);border-left-color:transparent!important;"><span class="nav-item-icon">🔍</span><span class="nav-item-text">Buscar</span></button>
     <button class="nav-item active" onclick="showPage('clientes-leads',this)"><span class="nav-item-icon">👤</span><span class="nav-item-text">Clientes / Leads</span></button>
+    <button class="nav-item" onclick="showPage('reuniones',this);initReuniones()"><span class="nav-item-icon">📅</span><span class="nav-item-text">Reuniones</span></button>
     <button class="nav-item" id="nav-portfolios" onclick="showPage('portfolios',this)"><span class="nav-item-icon">🌐</span><span class="nav-item-text">Portfolios ONLINE</span></button>
-    <button class="nav-item" onclick="showPage('mercado',this);initMercado()"><span class="nav-item-icon">📈</span><span class="nav-item-text">Mercado</span></button>
     <button class="nav-item" onclick="showPage('cartera',this)"><span class="nav-item-icon">💼</span><span class="nav-item-text">Cartera modelo</span></button>
     <button class="nav-item" onclick="showPage('propuesta',this);initPropuesta()"><span class="nav-item-icon">📋</span><span class="nav-item-text">Propuesta de Cartera</span></button>
     <button class="nav-item" onclick="showPage('calcular',this)"><span class="nav-item-icon">📝</span><span class="nav-item-text">Generador de reportes</span></button>
     <button class="nav-item" onclick="showPage('hedgeye',this);loadHedgeye()"><span class="nav-item-icon">👁️</span><span class="nav-item-text">Hedgeye</span></button>
-    <button class="nav-item" onclick="showPage('reuniones',this);initReuniones()"><span class="nav-item-icon">📅</span><span class="nav-item-text">Reuniones</span></button>
+    <button class="nav-item" onclick="showPage('mercado',this);initMercado()"><span class="nav-item-icon">📈</span><span class="nav-item-text">Mercado</span></button>
     <button class="nav-item" onclick="showPage('apertura',this)"><span class="nav-item-icon">🔑</span><span class="nav-item-text">Proceso de apertura</span></button>
     <button class="nav-item" onclick="showPage('documentacion',this)"><span class="nav-item-icon">🗂️</span><span class="nav-item-text">Documentación de apertura</span></button>
     <button class="nav-item" onclick="showPage('links',this)"><span class="nav-item-icon">🔗</span><span class="nav-item-text">Links útiles</span></button>
