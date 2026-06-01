@@ -2140,19 +2140,28 @@ function loadHedgeye(){
       return;
     }
   }catch(e){}
-  // 3. Servidor local
-  fetch(HG_API+'/api/status', {signal: AbortSignal.timeout(3000)})
-    .then(r=>r.json())
-    .then(s=>{
+  // 3. Servidor local — con retry automático
+  _hgFetchStatus(0);
+}
+
+function _hgFetchStatus(attempt){
+  fetch(HG_API+'/api/status', {signal: AbortSignal.timeout(8000)})
+    .then(function(r){return r.json();})
+    .then(function(s){
       document.getElementById('hg-dot').className='hg-dot ok';
-      document.getElementById('hg-updated').textContent = s.last_update ? 'Actualizado: '+s.last_update : 'Sin datos aún';
+      document.getElementById('hg-updated').textContent=s.last_update?'Actualizado: '+s.last_update:'Sin datos aún';
       if(s.has_data) fetchHedgeyeData();
       else renderHedgeyeOffline('Servidor activo — hacé click en Actualizar para obtener datos');
     })
-    .catch(()=>{
-      document.getElementById('hg-dot').className='hg-dot';
-      document.getElementById('hg-updated').textContent='Sin datos guardados';
-      renderHedgeyeOffline(null);
+    .catch(function(){
+      if(attempt<1){
+        document.getElementById('hg-updated').textContent='Conectando...';
+        setTimeout(function(){_hgFetchStatus(1);},2500);
+      } else {
+        document.getElementById('hg-dot').className='hg-dot';
+        document.getElementById('hg-updated').textContent='Servidor offline — iniciá hedgeye_server.py';
+        renderHedgeyeOffline(null);
+      }
     });
 }
 
@@ -2162,7 +2171,7 @@ function renderHedgeyeLoading(){
 
 function fetchHedgeyeData(){
   renderHedgeyeLoading();
-  fetch(HG_API+'/api/data', {signal: AbortSignal.timeout(5000)})
+  fetch(HG_API+'/api/data', {signal: AbortSignal.timeout(10000)})
     .then(r=>r.json())
     .then(d=>{
       window._hedgeyeData=d;
@@ -2203,7 +2212,7 @@ function hedgeyeActualizar(){
   fetch('https://ntfy.sh/crm-hg-dsalem123-offshore',{method:'POST',body:'ELhg2026xK9f',headers:{'Title':'Actualizar Hedgeye','Priority':'high','Tags':'hedgeye'}})
     .then(r=>{ if(r.ok) showToast('Señal enviada — el scraper va a correr en tu PC'); })
     .catch(()=>{});
-  fetch(HG_API+'/api/status',{signal:AbortSignal.timeout(2000)})
+  fetch(HG_API+'/api/status',{signal:AbortSignal.timeout(6000)})
     .then(r=>r.json())
     .then(()=>{ hedgeyeRefresh(); })
     .catch(()=>{
@@ -2918,13 +2927,15 @@ function renderTimeline(id){
   var arr=getActividad(id);
   var el=document.getElementById('pf-timeline');
   if(!arr.length){el.innerHTML='<div style="color:var(--vg);font-size:12px;text-align:center;padding:28px 0;opacity:.55;">Sin actividad registrada</div>';return;}
-  var cols={contacto:'var(--mint)',nota:'var(--gold)',sistema:'var(--vg)'};
+  var cols={contacto:'var(--mint)',nota:'var(--gold)',sistema:'var(--vg)',reunion:'#7b9ee0'};
+  var icons={contacto:'↻',nota:'📝',sistema:'⚙',reunion:'📅'};
   el.innerHTML=arr.map(function(e){
     var d=new Date(e.ts);
     var ds=d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'});
     var ts=d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
     var col=cols[e.tipo]||'var(--gold)';
-    return '<div class="act-entry"><div class="act-dot" style="background:'+col+'"></div><div><div class="act-meta">'+ds+' <span class="act-time">'+ts+'</span></div><div class="act-nota">'+e.nota+'</div></div></div>';
+    var ico=icons[e.tipo]||'📝';
+    return '<div class="act-entry"><div class="act-dot" style="background:'+col+'"></div><div><div class="act-meta"><span style="margin-right:4px;">'+ico+'</span>'+ds+' <span class="act-time">'+ts+'</span></div><div class="act-nota">'+e.nota+'</div></div></div>';
   }).join('');
 }
 function renderProximoStatus(c){
@@ -3778,8 +3789,24 @@ function reuCard(m,isPast){
   var h='<div class="reu-meeting-card'+(isPast?' past':'')+'"><div class="reu-meeting-client">'+reuEsc(m.clientName)+'</div>';
   h+='<div class="reu-meeting-date">'+ds+(m.time?' &middot; '+m.time:'')+'</div>';
   if(m.agenda) h+='<div class="reu-meeting-agenda">'+reuEsc(m.agenda)+'</div>';
-  h+='<div class="reu-meeting-actions"><button class="reu-btn-pdf" data-mid="'+reuEsc(m.id)+'" onclick="reuGeneratePDF(this.dataset.mid)">&#128196;&nbsp;Informe PDF</button><button class="reu-btn-del" title="Eliminar" data-mid="'+reuEsc(m.id)+'" onclick="reuDeleteMeeting(this.dataset.mid)">&#10005;</button></div></div>';
+  h+='<div class="reu-meeting-actions">';
+  if(isPast){
+    if(m.done) h+='<span style="font-size:10px;color:var(--mint);letter-spacing:.5px;">✓ Realizada</span>';
+    else h+='<button class="reu-btn-save" style="padding:5px 12px;font-size:10px;" data-mid="'+reuEsc(m.id)+'" onclick="reuMarkDone(this.dataset.mid)">✓ Realizada</button>';
+  }
+  h+='<button class="reu-btn-pdf" data-mid="'+reuEsc(m.id)+'" onclick="reuGeneratePDF(this.dataset.mid)">&#128196;&nbsp;PDF</button>';
+  h+='<button class="reu-btn-del" title="Eliminar" data-mid="'+reuEsc(m.id)+'" onclick="reuDeleteMeeting(this.dataset.mid)">&#10005;</button>';
+  h+='</div></div>';
   return h;
+}
+
+function reuMarkDone(id){
+  var m=REU.meetings.find(function(x){return x.id===id;});
+  if(!m)return;
+  m.done=true;
+  reuSave();reuRender();
+  if(m.clientId) addActividad(String(m.clientId),'Reunión realizada: '+m.date+(m.time?' a las '+m.time:'')+(m.agenda?' — '+m.agenda.slice(0,80):''),'reunion');
+  showToast('Reunión marcada como realizada');
 }
 
 function reuCalPrev(){REU.calMonth--;if(REU.calMonth<0){REU.calMonth=11;REU.calYear--;}reuRenderCal();}
@@ -3809,6 +3836,7 @@ function reuSaveMeeting(clientId,clientName){
   if(!de||!de.value){showToast('Seleccioná una fecha para la reunión.',true);return null;}
   var m={id:'r_'+Date.now(),clientId:clientId,clientName:clientName,date:de.value,time:te?te.value:'',agenda:ae?ae.value.trim():'',createdAt:new Date().toISOString()};
   REU.meetings.push(m); reuSave(); reuCloseModal(); reuRender();
+  if(clientId) addActividad(String(clientId),'Reunión agendada: '+m.date+(m.time?' a las '+m.time:'')+(m.agenda?' — '+m.agenda.slice(0,80):''),'reunion');
   showToast('Reunión agendada con '+clientName);
   return m.id;
 }
