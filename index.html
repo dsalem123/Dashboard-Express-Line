@@ -515,6 +515,30 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
 .alerta-chip.hoy{background:rgba(201,168,76,.08);border-color:rgba(201,168,76,.25);color:var(--gold);}
 .alerta-chip.proximo{background:rgba(168,218,187,.06);border-color:rgba(168,218,187,.2);color:var(--mint);}
 .alerta-date{font-size:9px;opacity:.65;}
+/* ── historial de cambios ── */
+.historial-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1200;display:flex;align-items:center;justify-content:center;}
+.historial-overlay.hidden{display:none;}
+.historial-wrap{background:#0e2923;border:1px solid rgba(168,218,187,.18);border-radius:12px;width:min(640px,94vw);max-height:80vh;display:flex;flex-direction:column;overflow:hidden;}
+.historial-header{display:flex;align-items:center;padding:14px 18px;border-bottom:1px solid rgba(168,218,187,.1);}
+.historial-title{font-family:'Playfair Display',serif;font-size:16px;color:var(--cream);flex:1;}
+.historial-close{background:none;border:none;color:var(--vg);font-size:18px;cursor:pointer;line-height:1;padding:2px 6px;}
+.historial-close:hover{color:var(--cream);}
+.historial-body{overflow-y:auto;padding:10px 18px 18px;flex:1;}
+.historial-empty{color:var(--vg);font-size:12px;text-align:center;padding:24px 0;}
+.hlog-row{display:flex;align-items:baseline;gap:10px;padding:6px 0;border-bottom:1px solid rgba(168,218,187,.06);}
+.hlog-row:last-child{border-bottom:none;}
+.hlog-time{font-size:10px;color:var(--vg);white-space:nowrap;flex-shrink:0;min-width:110px;}
+.hlog-badge{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border-radius:3px;flex-shrink:0;}
+.hlog-alta{background:rgba(33,160,85,.15);color:#21A055;}
+.hlog-edicion{background:rgba(168,218,187,.1);color:var(--mint);}
+.hlog-baja{background:rgba(192,57,43,.12);color:#f87171;}
+.hlog-conversion{background:rgba(201,168,76,.1);color:var(--gold);}
+.hlog-exportacion{background:rgba(107,133,120,.12);color:var(--vg);}
+.hlog-name{font-size:12px;color:var(--cream);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.hlog-entity{font-size:10px;color:var(--vg);}
+/* ── export / historial toolbar buttons ── */
+.btn-toolbar{background:transparent;border:1px solid rgba(168,218,187,.25);border-radius:6px;color:var(--mint);font-size:11px;font-weight:600;font-family:'Inter',sans-serif;letter-spacing:.5px;padding:6px 12px;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.btn-toolbar:hover{border-color:var(--mint);background:rgba(168,218,187,.06);}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -586,8 +610,10 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
     <div class="gold-line"></div>
     <div class="header-sub">Offshore &middot; Gesti&oacute;n de clientes</div>
   </div>
-  <div style="display:flex;align-items:center;gap:14px;">
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
     <span id="sync-status"></span>
+    <button class="btn-toolbar" onclick="exportCSV(currentTab)" title="Exportar tabla activa a CSV">↓ CSV</button>
+    <button class="btn-toolbar" onclick="openHistorial()" title="Historial de cambios">Historial</button>
     <span class="badge">Clientes / Leads &middot; Offshore</span>
   </div>
 </div>
@@ -1660,6 +1686,71 @@ function _updateNavAlertaBadge(count){
   }
 }
 
+// ── AUDIT LOG ────────────────────────────────────────────────────────────────
+function _auditLog(action,entity,name){
+  try{
+    var log=JSON.parse(localStorage.getItem('crm_auditlog')||'[]');
+    log.unshift({ts:Date.now(),action:action,entity:entity,name:name||''});
+    if(log.length>500)log=log.slice(0,500);
+    localStorage.setItem('crm_auditlog',JSON.stringify(log));
+  }catch(e){}
+}
+function openHistorial(){
+  renderHistorial();
+  document.getElementById('historial-modal').classList.remove('hidden');
+}
+function closeHistorial(){
+  document.getElementById('historial-modal').classList.add('hidden');
+}
+function renderHistorial(){
+  var body=document.getElementById('historial-body');
+  if(!body)return;
+  var log=[];
+  try{log=JSON.parse(localStorage.getItem('crm_auditlog')||'[]');}catch(e){}
+  if(!log.length){body.innerHTML='<div class="historial-empty">Sin registros todavía.</div>';return;}
+  var _labels={alta:'Alta',edicion:'Edición',baja:'Baja',conversion:'Conversión',exportacion:'Exportación'};
+  var _cls={alta:'hlog-alta',edicion:'hlog-edicion',baja:'hlog-baja',conversion:'hlog-conversion',exportacion:'hlog-exportacion'};
+  var _ent={cliente:'Cliente',lead:'Lead','lead->cliente':'Lead → Cliente',clientes:'Clientes',leads:'Leads'};
+  body.innerHTML=log.map(function(e){
+    var d=new Date(e.ts);
+    var dStr=d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'})+' '+d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+    var cls=_cls[e.action]||'hlog-edicion';
+    var lbl=_labels[e.action]||e.action;
+    var ent=_ent[e.entity]||e.entity;
+    return '<div class="hlog-row"><span class="hlog-time">'+dStr+'</span><span class="hlog-badge '+cls+'">'+lbl+'</span><span class="hlog-entity">'+ent+'</span><span class="hlog-name">'+reuEsc(e.name)+'</span></div>';
+  }).join('');
+}
+
+// ── CSV EXPORT ────────────────────────────────────────────────────────────────
+function exportCSV(type){
+  var headers,rows,filename;
+  var isClientes=(type==='clientes'||type==='cliente');
+  if(isClientes){
+    headers=['Nombre','Comitente','Broker','Custodio','N° Cuenta','Titular/Rep','Comercial','Sociedad','Tipo Fee','% Fee','AUM','Riesgo','Plazo','Seguimiento','Último Contacto','Próximo Contacto','Mail','Teléfono'];
+    rows=clients.map(function(c){return[c.nombre,c.comitente,c.broker,c.custodio,c.numCuenta||'',c.nombreContacto||'',c.comercial||'',c.sociedad||'',c.tipoFee||'',c.pctFee||'',c.aum||'',c.riesgo||'',c.plazo||'',c.seguimiento||'',c.ultimoContacto||'',c.proximoContacto||'',c.mail||'',c.telefono||''];});
+    filename='clientes_expressline_'+_csvDate()+'.csv';
+  } else {
+    headers=['Nombre','Estado','Notas'];
+    rows=leads.map(function(l){return[l.nombre,l.estado,l.notas||''];});
+    filename='leads_expressline_'+_csvDate()+'.csv';
+  }
+  _downloadFile(_buildCSV(headers,rows),'text/csv;charset=utf-8;',filename);
+  _auditLog('exportacion',isClientes?'clientes':'leads','CSV');
+  showToast('Exportado: '+filename);
+}
+function _csvDate(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function _buildCSV(headers,rows){
+  function esc(v){var s=String(v===null||v===undefined?'':v);return(s.includes(',')||s.includes('"')||s.includes('\n'))?'"'+s.replace(/"/g,'""')+'"':s;}
+  return[headers.map(esc).join(',')].concat(rows.map(function(r){return r.map(esc).join(',');})).join('\r\n');
+}
+function _downloadFile(content,mime,filename){
+  var blob=new Blob(['﻿'+content],{type:mime});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');a.href=url;a.download=filename;a.style.display='none';
+  document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(url);a.remove();},1000);
+}
+
 var sortCol=null,sortDir=1,sortColL=null,sortDirL=1;
 function sortBy(col){
   if(sortCol===col){sortDir*=-1;}else{sortCol=col;sortDir=1;}
@@ -2461,6 +2552,10 @@ function save(){
     }
   }
   (function(){var _t=editType==='lead'?leads:clients;var _id=editId||(editType==='lead'?nextLead-1:nextId-1);var _r=_t.find(function(x){return x.id===_id;});if(_r)_r.lastModified=Date.now();})();
+  var _aAction=editId?'edicion':'alta';var _aEntity=editType;
+  var _aId=editId||(editType==='lead'?nextLead-1:nextId-1);
+  var _aArr=editType==='lead'?leads:clients;var _aRec=_aArr.find(function(x){return x.id===_aId;});
+  _auditLog(_aAction,_aEntity,_aRec?_aRec.nombre:'');
   closeModal();render();saveToStorage();
 }
 
@@ -2535,6 +2630,7 @@ function convertLead(id){
     _updatePfolBadge();
     saveToStorage();
     try{var _dl=JSON.parse(localStorage.getItem('_deletedLeadIds')||'[]');if(!_dl.includes(id))_dl.push(id);localStorage.setItem('_deletedLeadIds',JSON.stringify(_dl));}catch(e){}
+    _auditLog('conversion','lead->cliente',n);
     closeModal();
     showToast('Lead convertido a cliente ✓');
     switchTab('clientes',document.getElementById('tab-clientes'));
@@ -2546,6 +2642,7 @@ function delClient(id){
   var c=clients.find(x=>x.id===id);
   if(!c)return;
   var bk=JSON.parse(JSON.stringify(c)),nm=c.nombre;
+  _auditLog('baja','cliente',nm);
   clients=clients.filter(x=>x.id!==id);
   render();saveToStorage();
   try{var d=JSON.parse(localStorage.getItem('_deletedClientIds')||'[]');if(!d.includes(id))d.push(id);localStorage.setItem('_deletedClientIds',JSON.stringify(d));}catch(e){}
@@ -2559,6 +2656,7 @@ function delLead(id){
   var l=leads.find(x=>x.id===id);
   if(!l)return;
   var bk=JSON.parse(JSON.stringify(l)),nm=l.nombre;
+  _auditLog('baja','lead',nm);
   leads=leads.filter(x=>x.id!==id);
   render();saveToStorage();
   try{var d=JSON.parse(localStorage.getItem('_deletedLeadIds')||'[]');if(!d.includes(id))d.push(id);localStorage.setItem('_deletedLeadIds',JSON.stringify(d));}catch(e){}
@@ -2584,6 +2682,7 @@ function saveRow(id){
   if(_aumStr!==''&&isNaN(parseFloat(_aumStr))){showToast('AUM inválido — ingresá solo números',true);return;}
   c.lastModified=Date.now();
   saveToStorage();
+  _auditLog('edicion','cliente',c.nombre);
   showToast('Guardado ✓');
 }
 function saveLeadRow(id){
@@ -2599,6 +2698,7 @@ function saveLeadRow(id){
   l.lastModified=Date.now();
   saveToStorage();
   updateAutoAUM();
+  _auditLog('edicion','lead',l.nombre);
   showToast('Guardado ✓');
 }
 
@@ -4214,5 +4314,16 @@ function propBuildPDFHTML(p){
 }
 
 </script>
+
+<div id="historial-modal" class="historial-overlay hidden" onclick="if(event.target===this)closeHistorial()">
+  <div class="historial-wrap">
+    <div class="historial-header">
+      <span class="historial-title">Historial de cambios</span>
+      <button class="historial-close" onclick="closeHistorial()">✕</button>
+    </div>
+    <div class="historial-body" id="historial-body"></div>
+  </div>
+</div>
+
 </body>
 </html>
