@@ -550,6 +550,12 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
 .btn-filter-clear:hover{background:rgba(201,168,76,.1);}
 .btn-filter-clear.hidden{display:none;}
 .filter-count{font-size:10px;color:var(--vg);margin-left:2px;white-space:nowrap;}
+/* ── leads: origen badge ── */
+.lead-origen{display:inline-block;font-size:9px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;padding:2px 6px;border-radius:3px;background:rgba(168,218,187,.08);color:var(--vg);border:1px solid rgba(168,218,187,.15);white-space:nowrap;}
+/* ── perfil de lead modal ── */
+#lead-perfil-modal .historial-wrap{width:min(560px,94vw);}
+.lp-field-label{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--vg);margin-bottom:4px;}
+.lp-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid rgba(168,218,187,.1);}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -724,7 +730,9 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
             <th style="width:24px;"></th>
             <th class="sortable" data-sort-lead="nombre" onclick="sortByLead('nombre')">Nombre</th>
             <th class="sortable" data-sort-lead="estado" onclick="sortByLead('estado')">Estado</th>
+            <th class="sortable" data-sort-lead="origen" onclick="sortByLead('origen')">Origen</th>
             <th>Notas</th>
+            <th class="sortable" data-sort-lead="proximoContacto" onclick="sortByLead('proximoContacto')">Próximo</th>
             <th></th>
           </tr></thead>
           <tbody id="tbody-leads"></tbody>
@@ -1106,15 +1114,31 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
   </div>
   <div id="form-lead" style="display:none;">
     <div class="field"><label>Nombre del lead</label><input type="text" id="f-lead-nombre" placeholder="Ej. GARCIA JUAN" /></div>
-    <div class="field"><label>Estado</label>
-      <select id="f-lead-estado">
-        <option value="Nuevo">Nuevo</option>
-        <option value="Contactado">Contactado</option>
-        <option value="Interesado">Interesado</option>
-        <option value="En Proceso">En Proceso</option>
-      </select>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="field"><label>Estado</label>
+        <select id="f-lead-estado">
+          <option value="Nuevo">Nuevo</option>
+          <option value="Contactado">Contactado</option>
+          <option value="Interesado">Interesado</option>
+          <option value="En Proceso">En Proceso</option>
+        </select>
+      </div>
+      <div class="field"><label>Origen</label>
+        <select id="f-lead-origen">
+          <option value="">— Sin especificar —</option>
+          <option value="Referido">Referido</option>
+          <option value="LinkedIn">LinkedIn</option>
+          <option value="Evento">Evento</option>
+          <option value="Sitio web">Sitio web</option>
+          <option value="Llamada">Llamada</option>
+          <option value="Otro">Otro</option>
+        </select>
+      </div>
     </div>
-    <div class="field"><label>Notas</label><input type="text" id="f-lead-notas" placeholder="Observaciones..." /></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="field"><label>Notas</label><input type="text" id="f-lead-notas" placeholder="Observaciones..." /></div>
+      <div class="field"><label>Próximo contacto</label><input type="date" id="f-lead-proximo" /></div>
+    </div>
   </div>
   <div class="modal-actions">
     <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
@@ -1656,18 +1680,21 @@ function renderAlertasVencimiento(){
   if(!panel)return;
   var hoy=new Date();hoy.setHours(0,0,0,0);
   var vencidos=[],hoyArr=[],proximos=[];
-  clients.forEach(function(c){
-    if(!c.proximoContacto)return;
-    var d=new Date(c.proximoContacto);d.setHours(0,0,0,0);
+  function _pushAlerta(rec,isLead){
+    if(!rec.proximoContacto)return;
+    var d=new Date(rec.proximoContacto);d.setHours(0,0,0,0);
     var diff=Math.floor((d-hoy)/86400000);
-    if(diff<0)vencidos.push({c:c,diff:diff,d:d});
-    else if(diff===0)hoyArr.push({c:c,diff:diff,d:d});
-    else if(diff<=7)proximos.push({c:c,diff:diff,d:d});
-  });
+    var item={c:rec,diff:diff,d:d,isLead:isLead};
+    if(diff<0)vencidos.push(item);
+    else if(diff===0)hoyArr.push(item);
+    else if(diff<=7)proximos.push(item);
+  }
+  clients.forEach(function(c){_pushAlerta(c,false);});
+  leads.forEach(function(l){_pushAlerta(l,true);});
   vencidos.sort(function(a,b){return a.diff-b.diff;});
   proximos.sort(function(a,b){return a.diff-b.diff;});
   var total=vencidos.length+hoyArr.length+proximos.length;
-  _updateNavAlertaBadge(vencidos.length);
+  _updateNavAlertaBadge(vencidos.filter(function(x){return !x.isLead;}).length);
   if(total===0){panel.classList.add('hidden');return;}
   panel.classList.remove('hidden');
   var sumParts=[];
@@ -1678,7 +1705,9 @@ function renderAlertasVencimiento(){
   function chip(item,tipo){
     var dStr=item.d.toLocaleDateString('es-AR',{day:'2-digit',month:'short'});
     var label=tipo==='vencido'?Math.abs(item.diff)+'d':(tipo==='hoy'?'Hoy':'+'+item.diff+'d');
-    return '<span class="alerta-chip '+tipo+'" onclick="openPerfil('+item.c.id+')" title="Abrir perfil">'+reuEsc(item.c.nombre)+'<span class="alerta-date">'+dStr+' ('+label+')</span></span>';
+    var tag=item.isLead?'<span style="font-size:8px;opacity:.6;margin-left:2px;">lead</span>':'';
+    var fn=item.isLead?'openLeadPerfil':'openPerfil';
+    return '<span class="alerta-chip '+tipo+'" onclick="'+fn+'('+item.c.id+')" title="Abrir perfil">'+reuEsc(item.c.nombre)+tag+'<span class="alerta-date">'+dStr+' ('+label+')</span></span>';
   }
   var html='';
   if(vencidos.length)html+='<div class="alertas-group"><div class="alertas-group-label" style="color:#f87171">Vencidos</div><div class="alertas-chips">'+vencidos.map(function(x){return chip(x,'vencido');}).join('')+'</div></div>';
@@ -1751,8 +1780,8 @@ function exportCSV(type){
     rows=clients.map(function(c){return[c.nombre,c.comitente,c.broker,c.custodio,c.numCuenta||'',c.nombreContacto||'',c.comercial||'',c.sociedad||'',c.tipoFee||'',c.pctFee||'',c.aum||'',c.riesgo||'',c.plazo||'',c.seguimiento||'',c.ultimoContacto||'',c.proximoContacto||'',c.mail||'',c.telefono||''];});
     filename='clientes_expressline_'+_csvDate()+'.csv';
   } else {
-    headers=['Nombre','Estado','Notas'];
-    rows=leads.map(function(l){return[l.nombre,l.estado,l.notas||''];});
+    headers=['Nombre','Estado','Origen','Notas','Próximo Contacto'];
+    rows=leads.map(function(l){return[l.nombre,l.estado,l.origen||'',l.notas||'',l.proximoContacto||''];});
     filename='leads_expressline_'+_csvDate()+'.csv';
   }
   _downloadFile(_buildCSV(headers,rows),'text/csv;charset=utf-8;',filename);
@@ -1891,20 +1920,25 @@ function render(){
     if(th.dataset.sortLead===sortColL) th.classList.add(sortDirL===1?'sort-asc':'sort-desc');
   });
   document.getElementById('tbody-leads').innerHTML=(function(){
-    if(!fl.length) return `<tr><td colspan="5" class="empty">${leads.length===0?'No hay leads registrados — hacé click en <strong style="color:var(--mint)">+ Nuevo lead<\/strong> para agregar uno.':'Sin resultados para la búsqueda actual.'}</td></tr>`;
+    if(!fl.length) return `<tr><td colspan="7" class="empty">${leads.length===0?'No hay leads registrados — hacé click en <strong style="color:var(--mint)">+ Nuevo lead<\/strong> para agregar uno.':'Sin resultados para la búsqueda actual.'}</td></tr>`;
     var rows='', prevGroup=null;
     fl.forEach(function(l){
       var grp=STATUS_ORDER[l.estado]!==undefined?STATUS_ORDER[l.estado]:99;
       if(!sortColL && prevGroup!==null && grp!==prevGroup){
-        rows+='<tr class="lead-group-sep"><td colspan="5"><\/td><\/tr>';
+        rows+='<tr class="lead-group-sep"><td colspan="7"><\/td><\/tr>';
       }
       prevGroup=grp;
+      var proxCell=l.proximoContacto?'<span style="color:'+_proxColor(l.proximoContacto)+';font-size:11px;">'+reuEsc(l.proximoContacto)+'<\/span>':'<span style="color:var(--vg);font-size:11px;">—<\/span>';
+      var origenCell=l.origen?'<span class="lead-origen">'+reuEsc(l.origen)+'<\/span>':'<span style="color:var(--vg);font-size:10px;">—<\/span>';
       rows+='<tr data-lid="'+l.id+'">'
        +'<td class="lead-drag-handle" title="Arrastrar para reordenar">⠿<\/td>'
        +'<td class="client-name" contenteditable="true" ondragstart="event.stopPropagation()" data-key="l-'+l.id+'-nombre">'+(reuEsc?reuEsc(l.nombre):l.nombre)+'<\/td>'
        +'<td ondragstart="event.stopPropagation()"><span class="badge-status '+statusClass(l.estado)+'" contenteditable="true" data-key="l-'+l.id+'-estado">'+(reuEsc?reuEsc(l.estado):l.estado)+'<\/span><\/td>'
+       +'<td style="text-align:center;">'+origenCell+'<\/td>'
        +'<td style="font-size:12px;color:var(--vg);" contenteditable="true" ondragstart="event.stopPropagation()" data-key="l-'+l.id+'-notas">'+(reuEsc?reuEsc(l.notas||''):(l.notas||''))+'<\/td>'
+       +'<td style="text-align:center;cursor:pointer;" onclick="openLeadPerfil('+l.id+')" title="Editar en Perfil">'+proxCell+'<\/td>'
        +'<td><div class="actions">'
+       +'<button class="btn-act btn-perfil" onclick="openLeadPerfil('+l.id+')" title="Perfil del lead">Perfil<\/button>'
        +'<button class="btn-act btn-convert" onclick="convertLead('+l.id+')">Convertir<\/button>'
        +'<button class="btn-act btn-save-row" onclick="saveLeadRow('+l.id+')" title="Guardar cambios">✓<\/button>'
        +'<button class="btn-act btn-del" onclick="delLead('+l.id+')">Eliminar<\/button>'
@@ -2002,7 +2036,7 @@ function openModal(){
   document.getElementById('f-aum').value='';document.getElementById('f-plazo').value='';document.getElementById('f-mail').value='';
   document.getElementById('f-telefono').value='';document.getElementById('f-detalles').value='';
   document.getElementById('f-lead-nombre').value='';document.getElementById('f-lead-estado').value='Nuevo';
-  document.getElementById('f-lead-notas').value='';
+  document.getElementById('f-lead-notas').value='';document.getElementById('f-lead-origen').value='';document.getElementById('f-lead-proximo').value='';
   document.getElementById('btn-save').onclick=save;
   document.getElementById('modal').classList.add('open');
 }
@@ -2604,9 +2638,11 @@ function save(){
     const n=document.getElementById('f-lead-nombre').value.trim();
     const e=document.getElementById('f-lead-estado').value;
     const no=document.getElementById('f-lead-notas').value.trim();
+    const orig=document.getElementById('f-lead-origen').value;
+    const prox=document.getElementById('f-lead-proximo').value;
     if(!n){showToast('Ingresá el nombre del lead.',true);return;}
-    if(editId){const l=leads.find(x=>x.id===editId);l.nombre=n;l.estado=e;l.notas=no;}
-    else leads.push({id:nextLead++,nombre:n,estado:e,notas:no});
+    if(editId){const l=leads.find(x=>x.id===editId);l.nombre=n;l.estado=e;l.notas=no;l.origen=orig;l.proximoContacto=prox;}
+    else leads.push({id:nextLead++,nombre:n,estado:e,notas:no,origen:orig,proximoContacto:prox});
   } else {
     const n=document.getElementById('f-nombre').value.trim();
     const co=document.getElementById('f-comitente').value.trim();
@@ -2669,9 +2705,70 @@ function editLead(id){
   document.getElementById('form-lead').style.display='';
   document.getElementById('f-lead-nombre').value=l.nombre;
   document.getElementById('f-lead-estado').value=l.estado;
-  document.getElementById('f-lead-notas').value=l.notas;
+  document.getElementById('f-lead-origen').value=l.origen||'';
+  document.getElementById('f-lead-notas').value=l.notas||'';
+  document.getElementById('f-lead-proximo').value=l.proximoContacto||'';
   document.getElementById('btn-save').onclick=save;
   document.getElementById('modal').classList.add('open');
+}
+
+// ── PERFIL DE LEAD ────────────────────────────────────────────────────────────
+var _lpId=null;
+function openLeadPerfil(id){
+  var l=leads.find(function(x){return x.id===id;});
+  if(!l)return;
+  _lpId=id;
+  document.getElementById('lp-nombre').textContent=l.nombre;
+  var badge=document.getElementById('lp-estado-badge');
+  badge.textContent=l.estado;badge.className='badge-status '+statusClass(l.estado);
+  document.getElementById('lp-origen-hdr').textContent=l.origen||'';
+  document.getElementById('lp-notas').textContent=l.notas||'—';
+  document.getElementById('lp-proximo').value=l.proximoContacto||'';
+  document.getElementById('lp-nota-input').value='';
+  renderLeadProximoStatus(l);
+  renderLeadTimeline(id);
+  document.getElementById('lead-perfil-modal').classList.remove('hidden');
+}
+function closeLeadPerfil(){document.getElementById('lead-perfil-modal').classList.add('hidden');_lpId=null;}
+function saveLeadProximo(){
+  var l=leads.find(function(x){return x.id===_lpId;});
+  if(!l)return;
+  l.proximoContacto=document.getElementById('lp-proximo').value||'';
+  l.lastModified=Date.now();
+  saveToStorage();renderLeadProximoStatus(l);render();
+  _auditLog('edicion','lead',l.nombre);
+}
+function renderLeadProximoStatus(l){
+  var el=document.getElementById('lp-proximo-status');
+  if(!el||!l.proximoContacto){if(el)el.textContent='';return;}
+  var diff=Math.floor((new Date(l.proximoContacto)-new Date())/86400000);
+  if(diff<0)el.innerHTML='<span style="color:#f87171">Vencido hace '+Math.abs(diff)+(Math.abs(diff)===1?' día':' días')+'</span>';
+  else if(diff===0)el.innerHTML='<span style="color:var(--gold)">Hoy</span>';
+  else el.innerHTML='<span style="color:var(--mint)">En '+diff+' día'+(diff===1?'':'s')+'</span>';
+}
+function getLeadActividad(id){try{return JSON.parse(localStorage.getItem('crm_act_lead_'+id)||'[]');}catch(e){return[];}}
+function saveLeadActividad(id,arr){localStorage.setItem('crm_act_lead_'+id,JSON.stringify(arr));}
+function addLeadNota(){
+  var input=document.getElementById('lp-nota-input');
+  if(!input||!_lpId)return;
+  var nota=input.value.trim();
+  if(!nota)return;
+  var arr=getLeadActividad(_lpId);
+  arr.unshift({ts:Date.now(),nota:nota,tipo:'nota'});
+  saveLeadActividad(_lpId,arr);
+  input.value='';
+  renderLeadTimeline(_lpId);
+}
+function renderLeadTimeline(id){
+  var el=document.getElementById('lp-timeline');
+  if(!el)return;
+  var arr=getLeadActividad(id);
+  if(!arr.length){el.innerHTML='<div class="historial-empty">Sin actividad registrada.</div>';return;}
+  el.innerHTML=arr.map(function(e){
+    var d=new Date(e.ts);
+    var dStr=d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'})+' '+d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+    return '<div class="hlog-row"><span class="hlog-time">'+dStr+'</span><span style="font-size:13px;">📝</span><span style="font-size:12px;color:var(--cream);">'+reuEsc(e.nota)+'</span></div>';
+  }).join('');
 }
 
 function convertLead(id){
@@ -4386,6 +4483,40 @@ function propBuildPDFHTML(p){
 }
 
 </script>
+
+<div id="lead-perfil-modal" class="historial-overlay hidden" onclick="if(event.target===this)closeLeadPerfil()">
+  <div class="historial-wrap">
+    <div class="historial-header">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:2px;" id="lp-origen-hdr"></div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span class="historial-title" id="lp-nombre" style="font-size:15px;"></span>
+          <span class="badge-status" id="lp-estado-badge"></span>
+        </div>
+      </div>
+      <button class="historial-close" onclick="closeLeadPerfil()">✕</button>
+    </div>
+    <div class="historial-body">
+      <div class="lp-grid">
+        <div>
+          <div class="lp-field-label">Próximo contacto</div>
+          <input type="date" id="lp-proximo" style="background:transparent;border:none;border-bottom:1px solid rgba(168,218,187,.2);color:var(--cream);font-size:13px;font-family:Inter,sans-serif;width:100%;padding-bottom:3px;" onchange="saveLeadProximo()" />
+          <div id="lp-proximo-status" style="font-size:11px;margin-top:5px;min-height:16px;"></div>
+        </div>
+        <div>
+          <div class="lp-field-label">Notas</div>
+          <div id="lp-notas" style="font-size:12px;color:var(--cream);line-height:1.5;"></div>
+        </div>
+      </div>
+      <div class="lp-field-label" style="margin-bottom:8px;">Actividad</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <input type="text" id="lp-nota-input" class="pf-nota-textarea" placeholder="Agregar nota..." style="flex:1;height:auto;padding:7px 10px;" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();addLeadNota();}" />
+        <button class="btn-add-nota" onclick="addLeadNota()">+</button>
+      </div>
+      <div id="lp-timeline"></div>
+    </div>
+  </div>
+</div>
 
 <div id="historial-modal" class="historial-overlay hidden" onclick="if(event.target===this)closeHistorial()">
   <div class="historial-wrap">
