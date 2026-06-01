@@ -492,6 +492,29 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
 /* ── nav pending badge ── */
 .nav-pending{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--gold);margin-left:6px;vertical-align:middle;flex-shrink:0;}
 .sidebar.collapsed .nav-pending{position:absolute;top:6px;right:6px;margin-left:0;}
+/* ── nav alerta badge (vencidos) ── */
+.nav-alerta{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;border-radius:8px;background:var(--err);color:#fff;font-size:9px;font-weight:700;margin-left:6px;padding:0 4px;flex-shrink:0;}
+.sidebar.collapsed .nav-alerta{position:absolute;top:4px;right:4px;margin-left:0;}
+/* ── alertas de vencimiento ── */
+#alertas-panel{margin:0 0 12px;border-radius:8px;overflow:hidden;border:1px solid rgba(168,218,187,.12);}
+#alertas-panel.hidden{display:none;}
+.alertas-hdr{display:flex;align-items:center;gap:8px;padding:8px 14px;background:rgba(168,218,187,.04);cursor:pointer;user-select:none;}
+.alertas-arr{font-size:10px;color:var(--vg);transition:transform .15s;flex-shrink:0;}
+.alertas-arr.open{transform:rotate(90deg);}
+.alertas-title{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--vg);}
+.alertas-summary{font-size:10px;color:var(--vg);margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.alertas-body{display:none;padding:8px 14px 12px;}
+.alertas-body.open{display:block;}
+.alertas-group{margin-bottom:8px;}
+.alertas-group:last-child{margin-bottom:0;}
+.alertas-group-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:5px;}
+.alertas-chips{display:flex;flex-wrap:wrap;gap:5px;}
+.alerta-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px 3px 9px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid transparent;transition:opacity .12s;line-height:1.4;}
+.alerta-chip:hover{opacity:.72;}
+.alerta-chip.vencido{background:rgba(192,57,43,.08);border-color:rgba(192,57,43,.25);color:#f87171;}
+.alerta-chip.hoy{background:rgba(201,168,76,.08);border-color:rgba(201,168,76,.25);color:var(--gold);}
+.alerta-chip.proximo{background:rgba(168,218,187,.06);border-color:rgba(168,218,187,.2);color:var(--mint);}
+.alerta-date{font-size:9px;opacity:.65;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -598,6 +621,15 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
     <div class="kpi-label">Tiempo de Objetivo</div>
     <span class="kpi-val" id="kpi-tiempo">—</span><span class="kpi-pencil">✏</span>
   </div>
+</div>
+
+<div id="alertas-panel" class="hidden">
+  <div class="alertas-hdr" onclick="toggleAlertas()">
+    <span class="alertas-arr" id="alertas-arr">&#9658;</span>
+    <span class="alertas-title">Alertas de seguimiento</span>
+    <span class="alertas-summary" id="alertas-summary"></span>
+  </div>
+  <div class="alertas-body" id="alertas-body"></div>
 </div>
 
 <div class="wrap">
@@ -1572,6 +1604,62 @@ var STATUS_VALID=['Nuevo','Contactado','Interesado','En Proceso'];
 function _proxColor(d){if(!d)return 'var(--vg)';var diff=Math.floor((new Date(d)-new Date())/86400000);return diff<0?'#e74c3c':diff===0?'var(--gold)':'var(--mint)';}
 function statusClass(s){return s==='Nuevo'?'s-nuevo':s==='Contactado'?'s-contactado':s==='En Proceso'?'s-proceso':s==='Interesado'?'s-interesado':'s-nuevo';}
 
+function renderAlertasVencimiento(){
+  var panel=document.getElementById('alertas-panel');
+  if(!panel)return;
+  var hoy=new Date();hoy.setHours(0,0,0,0);
+  var vencidos=[],hoyArr=[],proximos=[];
+  clients.forEach(function(c){
+    if(!c.proximoContacto)return;
+    var d=new Date(c.proximoContacto);d.setHours(0,0,0,0);
+    var diff=Math.floor((d-hoy)/86400000);
+    if(diff<0)vencidos.push({c:c,diff:diff,d:d});
+    else if(diff===0)hoyArr.push({c:c,diff:diff,d:d});
+    else if(diff<=7)proximos.push({c:c,diff:diff,d:d});
+  });
+  vencidos.sort(function(a,b){return a.diff-b.diff;});
+  proximos.sort(function(a,b){return a.diff-b.diff;});
+  var total=vencidos.length+hoyArr.length+proximos.length;
+  _updateNavAlertaBadge(vencidos.length);
+  if(total===0){panel.classList.add('hidden');return;}
+  panel.classList.remove('hidden');
+  var sumParts=[];
+  if(vencidos.length)sumParts.push('<span style="color:#f87171">'+vencidos.length+' vencido'+(vencidos.length>1?'s':'')+'</span>');
+  if(hoyArr.length)sumParts.push('<span style="color:var(--gold)">'+hoyArr.length+' hoy</span>');
+  if(proximos.length)sumParts.push('<span style="color:var(--mint)">'+proximos.length+' próximo'+(proximos.length>1?'s':'')+'</span>');
+  document.getElementById('alertas-summary').innerHTML=sumParts.join('<span style="color:var(--vg);margin:0 3px;">·</span>');
+  function chip(item,tipo){
+    var dStr=item.d.toLocaleDateString('es-AR',{day:'2-digit',month:'short'});
+    var label=tipo==='vencido'?Math.abs(item.diff)+'d':(tipo==='hoy'?'Hoy':'+'+item.diff+'d');
+    return '<span class="alerta-chip '+tipo+'" onclick="openPerfil('+item.c.id+')" title="Abrir perfil">'+reuEsc(item.c.nombre)+'<span class="alerta-date">'+dStr+' ('+label+')</span></span>';
+  }
+  var html='';
+  if(vencidos.length)html+='<div class="alertas-group"><div class="alertas-group-label" style="color:#f87171">Vencidos</div><div class="alertas-chips">'+vencidos.map(function(x){return chip(x,'vencido');}).join('')+'</div></div>';
+  if(hoyArr.length)html+='<div class="alertas-group"><div class="alertas-group-label" style="color:var(--gold)">Hoy</div><div class="alertas-chips">'+hoyArr.map(function(x){return chip(x,'hoy');}).join('')+'</div></div>';
+  if(proximos.length)html+='<div class="alertas-group"><div class="alertas-group-label" style="color:var(--mint)">Próximos 7 días</div><div class="alertas-chips">'+proximos.map(function(x){return chip(x,'proximo');}).join('')+'</div></div>';
+  document.getElementById('alertas-body').innerHTML=html;
+}
+
+function toggleAlertas(){
+  var body=document.getElementById('alertas-body');
+  var arr=document.getElementById('alertas-arr');
+  if(!body)return;
+  var open=body.classList.toggle('open');
+  if(arr)arr.classList.toggle('open',open);
+}
+
+function _updateNavAlertaBadge(count){
+  var btn=document.querySelector('.sidebar-nav .nav-item:first-child');
+  if(!btn)return;
+  var existing=btn.querySelector('.nav-alerta');
+  if(count>0){
+    if(!existing){var d=document.createElement('span');d.className='nav-alerta';d.title=count+' contacto(s) vencido(s)';btn.appendChild(d);}
+    btn.querySelector('.nav-alerta').textContent=count;
+  } else {
+    if(existing)existing.remove();
+  }
+}
+
 var sortCol=null,sortDir=1,sortColL=null,sortDirL=1;
 function sortBy(col){
   if(sortCol===col){sortDir*=-1;}else{sortCol=col;sortDir=1;}
@@ -1669,6 +1757,7 @@ function render(){
   localStorage.setItem('st-total',clients.length);
   localStorage.setItem('st-leads',leads.length);
   updateAutoAUM();
+  renderAlertasVencimiento();
   initLeadsDnd();
 }
 function initLeadsDnd(){
