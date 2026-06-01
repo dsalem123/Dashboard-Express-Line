@@ -554,6 +554,23 @@ select.pf-edit-input option{background:#0D2924;}
 .pf-reunion-dot{width:6px;height:6px;border-radius:50%;background:#7b9ee0;flex-shrink:0;margin-top:4px;}
 .pf-reunion-date{font-size:10px;color:#7b9ee0;font-weight:600;}
 .pf-reunion-agenda{font-size:11px;color:var(--vg);margin-top:1px;}
+/* ── búsqueda global ── */
+.gsr-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding-top:80px;opacity:0;pointer-events:none;transition:opacity .15s;}
+.gsr-overlay.open{opacity:1;pointer-events:all;}
+.gsr-box{background:#0a1f1b;border:1px solid rgba(168,218,187,.2);border-radius:12px;width:100%;max-width:520px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.6);}
+.gsr-input-row{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid rgba(168,218,187,.1);}
+.gsr-input{background:none;border:none;outline:none;color:var(--cream);font-family:'Inter',sans-serif;font-size:14px;flex:1;}
+.gsr-input::placeholder{color:var(--vg);}
+.gsr-hint{font-size:10px;color:var(--vg);flex-shrink:0;opacity:.6;}
+.gsr-results{max-height:380px;overflow-y:auto;}
+.gsr-group-label{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--vg);padding:10px 16px 4px;}
+.gsr-item{display:flex;align-items:center;gap:10px;padding:8px 16px;cursor:pointer;transition:background .1s;}
+.gsr-item:hover,.gsr-item.gsr-sel{background:rgba(168,218,187,.07);}
+.gsr-item-icon{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;background:rgba(168,218,187,.07);}
+.gsr-item-main{font-size:13px;color:var(--cream);}
+.gsr-item-sub{font-size:10px;color:var(--vg);margin-top:1px;}
+.gsr-empty{padding:28px 16px;text-align:center;color:var(--vg);font-size:12px;opacity:.6;}
+.gsr-footer{padding:7px 16px;border-top:1px solid rgba(168,218,187,.08);display:flex;gap:14px;font-size:10px;color:var(--vg);opacity:.6;}
 /* ── propuestas estado ── */
 .prop-estado-badge{display:inline-block;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:2px 6px;border-radius:3px;vertical-align:middle;}
 .prop-estado-borrador{background:rgba(107,133,120,.15);color:var(--vg);}
@@ -629,6 +646,7 @@ select.pf-edit-input option{background:#0D2924;}
     </svg>
   </button>
   <nav class="sidebar-nav">
+    <button class="nav-item" onclick="gsrOpen()" style="color:var(--vg);border-left-color:transparent!important;"><span class="nav-item-icon">🔍</span><span class="nav-item-text">Buscar <span style="font-size:9px;opacity:.5;background:rgba(168,218,187,.08);border:1px solid rgba(168,218,187,.15);border-radius:3px;padding:1px 5px;font-family:'Inter';">Ctrl+K</span></span></button>
     <button class="nav-item active" onclick="showPage('clientes-leads',this)"><span class="nav-item-icon">👤</span><span class="nav-item-text">Clientes / Leads</span></button>
     <button class="nav-item" id="nav-portfolios" onclick="showPage('portfolios',this)"><span class="nav-item-icon">🌐</span><span class="nav-item-text">Portfolios ONLINE</span></button>
     <button class="nav-item" onclick="showPage('mercado',this);initMercado()"><span class="nav-item-icon">📈</span><span class="nav-item-text">Mercado</span></button>
@@ -4571,6 +4589,109 @@ function propCreateFromModal(){
   showToast('Cartera creada');
 }
 
+// ── Búsqueda global ──────────────────────────────────────────────────────────
+var _gsrSel=-1,_gsrItems=[];
+function gsrOpen(){
+  document.getElementById('gsr-overlay').classList.add('open');
+  var inp=document.getElementById('gsr-input');
+  inp.value='';_gsrSel=-1;_gsrItems=[];
+  document.getElementById('gsr-results').innerHTML='';
+  document.body.style.overflow='hidden';
+  setTimeout(function(){inp.focus();},60);
+}
+function gsrClose(){
+  document.getElementById('gsr-overlay').classList.remove('open');
+  document.body.style.overflow='';
+}
+function gsrSearch(q){
+  q=q.trim().toLowerCase();_gsrSel=-1;
+  if(!q){document.getElementById('gsr-results').innerHTML='';return;}
+  var rc=[],rl=[],rp=[];
+  (typeof clients!=='undefined'?clients:[]).forEach(function(c){
+    if([c.nombre,c.mail,c.telefono,String(c.comitente||''),c.broker||'',c.nombreContacto||''].join(' ').toLowerCase().includes(q)) rc.push(c);
+  });
+  (typeof leads!=='undefined'?leads:[]).forEach(function(l){
+    if([l.nombre,l.notas||'',l.origen||'',l.estado||''].join(' ').toLowerCase().includes(q)) rl.push(l);
+  });
+  var props=[];try{props=JSON.parse(localStorage.getItem('crm_propuestas')||'[]');}catch(e){}
+  props.forEach(function(p){if((p.name+' '+(p.clientName||'')).toLowerCase().includes(q)) rp.push(p);});
+  gsrRender(rc,rl,rp);
+}
+function gsrRender(rc,rl,rp){
+  _gsrItems=[];var html='';
+  function fmtAUM(a){var n=parseAUM(a);return n>=1e6?'$'+(n/1e6).toFixed(1)+'M':n>=1e3?'$'+Math.round(n/1e3)+'k':'';}
+  if(rc.length){
+    html+='<div class="gsr-group-label">Clientes ('+rc.length+')</div>';
+    rc.slice(0,6).forEach(function(c){
+      var i=_gsrItems.length;_gsrItems.push({type:'cliente',id:c.id});
+      var s=[c.broker,fmtAUM(c.aum),c.riesgo].filter(Boolean).join(' · ');
+      html+='<div class="gsr-item" data-idx="'+i+'" onclick="gsrGo('+i+')" onmouseenter="gsrHover('+i+')">'+
+        '<div class="gsr-item-icon">👤</div><div><div class="gsr-item-main">'+reuEsc(c.nombre)+'</div>'+
+        (s?'<div class="gsr-item-sub">'+reuEsc(s)+'</div>':'')+'</div></div>';
+    });
+  }
+  if(rl.length){
+    html+='<div class="gsr-group-label">Leads ('+rl.length+')</div>';
+    rl.slice(0,6).forEach(function(l){
+      var i=_gsrItems.length;_gsrItems.push({type:'lead',id:l.id});
+      var s=[l.origen,l.estado].filter(Boolean).join(' · ');
+      html+='<div class="gsr-item" data-idx="'+i+'" onclick="gsrGo('+i+')" onmouseenter="gsrHover('+i+')">'+
+        '<div class="gsr-item-icon">⭐</div><div><div class="gsr-item-main">'+reuEsc(l.nombre)+'</div>'+
+        (s?'<div class="gsr-item-sub">'+reuEsc(s)+'</div>':'')+'</div></div>';
+    });
+  }
+  if(rp.length){
+    html+='<div class="gsr-group-label">Carteras ('+rp.length+')</div>';
+    rp.slice(0,4).forEach(function(p){
+      var i=_gsrItems.length;_gsrItems.push({type:'propuesta',id:p.id});
+      html+='<div class="gsr-item" data-idx="'+i+'" onclick="gsrGo('+i+')" onmouseenter="gsrHover('+i+')">'+
+        '<div class="gsr-item-icon">📋</div><div><div class="gsr-item-main">'+reuEsc(p.name)+'</div>'+
+        '<div class="gsr-item-sub">'+reuEsc(p.clientName||'Sin cliente')+'</div></div></div>';
+    });
+  }
+  if(!_gsrItems.length) html='<div class="gsr-empty">Sin resultados para esa búsqueda</div>';
+  document.getElementById('gsr-results').innerHTML=html;
+}
+function gsrHover(i){_gsrSel=i;gsrHighlight();}
+function gsrHighlight(){
+  document.querySelectorAll('#gsr-results .gsr-item').forEach(function(el,i){
+    el.classList.toggle('gsr-sel',i===_gsrSel);
+  });
+}
+function gsrGo(idx){
+  if(idx==null) idx=_gsrSel;
+  var item=_gsrItems[idx];if(!item)return;
+  gsrClose();
+  if(item.type==='cliente'){
+    showPage('clientes-leads',document.querySelector('.nav-item[onclick*="clientes-leads"]'));
+    setTimeout(function(){openPerfil(item.id);},80);
+  } else if(item.type==='lead'){
+    showPage('clientes-leads',document.querySelector('.nav-item[onclick*="clientes-leads"]'));
+    setTimeout(function(){
+      if(typeof currentTab!=='undefined'&&currentTab!=='leads') switchTab('leads');
+      setTimeout(function(){openLeadPerfil(item.id);},80);
+    },80);
+  } else if(item.type==='propuesta'){
+    var btn=document.querySelector('.nav-item[onclick*="propuesta"]');
+    showPage('propuesta',btn);
+    setTimeout(function(){initPropuesta();propSelect(item.id);},120);
+  }
+}
+document.addEventListener('keydown',function(e){
+  if((e.ctrlKey||e.metaKey)&&e.key==='k'){
+    e.preventDefault();
+    var open=document.getElementById('gsr-overlay').classList.contains('open');
+    if(open) gsrClose(); else gsrOpen();
+    return;
+  }
+  if(!document.getElementById('gsr-overlay').classList.contains('open')) return;
+  var items=document.querySelectorAll('#gsr-results .gsr-item');
+  if(e.key==='Escape'){gsrClose();return;}
+  if(e.key==='ArrowDown'){e.preventDefault();_gsrSel=Math.min(_gsrSel+1,items.length-1);gsrHighlight();var s=items[_gsrSel];if(s)s.scrollIntoView({block:'nearest'});}
+  else if(e.key==='ArrowUp'){e.preventDefault();_gsrSel=Math.max(_gsrSel-1,0);gsrHighlight();var s=items[_gsrSel];if(s)s.scrollIntoView({block:'nearest'});}
+  else if(e.key==='Enter'){e.preventDefault();if(_gsrSel>=0)gsrGo(_gsrSel);}
+});
+
 // ── PDF ──
 function propDownloadPDF(){
   var p=propActive();if(!p){showToast('No hay cartera activa',true);return;}
@@ -4708,6 +4829,19 @@ function propBuildPDFHTML(p){
       <button class="historial-close" onclick="closeHistorial()">✕</button>
     </div>
     <div class="historial-body" id="historial-body"></div>
+  </div>
+</div>
+
+<!-- ── BÚSQUEDA GLOBAL ── -->
+<div class="gsr-overlay" id="gsr-overlay" onclick="if(event.target===this)gsrClose()">
+  <div class="gsr-box">
+    <div class="gsr-input-row">
+      <span style="color:var(--vg);font-size:15px;flex-shrink:0;">🔍</span>
+      <input id="gsr-input" class="gsr-input" type="text" placeholder="Buscar clientes, leads, carteras..." oninput="gsrSearch(this.value)" autocomplete="off">
+      <span class="gsr-hint">ESC para cerrar</span>
+    </div>
+    <div id="gsr-results" class="gsr-results"></div>
+    <div class="gsr-footer"><span>↑↓ navegar</span><span>↵ abrir</span><span>Ctrl+K para buscar</span></div>
   </div>
 </div>
 
