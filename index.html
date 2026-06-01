@@ -539,6 +539,21 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
 /* ── export / historial toolbar buttons ── */
 .btn-toolbar{background:transparent;border:1px solid rgba(168,218,187,.25);border-radius:6px;color:var(--mint);font-size:11px;font-weight:600;font-family:'Inter',sans-serif;letter-spacing:.5px;padding:6px 12px;cursor:pointer;transition:all .15s;white-space:nowrap;}
 .btn-toolbar:hover{border-color:var(--mint);background:rgba(168,218,187,.06);}
+/* ── perfil quick-edit ── */
+.pf-edit-input{background:rgba(0,0,0,.25);border:none;border-bottom:1px solid rgba(168,218,187,.2);color:var(--cream);font-family:'Inter',sans-serif;font-size:12px;padding:4px 2px;width:100%;outline:none;}
+.pf-edit-input:focus{border-bottom-color:var(--mint);}
+select.pf-edit-input{cursor:pointer;}
+select.pf-edit-input option{background:#0D2924;}
+.pf-edit-label{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--vg);margin-bottom:3px;}
+.pf-edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;margin-bottom:10px;}
+.pf-save-btn{width:100%;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.3);border-radius:6px;color:var(--gold);font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:7px;cursor:pointer;transition:all .15s;}
+.pf-save-btn:hover{background:rgba(201,168,76,.2);}
+/* ── perfil reuniones ── */
+.pf-reunion-item{display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid rgba(168,218,187,.06);}
+.pf-reunion-item:last-child{border-bottom:none;}
+.pf-reunion-dot{width:6px;height:6px;border-radius:50%;background:#7b9ee0;flex-shrink:0;margin-top:4px;}
+.pf-reunion-date{font-size:10px;color:#7b9ee0;font-weight:600;}
+.pf-reunion-agenda{font-size:11px;color:var(--vg);margin-top:1px;}
 /* ── filtros avanzados ── */
 .filter-row{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:center;}
 .filter-row.hidden{display:none;}
@@ -1155,7 +1170,10 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
         <div class="perfil-nombre" id="pf-nombre"></div>
         <div class="perfil-sub" id="pf-sub"></div>
       </div>
-      <button class="perfil-close" onclick="closePerfil()">✕ Cerrar</button>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="perfil-close" style="background:rgba(201,168,76,.1);border-color:rgba(201,168,76,.3);color:var(--gold);" onclick="editClientFromPerfil()">✏ Editar</button>
+        <button class="perfil-close" onclick="closePerfil()">✕ Cerrar</button>
+      </div>
     </div>
     <div class="perfil-grid">
       <div class="perfil-panel">
@@ -1190,9 +1208,38 @@ td[contenteditable]:empty::before,span[contenteditable]:empty::before{content:'�
             <span id="pf-proximo-status" style="font-size:11px;"></span>
           </div>
         </div>
+        <div class="perfil-section">
+          <div class="ps-label">Editar rápido</div>
+          <div class="pf-edit-grid">
+            <div><div class="pf-edit-label">AUM (USD)</div><input id="pf-eq-aum" class="pf-edit-input" type="number" min="0" step="1000" placeholder="0"></div>
+            <div><div class="pf-edit-label">Riesgo</div>
+              <select id="pf-eq-riesgo" class="pf-edit-input">
+                <option value="">—</option>
+                <option value="Conservador">Conservador</option>
+                <option value="Moderado">Moderado</option>
+                <option value="Agresivo">Agresivo</option>
+              </select>
+            </div>
+            <div><div class="pf-edit-label">% Fee</div><input id="pf-eq-fee" class="pf-edit-input" type="number" min="0" max="10" step="0.1" placeholder="0.00"></div>
+            <div><div class="pf-edit-label">Seguimiento</div>
+              <select id="pf-eq-seg" class="pf-edit-input">
+                <option value="">—</option>
+                <option value="Mensual">Mensual</option>
+                <option value="Trimestral">Trimestral</option>
+                <option value="Semestral">Semestral</option>
+                <option value="Anual">Anual</option>
+              </select>
+            </div>
+          </div>
+          <button class="pf-save-btn" onclick="savePerfilEdits()">GUARDAR CAMBIOS</button>
+        </div>
       </div>
       <div class="perfil-panel">
         <button class="btn-registrar-contacto" onclick="registrarContactoHoy()">↻ &nbsp;Registrar contacto hoy</button>
+        <div class="perfil-section" style="margin-bottom:10px;">
+          <div class="ps-label">Próximas reuniones</div>
+          <div id="pf-reuniones"></div>
+        </div>
         <div id="pf-timeline" class="pf-timeline"></div>
         <div class="pf-nota-area">
           <textarea id="pf-nota-input" class="pf-nota-textarea" placeholder="Agregar nota..."></textarea>
@@ -2971,7 +3018,16 @@ function openPerfil(id){
   document.getElementById('pf-ult-row').innerHTML=row('Último contacto',c.ultimoContacto);
   document.getElementById('pf-proximo').value=c.proximoContacto||'';
   renderProximoStatus(c);
+  var aumRawEq=parseAUM(c.aum);
+  document.getElementById('pf-eq-aum').value=aumRawEq>0?aumRawEq:'';
+  var riesgoSel=document.getElementById('pf-eq-riesgo');
+  riesgoSel.value=['Conservador','Moderado','Agresivo'].indexOf(c.riesgo)>=0?c.riesgo:'';
+  var feeParsed=parseFloat(String(c.pctFee).replace(',','.'));
+  document.getElementById('pf-eq-fee').value=isNaN(feeParsed)?'':feeParsed;
+  var segSel=document.getElementById('pf-eq-seg');
+  segSel.value=['Mensual','Trimestral','Semestral','Anual'].indexOf(c.seguimiento)>=0?c.seguimiento:'';
   renderTimeline(id);
+  renderPerfilReuniones(id);
   document.getElementById('pf-nota-input').value='';
   document.getElementById('perfil-modal').classList.add('open');
   document.body.style.overflow='hidden';
@@ -2980,6 +3036,57 @@ function closePerfil(){
   document.getElementById('perfil-modal').classList.remove('open');
   document.body.style.overflow='';
   perfilClientId=null;
+}
+function editClientFromPerfil(){
+  var id=perfilClientId;
+  if(!id) return;
+  closePerfil();
+  editClient(id);
+}
+function savePerfilEdits(){
+  if(!perfilClientId) return;
+  var c=clients.find(function(x){return x.id===perfilClientId;});
+  if(!c) return;
+  var aumVal=parseFloat(document.getElementById('pf-eq-aum').value);
+  var feeVal=parseFloat(document.getElementById('pf-eq-fee').value);
+  if(!isNaN(feeVal)&&(feeVal<0||feeVal>10)){showToast('Fee debe estar entre 0 y 10%','err');return;}
+  if(!isNaN(aumVal)&&aumVal>=0) c.aum=String(aumVal);
+  var riesgoVal=document.getElementById('pf-eq-riesgo').value;
+  if(riesgoVal) c.riesgo=riesgoVal;
+  if(!isNaN(feeVal)&&feeVal>=0) c.pctFee=String(feeVal);
+  var segVal=document.getElementById('pf-eq-seg').value;
+  if(segVal) c.seguimiento=segVal;
+  saveToStorage();
+  _auditLog('edicion','cliente',c.nombre);
+  var aumRaw2=parseAUM(c.aum);
+  var aumFmt2=aumRaw2>=1e6?'$'+(aumRaw2/1e6).toFixed(1)+'M':aumRaw2>=1e3?'$'+Math.round(aumRaw2/1e3)+'k':aumRaw2>0?'$'+aumRaw2:(c.aum||'—');
+  document.getElementById('pf-aum').textContent=aumFmt2;
+  document.getElementById('pf-riesgo-m').textContent=c.riesgo||'—';
+  function row2(label,val){return val?'<span style="color:var(--vg)">'+label+':</span> <span>'+val+'</span>':'';}
+  document.getElementById('pf-seg-row').innerHTML=row2('Seguimiento',c.seguimiento);
+  var feeLabel2=(c.tipoFee||'')+(c.pctFee?' · '+c.pctFee:'');
+  document.getElementById('pf-fee-row').innerHTML=row2('Fee',feeLabel2||null);
+  render();
+  showToast('Cambios guardados ✓');
+}
+function renderPerfilReuniones(clientId){
+  var el=document.getElementById('pf-reuniones');
+  if(!el) return;
+  var reus=[];
+  try{reus=JSON.parse(localStorage.getItem('crm_reuniones')||'[]');}catch(e){}
+  var hoy=new Date(); hoy.setHours(0,0,0,0);
+  var proximas=reus.filter(function(r){
+    return String(r.clientId)===String(clientId)&&!r.done&&r.date&&new Date(r.date)>=hoy;
+  }).sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:0;}).slice(0,4);
+  if(!proximas.length){
+    el.innerHTML='<div style="color:var(--vg);font-size:11px;opacity:.55;padding:4px 0;">Sin reuniones pendientes</div>';
+    return;
+  }
+  el.innerHTML=proximas.map(function(r){
+    var d=new Date(r.date+'T12:00:00');
+    var ds=d.toLocaleDateString('es-AR',{weekday:'short',day:'2-digit',month:'2-digit'});
+    return '<div class="pf-reunion-item"><div class="pf-reunion-dot"></div><div><div class="pf-reunion-date">'+reuEsc(ds)+(r.time?' · '+reuEsc(r.time):'')+'</div>'+(r.agenda?'<div class="pf-reunion-agenda">'+reuEsc(r.agenda)+'</div>':'')+'</div></div>';
+  }).join('');
 }
 function registrarContactoHoy(){
   if(!perfilClientId) return;
