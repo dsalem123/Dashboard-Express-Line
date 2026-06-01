@@ -554,6 +554,20 @@ select.pf-edit-input option{background:#0D2924;}
 .pf-reunion-dot{width:6px;height:6px;border-radius:50%;background:#7b9ee0;flex-shrink:0;margin-top:4px;}
 .pf-reunion-date{font-size:10px;color:#7b9ee0;font-weight:600;}
 .pf-reunion-agenda{font-size:11px;color:var(--vg);margin-top:1px;}
+/* ── propuestas estado ── */
+.prop-estado-badge{display:inline-block;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:2px 6px;border-radius:3px;vertical-align:middle;}
+.prop-estado-borrador{background:rgba(107,133,120,.15);color:var(--vg);}
+.prop-estado-enviada{background:rgba(201,168,76,.12);color:var(--gold);}
+.prop-estado-aceptada{background:rgba(33,160,85,.15);color:var(--ok);}
+.prop-estado-rechazada{background:rgba(192,57,43,.15);color:var(--err);}
+.prop-estado-btns{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px;}
+.prop-estado-btn{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border-radius:3px;cursor:pointer;border:1px solid transparent;transition:opacity .15s;}
+.prop-estado-btn.borrador{background:rgba(107,133,120,.1);border-color:rgba(107,133,120,.3);color:var(--vg);}
+.prop-estado-btn.enviada{background:rgba(201,168,76,.08);border-color:rgba(201,168,76,.25);color:var(--gold);}
+.prop-estado-btn.aceptada{background:rgba(33,160,85,.1);border-color:rgba(33,160,85,.25);color:var(--ok);}
+.prop-estado-btn.rechazada{background:rgba(192,57,43,.1);border-color:rgba(192,57,43,.25);color:var(--err);}
+.prop-estado-btn:not(.sel){opacity:.45;}.prop-estado-btn:hover{opacity:.85;}
+.prop-list-aum{font-size:10px;color:var(--mint);margin-top:1px;}
 /* ── filtros avanzados ── */
 .filter-row{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:center;}
 .filter-row.hidden{display:none;}
@@ -663,13 +677,13 @@ select.pf-edit-input option{background:#0D2924;}
     <div class="kpi-label">En Apertura</div>
     <span class="kpi-val" id="kpi-apertura">—</span>
   </div>
-  <div class="kpi-item editable" onclick="startKPIEdit('kpi-facturacion')">
-    <div class="kpi-label">Facturación</div>
-    <span class="kpi-val" id="kpi-facturacion">—</span><span class="kpi-pencil">✏</span>
+  <div class="kpi-item">
+    <div class="kpi-label">Fee Anual Est.</div>
+    <span class="kpi-val" id="kpi-facturacion">—</span>
   </div>
-  <div class="kpi-item editable" onclick="startKPIEdit('kpi-aum')">
+  <div class="kpi-item">
     <div class="kpi-label">AUM Total</div>
-    <span class="kpi-val" id="kpi-aum">—</span><span class="kpi-pencil">✏</span>
+    <span class="kpi-val" id="kpi-aum">—</span>
   </div>
   <div class="kpi-item editable" onclick="startKPIEdit('kpi-objetivo')">
     <div class="kpi-label">Objetivo AUM</div>
@@ -971,6 +985,7 @@ select.pf-edit-input option{background:#0D2924;}
       <div class="prop-editor-hdr">
         <div class="prop-editor-hdr-left">
           <span class="prop-editor-title">Editor de Propuesta</span>
+          <div id="prop-editor-estado" class="prop-estado-btns"></div>
         </div>
         <div style="display:flex;gap:8px;">
           <button class="prop-btn-pdf" onclick="propDownloadPDF()">&#11015; Descargar PDF</button>
@@ -1674,7 +1689,7 @@ loadFromStorage();
 })();
 
 // ── KPI bar ──────────────────────────────────────────────────────────────────
-const _KPI_FIELDS = ['kpi-apertura','kpi-facturacion','kpi-aum','kpi-objetivo','kpi-tiempo'];
+const _KPI_FIELDS = ['kpi-apertura','kpi-objetivo','kpi-tiempo'];
 (function initKPIs(){
   _KPI_FIELDS.forEach(id=>{
     const el=document.getElementById(id);
@@ -2938,10 +2953,15 @@ function parseAUM(s){
 }
 function updateAutoAUM(){
   var total=clients.reduce(function(sum,c){return sum+parseAUM(c.aum);},0);
-  if(total){
-    var fmt=total>=1e6?'$'+(total/1e6).toFixed(1)+'M':total>=1e3?'$'+Math.round(total/1e3)+'k':'$'+Math.round(total);
-    document.getElementById('kpi-aum').textContent=fmt;
-  }
+  var aumFmt=total>=1e6?'$'+(total/1e6).toFixed(1)+'M':total>=1e3?'$'+Math.round(total/1e3)+'k':total>0?'$'+Math.round(total):'—';
+  document.getElementById('kpi-aum').textContent=aumFmt;
+  var feeTotal=clients.reduce(function(sum,c){
+    var aum=parseAUM(c.aum);
+    var pct=parseFloat(String(c.pctFee).replace('%','').replace(',','.'))||0;
+    return sum+aum*pct/100;
+  },0);
+  var feeFmt=feeTotal>=1e6?'$'+(feeTotal/1e6).toFixed(2)+'M/a':feeTotal>=1e3?'$'+Math.round(feeTotal/1e3)+'k/a':feeTotal>0?'$'+Math.round(feeTotal)+'/a':'—';
+  document.getElementById('kpi-facturacion').textContent=feeFmt;
   var enApertura=leads.filter(function(l){return l.estado==='En Proceso';}).length;
   document.getElementById('kpi-apertura').textContent=enApertura||'—';
 }
@@ -4259,11 +4279,20 @@ function propRenderSidebar(filterClient){
       (client?'Sin carteras para este cliente':'Seleccion&#225; un cliente')+'</div>';
     return;
   }
+  var _cls=(typeof clients!=='undefined'?clients:[]);
   el.innerHTML=list.map(function(p){
     var total=p.assets.reduce(function(s,a){return s+(parseFloat(a.pct)||0);},0);
+    var est=p.estado||'borrador';
+    var estLabels={borrador:'Borrador',enviada:'Enviada',aceptada:'Aceptada',rechazada:'Rechazada'};
+    var cl=_cls.find(function(c){return c.nombre===p.clientName;});
+    var aumRaw=cl?parseAUM(cl.aum):0;
+    var aumStr=aumRaw>=1e6?'$'+(aumRaw/1e6).toFixed(1)+'M':aumRaw>=1e3?'$'+Math.round(aumRaw/1e3)+'k':'';
     return '<div class="prop-list-item'+(p.id===PROP.activeId?' active':'')+'" onclick="propSelect(\''+reuEsc(p.id)+'\')">'+
-      '<div class="prop-list-name">'+reuEsc(p.name)+'</div>'+
-      '<div class="prop-list-client">'+reuEsc(p.clientName||'Sin cliente')+'</div>'+
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;">'+
+        '<div class="prop-list-name">'+reuEsc(p.name)+'</div>'+
+        '<span class="prop-estado-badge prop-estado-'+est+'">'+estLabels[est]+'</span>'+
+      '</div>'+
+      '<div class="prop-list-client">'+reuEsc(p.clientName||'Sin cliente')+(aumStr?'<span class="prop-list-aum"> · '+aumStr+'</span>':'')+'</div>'+
       '<div class="prop-list-total">'+total.toFixed(1)+'%</div>'+
     '</div>';
   }).join('');
@@ -4304,7 +4333,8 @@ function propRenderEditor(){
   if(empty)empty.style.display='none';
   var ni=document.getElementById('prop-doc-name');if(ni)ni.value=p.name;
   var meta=document.getElementById('prop-doc-meta');
-  if(meta)meta.textContent=(p.clientName||'—')+' · '+( p.createdAt||'');
+  if(meta)meta.textContent=(p.clientName||'—')+' · '+(p.createdAt||'');
+  propRenderEstadoSelector(p);
   var di=document.getElementById('prop-doc-desc');
   if(di){
     di.value=p.description||'';
@@ -4312,6 +4342,24 @@ function propRenderEditor(){
   }
   propRenderComp();
   propRenderChart();
+}
+
+function propRenderEstadoSelector(p){
+  var el=document.getElementById('prop-editor-estado');
+  if(!el||!p) return;
+  var est=p.estado||'borrador';
+  var opts=[['borrador','Borrador'],['enviada','Enviada'],['aceptada','Aceptada'],['rechazada','Rechazada']];
+  el.innerHTML=opts.map(function(o){
+    return '<button class="prop-estado-btn '+o[0]+(est===o[0]?' sel':'')+'" onclick="propSetEstado(\''+o[0]+'\')">'+o[1]+'</button>';
+  }).join('');
+}
+function propSetEstado(estado){
+  var p=propActive();if(!p)return;
+  p.estado=estado;
+  propSave();
+  propRenderEstadoSelector(p);
+  propRenderSidebar();
+  showToast('Estado: '+estado.charAt(0).toUpperCase()+estado.slice(1));
 }
 
 function propRenderComp(){
@@ -4514,7 +4562,7 @@ function propCreateFromModal(){
   if(_an.length!==new Set(_an).size){showToast('Hay activos con nombre duplicado',true);return;}
   var id='prop_'+Date.now();
   var today=new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'long',year:'numeric'});
-  PROP.proposals.unshift({id:id,clientName:clientName,name:name,description:desc,assets:assets,createdAt:today});
+  PROP.proposals.unshift({id:id,clientName:clientName,name:name,description:desc,assets:assets,createdAt:today,estado:'borrador'});
   PROP.activeId=id;
   propSave();
   propCloseModal();
