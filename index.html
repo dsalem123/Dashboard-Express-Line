@@ -1147,6 +1147,7 @@ var _sb=null,_sbReady=false,_sbLastPull=0,_sbPulling=false,_sbConnected=false,_s
 function _showApp(){
   var ov=document.getElementById('login-overlay');
   if(ov) ov.classList.add('hidden');
+  _startIdleTimer();
 }
 
 function _showLogin(msg){
@@ -1172,6 +1173,7 @@ async function _loginSubmit(){
 }
 
 async function _logout(){
+  _clearIdleTimer();
   if(!_sb)return;
   await _sb.auth.signOut();
   var btn=document.getElementById('login-btn');
@@ -1181,6 +1183,23 @@ async function _logout(){
   document.getElementById('login-email').value='';
   document.getElementById('login-password').value='';
   _showLogin('');
+}
+
+var _idleTimer=null;
+var _IDLE_MS=20*60*1000;
+function _clearIdleTimer(){
+  clearTimeout(_idleTimer);_idleTimer=null;
+  ['mousemove','keydown','click','touchstart'].forEach(function(ev){document.removeEventListener(ev,_resetIdleTimer);});
+}
+function _resetIdleTimer(){
+  if(_idleTimer===null)return;
+  clearTimeout(_idleTimer);
+  _idleTimer=setTimeout(function(){showToast('Sesión cerrada por inactividad',true);_logout();},_IDLE_MS);
+}
+function _startIdleTimer(){
+  _clearIdleTimer();
+  ['mousemove','keydown','click','touchstart'].forEach(function(ev){document.addEventListener(ev,_resetIdleTimer,{passive:true});});
+  _idleTimer=setTimeout(function(){showToast('Sesión cerrada por inactividad',true);_logout();},_IDLE_MS);
 }
 
 function _initSupabase(){
@@ -2470,6 +2489,10 @@ function saveRow(id){
   });
   c.comitente=parseInt(c.comitente)||c.comitente;
   if(c.ultimoContacto&&!/^\d{2}\/\d{2}\/\d{2,4}$/.test(c.ultimoContacto)&&!/^\d{4}-\d{2}-\d{2}$/.test(c.ultimoContacto)){c.ultimoContacto='';}
+  var _feeV=parseFloat(c.pctFee);
+  if(c.pctFee!==''&&(isNaN(_feeV)||_feeV<0||_feeV>10)){showToast('Fee debe ser un número entre 0 y 10',true);return;}
+  var _aumStr=(c.aum||'').toString().replace(/[$,\s]/g,'');
+  if(_aumStr!==''&&isNaN(parseFloat(_aumStr))){showToast('AUM inválido — ingresá solo números',true);return;}
   c.lastModified=Date.now();
   saveToStorage();
   showToast('Guardado ✓');
@@ -2518,8 +2541,9 @@ function updateSyncStatus(){
     else if(_sbEverConnected)parts.push('<span class="sync-dead"><span class="sync-dead-dot"></span><span class="sync-dead-txt">SIN CONEXIÓN</span></span>');
   }
   var ts=parseInt(localStorage.getItem('_sync_ts')||'0');
-  if(ts){var mins=Math.floor((Date.now()-ts)/60000);var color=mins<10?'#A8DABB':mins<60?'#C9A84C':'#6B8578';var txt=mins<1?'Vercel: ahora':mins<60?'Vercel: '+mins+'m':'Vercel: '+Math.floor(mins/60)+'h';parts.push('<span style="color:'+color+'">'+txt+'</span>');}
-  el.innerHTML=parts.join('<span style="color:#3A5A45;margin:0 4px;">·</span>');
+  if(ts){var mins=Math.floor((Date.now()-ts)/60000);var cls=mins<10?'color:var(--mint)':mins<60?'color:var(--gold)':'color:var(--vg)';var txt=mins<1?'Vercel: ahora':mins<60?'Vercel: '+mins+'m':'Vercel: '+Math.floor(mins/60)+'h';parts.push('<span style="'+cls+'">'+txt+'</span>');}
+  if(typeof _localModified!=='undefined'&&_localModified)parts.push('<span style="color:var(--gold)">● sin sincronizar</span>');
+  el.innerHTML=parts.join('<span style="color:var(--vg);margin:0 4px;">·</span>');
 }
 
 // ── PERFIL 360 ──────────────────────────────────────────────────────────────
@@ -3992,7 +4016,9 @@ function propCreateFromModal(){
     if(n||pct)assets.push({name:n,pct:pct});
   });
   var totalPct=assets.reduce(function(s,a){return s+(parseFloat(a.pct)||0);},0);
-  if(assets.length>0&&Math.abs(totalPct-100)>1){showToast('Los porcentajes deben sumar 100% (actual: '+totalPct.toFixed(1)+'%)',true);return;}
+  if(assets.length>0&&Math.abs(totalPct-100)>0.1){showToast('Los porcentajes deben sumar 100% (actual: '+totalPct.toFixed(1)+'%)',true);return;}
+  var _an=assets.map(function(a){return a.name.toLowerCase().trim();});
+  if(_an.length!==new Set(_an).size){showToast('Hay activos con nombre duplicado',true);return;}
   var id='prop_'+Date.now();
   var today=new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'long',year:'numeric'});
   PROP.proposals.unshift({id:id,clientName:clientName,name:name,description:desc,assets:assets,createdAt:today});
