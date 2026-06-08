@@ -110,7 +110,9 @@ FORMATO DE SALIDA — OBLIGATORIO:
 - PROHIBIDO usar # ## ### para títulos. Los títulos de sección van en MAYÚSCULAS, solos en su línea, seguidos de una línea en blanco.
 - Los subtítulos (ej: Estados Unidos, Europa) van en Mayúscula Inicial, solos en su línea, con dos guiones antes: "— Estados Unidos".
 - PROHIBIDO usar * para listas. El Resumen Ejecutivo usa numeración simple: "1.", "2.", etc. El resto del documento son párrafos corridos.
-- Reservá el uso de negrita (**texto**) ÚNICAMENTE para nombres de activos financieros o índices la primera vez que aparecen en cada sección. Máximo 2 negritas por párrafo.
+- Para destacar nombres de activos o índices usá *texto* (un asterisco antes y uno después, no dos). Máximo 2 por párrafo. NUNCA uses **texto** con dos asteriscos.
+- El primer subtítulo de la sección MERCADOS GLOBALES debe describir el contenido real del párrafo (ej: "— Desempeño de índices en la semana", "— Caída generalizada en renta variable"). No uses "Estados Unidos" como primer subtítulo si el párrafo habla de índices globales.
+- La frase "No hubo información relevante esta semana al respecto." SOLO se usa dentro de una sección específica cuando no hay datos para ella. PROHIBIDO usarla como línea final suelta o de cierre del documento.
 - Separá cada sección principal con una línea de guiones: "────────────────────────────────"
 - Párrafos de mínimo 4 oraciones, fluidos, sin viñetas ni sub-listas dentro del cuerpo.
 - Tono: documento institucional de banca privada. Sin exclamaciones ni lenguaje coloquial.\n\n`;
