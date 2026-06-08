@@ -15,24 +15,31 @@ export default async function handler(req, res) {
   let sysPrompt  = splitIdx > -1 ? rawPrompt.slice(0, splitIdx) : rawPrompt;
   let newsBlock  = splitIdx > -1 ? rawPrompt.slice(splitIdx)    : '';
 
-  // Limitar noticias: max 4 artículos por fuente, solo título (sin descripción)
+  // Limitar noticias: max 3 artículos por fuente, título + descripción 90 chars
   if (newsBlock) {
     newsBlock = newsBlock
       .split(/(?=### [A-Z])/g)
       .map(section => {
-        const lines = section.split('\n');
-        const items = lines.filter(l => l.startsWith('- ['));
-        const rest  = lines.filter(l => !l.startsWith('- ['));
-        const trimmed = items.slice(0, 4).map(l => {
-          const m = l.match(/^- \[.*?\] \*\*(.*?)\*\*/);
-          return m ? `- ${m[1]}` : l.slice(0, 120);
+        const lines   = section.split('\n');
+        const items   = lines.filter(l => l.startsWith('- ['));
+        const rest    = lines.filter(l => !l.startsWith('- ['));
+        const trimmed = items.slice(0, 3).map(l => {
+          const mFull = l.match(/^- \[.*?\] \*\*(.*?)\*\*(?:: (.+))?$/);
+          if (mFull) {
+            const title = mFull[1] || '';
+            const desc  = mFull[2] ? ': ' + mFull[2].slice(0, 90) : '';
+            return `- ${title}${desc}`;
+          }
+          return l.slice(0, 150);
         });
         return [...rest, ...trimmed].join('\n');
       })
       .join('');
   }
 
-  const prompt = (sysPrompt + newsBlock).slice(0, 28000);
+  const antiRep = `\nREGLAS ADICIONALES DE REDACCIÓN:\n- Cada párrafo debe incluir al menos un dato concreto (número, porcentaje, fecha, nombre).\n- Prohibido usar "sigue siendo", "sigue experimentando", "sigue trabajando". Usá verbos de acción específicos.\n- Cada sección debe ser diferente a las demás. No repitas estructuras de oración.\n- Si no hay datos concretos disponibles, escribí exactamente: "No hubo información relevante esta semana al respecto."\n\n`;
+
+  const prompt = (antiRep + sysPrompt + newsBlock).slice(0, 28000);
 
   const key = process.env.GROQ_API_KEY;
   if (!key) return res.status(500).json({ error: 'GROQ_API_KEY no configurada en Vercel' });
