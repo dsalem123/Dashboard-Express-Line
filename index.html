@@ -976,22 +976,42 @@ select.pf-edit-input option{background:#0D2924;}
 
     <div id="rs-result" style="display:none;flex-direction:column;gap:16px;">
       <div id="rs-stats" style="display:flex;gap:12px;flex-wrap:wrap;"></div>
-      <div style="background:rgba(168,218,187,.04);border:1px solid rgba(168,218,187,.12);border-radius:10px;overflow:hidden;">
+
+      <!-- Boton generar -->
+      <button onclick="generarConIA()" id="rs-gen-btn"
+        style="background:linear-gradient(135deg,rgba(201,168,76,.2) 0%,rgba(201,168,76,.1) 100%);border:1px solid rgba(201,168,76,.5);color:var(--gold);font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;padding:16px 40px;border-radius:8px;cursor:pointer;transition:all .2s;align-self:flex-start;"
+        onmouseover="this.style.background='linear-gradient(135deg,rgba(201,168,76,.35) 0%,rgba(201,168,76,.2) 100%)';this.style.borderColor='rgba(201,168,76,.8)'"
+        onmouseout="this.style.background='linear-gradient(135deg,rgba(201,168,76,.2) 0%,rgba(201,168,76,.1) 100%)';this.style.borderColor='rgba(201,168,76,.5)'">
+        Generar Reporte
+      </button>
+
+      <!-- Loading IA -->
+      <div id="rs-gen-loading" style="display:none;background:rgba(168,218,187,.04);border:1px solid rgba(168,218,187,.12);border-radius:10px;padding:28px;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--mint);margin-bottom:14px;">Generando reporte con IA...</div>
+        <div style="height:3px;background:rgba(168,218,187,.12);border-radius:3px;overflow:hidden;">
+          <div id="rs-gen-fill" style="height:100%;background:linear-gradient(90deg,var(--mint),var(--gold));width:0%;transition:width .6s;border-radius:3px;"></div>
+        </div>
+        <div style="font-size:11px;color:var(--vg);margin-top:10px;">Esto puede tomar hasta 30 segundos...</div>
+      </div>
+
+      <!-- Reporte generado -->
+      <div id="rs-report-area" style="display:none;background:rgba(168,218,187,.04);border:1px solid rgba(168,218,187,.12);border-radius:10px;overflow:hidden;">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid rgba(168,218,187,.1);">
           <div>
-            <div style="font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--gold);">Prompt generado</div>
-            <div style="font-size:10px;color:var(--vg);margin-top:3px;">Copía este prompt y pegalo en Claude.ai para generar el reporte</div>
+            <div style="font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--gold);">Briefing Semanal generado</div>
+            <div id="rs-token-info" style="font-size:10px;color:var(--vg);margin-top:3px;"></div>
           </div>
-          <button onclick="copiarPromptRS()" id="rs-copy-btn"
+          <button onclick="copiarReporteRS()" id="rs-copy-report-btn"
             style="background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.3);color:var(--gold);font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:8px 20px;border-radius:20px;cursor:pointer;transition:background .2s;white-space:nowrap;"
             onmouseover="this.style.background='rgba(201,168,76,.25)'" onmouseout="this.style.background='rgba(201,168,76,.12)'">
-            Copiar Prompt
+            Copiar Reporte
           </button>
         </div>
-        <textarea id="rs-prompt-ta" readonly
-          style="width:100%;height:440px;background:transparent;border:none;color:rgba(236,237,227,.65);font-family:'Courier New',monospace;font-size:11px;line-height:1.75;padding:20px 22px;resize:vertical;outline:none;"></textarea>
+        <div id="rs-report-content" style="padding:24px 28px;color:var(--cream);font-family:'Inter',sans-serif;font-size:13px;line-height:1.8;max-height:700px;overflow-y:auto;white-space:pre-wrap;"></div>
       </div>
+
       <div id="rs-source-status" style="display:flex;flex-wrap:wrap;gap:8px;padding:4px 0;"></div>
+      <textarea id="rs-prompt-ta" style="display:none;"></textarea>
     </div>
 
   </div>
@@ -5043,11 +5063,65 @@ function assembleNewsBlock(data) {
 function copiarPromptRS() {
   var ta  = document.getElementById('rs-prompt-ta');
   var btn = document.getElementById('rs-copy-btn');
+  if (!btn) return;
   navigator.clipboard.writeText(ta.value).then(function() {
     var orig = btn.textContent;
     btn.textContent = '\u2713 Copiado';
     setTimeout(function(){ btn.textContent = orig; }, 2000);
   }).catch(function() { ta.select(); document.execCommand('copy'); });
+}
+
+function generarConIA() {
+  var prompt = document.getElementById('rs-prompt-ta').value;
+  if (!prompt) { alert('Primero prepar\u00e1 los datos'); return; }
+  var genBtn = document.getElementById('rs-gen-btn');
+  var loading = document.getElementById('rs-gen-loading');
+  var reportArea = document.getElementById('rs-report-area');
+  genBtn.style.display = 'none';
+  loading.style.display = 'block';
+  reportArea.style.display = 'none';
+  var fill = document.getElementById('rs-gen-fill');
+  fill.style.width = '0%';
+  var prog = 0;
+  var pi = setInterval(function() { prog = Math.min(prog + 0.8, 90); fill.style.width = prog + '%'; }, 300);
+  fetch('/api/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt: prompt })
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      clearInterval(pi);
+      fill.style.width = '100%';
+      setTimeout(function() {
+        loading.style.display = 'none';
+        genBtn.style.display = 'block';
+        if (data.error) { alert('Error: ' + data.error); return; }
+        document.getElementById('rs-report-content').textContent = data.report;
+        if (data.tokens) {
+          document.getElementById('rs-token-info').textContent =
+            'Tokens entrada: ' + (data.tokens.input || '?') + ' \u00b7 salida: ' + (data.tokens.output || '?');
+        }
+        reportArea.style.display = 'block';
+        reportArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 300);
+    })
+    .catch(function(err) {
+      clearInterval(pi);
+      loading.style.display = 'none';
+      genBtn.style.display = 'block';
+      alert('Error de conexi\u00f3n: ' + err.message);
+    });
+}
+
+function copiarReporteRS() {
+  var txt = document.getElementById('rs-report-content').textContent;
+  var btn = document.getElementById('rs-copy-report-btn');
+  navigator.clipboard.writeText(txt).then(function() {
+    var orig = btn.textContent;
+    btn.textContent = '\u2713 Copiado';
+    setTimeout(function(){ btn.textContent = orig; }, 2000);
+  });
 }
 </script>
 
