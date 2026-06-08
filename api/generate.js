@@ -7,38 +7,36 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).end();
 
-  const key = process.env.GEMINI_API_KEY;
-  if (!key) return res.status(500).json({ error: 'GEMINI_API_KEY no configurada en Vercel' });
+  const key = process.env.GROQ_API_KEY;
+  if (!key) return res.status(500).json({ error: 'GROQ_API_KEY no configurada en Vercel' });
 
   const { prompt } = req.body || {};
   if (!prompt) return res.status(400).json({ error: 'prompt requerido' });
 
-  const r = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${key}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.2,
-          maxOutputTokens: 8192,
-          topP: 0.85,
-        },
-      }),
-      signal: AbortSignal.timeout(55000),
-    }
-  );
+  const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${key}`,
+    },
+    body: JSON.stringify({
+      model: 'llama-3.3-70b-versatile',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.2,
+      max_tokens: 8192,
+    }),
+    signal: AbortSignal.timeout(55000),
+  });
 
   if (!r.ok) {
     const err = await r.text();
-    return res.status(r.status).json({ error: `Gemini error ${r.status}: ${err}` });
+    return res.status(r.status).json({ error: `Groq error ${r.status}: ${err}` });
   }
 
   const data  = await r.json();
-  const text  = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  const block = data?.usageMetadata || {};
+  const text  = data?.choices?.[0]?.message?.content || '';
+  const usage = data?.usage || {};
 
   res.setHeader('Cache-Control', 'no-store');
-  res.json({ report: text, tokens: { input: block.promptTokenCount, output: block.candidatesTokenCount } });
+  res.json({ report: text, tokens: { input: usage.prompt_tokens, output: usage.completion_tokens } });
 }
