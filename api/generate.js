@@ -40,7 +40,7 @@ async function fetchMarketData() {
     const price = meta.regularMarketPrice;
     const closes = (result?.indicators?.quote?.[0]?.close || []).filter(c => c != null);
     const prevClose = meta.previousClose ?? (closes.length >= 2 ? closes[closes.length - 2] : price);
-    const weekOpen  = closes.length >= 5 ? closes[closes.length - 5] : (closes[0] ?? price);
+    const weekOpen  = closes.length > 0 ? closes[0] : price;
 
     const dailyPct  = prevClose ? ((price - prevClose) / prevClose * 100).toFixed(2) : '?';
     const weeklyPct = weekOpen  ? ((price - weekOpen)  / weekOpen  * 100).toFixed(2) : '?';
@@ -104,6 +104,7 @@ export default async function handler(req, res) {
 4. PROHIBIDO usar los valores de los ejemplos del prompt (XXXX, X,X%) — son placeholders.
 5. Cada párrafo debe referenciar datos REALES de los bloques provistos.
 6. No repitas la misma estructura de oración en párrafos consecutivos.
+7. PROHIBIDO caracterizar movimientos con palabras vagas: nunca uses "estable", "leve", "moderado", "ligero" sin acompañarlo del porcentaje exacto. Un -3% es una caída, no una caída "leve". Un -0.5% puede describirse como "marginal" SOLO si incluís el número.
 
 FORMATO DE SALIDA — OBLIGATORIO:
 - La primera línea del documento debe ser el título: "BRIEFING SEMANAL OFFSHORE" seguido de una línea en blanco y la fecha en formato "08 de junio de 2026".
