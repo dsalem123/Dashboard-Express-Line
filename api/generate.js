@@ -7,8 +7,28 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { prompt } = req.body || {};
-  if (!prompt) return res.status(400).json({ error: 'prompt requerido' });
+  const { prompt: rawPrompt } = req.body || {};
+  if (!rawPrompt) return res.status(400).json({ error: 'prompt requerido' });
+
+  // Separar prompt del sistema y bloque de noticias
+  const splitIdx = rawPrompt.indexOf('---\n## NOTICIAS RECOPILADAS');
+  let sysPrompt  = splitIdx > -1 ? rawPrompt.slice(0, splitIdx) : rawPrompt;
+  let newsBlock  = splitIdx > -1 ? rawPrompt.slice(splitIdx)    : '';
+
+  // Limitar noticias: max 3 artículos por fuente, descripción a 180 chars
+  if (newsBlock) {
+    newsBlock = newsBlock
+      .split(/(?=### [A-Z])/g)
+      .map(section => {
+        const lines  = section.split('\n');
+        const items  = lines.filter(l => l.startsWith('- ['));
+        const rest   = lines.filter(l => !l.startsWith('- ['));
+        return [...rest, ...items.slice(0, 3).map(l => l.slice(0, 220))].join('\n');
+      })
+      .join('');
+  }
+
+  const prompt = (sysPrompt + newsBlock).slice(0, 36000);
 
   const key = process.env.GROQ_API_KEY;
   if (!key) return res.status(500).json({ error: 'GROQ_API_KEY no configurada en Vercel' });
