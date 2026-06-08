@@ -15,20 +15,24 @@ export default async function handler(req, res) {
   let sysPrompt  = splitIdx > -1 ? rawPrompt.slice(0, splitIdx) : rawPrompt;
   let newsBlock  = splitIdx > -1 ? rawPrompt.slice(splitIdx)    : '';
 
-  // Limitar noticias: max 3 artículos por fuente, descripción a 180 chars
+  // Limitar noticias: max 4 artículos por fuente, solo título (sin descripción)
   if (newsBlock) {
     newsBlock = newsBlock
       .split(/(?=### [A-Z])/g)
       .map(section => {
-        const lines  = section.split('\n');
-        const items  = lines.filter(l => l.startsWith('- ['));
-        const rest   = lines.filter(l => !l.startsWith('- ['));
-        return [...rest, ...items.slice(0, 3).map(l => l.slice(0, 220))].join('\n');
+        const lines = section.split('\n');
+        const items = lines.filter(l => l.startsWith('- ['));
+        const rest  = lines.filter(l => !l.startsWith('- ['));
+        const trimmed = items.slice(0, 4).map(l => {
+          const m = l.match(/^- \[.*?\] \*\*(.*?)\*\*/);
+          return m ? `- ${m[1]}` : l.slice(0, 120);
+        });
+        return [...rest, ...trimmed].join('\n');
       })
       .join('');
   }
 
-  const prompt = (sysPrompt + newsBlock).slice(0, 36000);
+  const prompt = (sysPrompt + newsBlock).slice(0, 28000);
 
   const key = process.env.GROQ_API_KEY;
   if (!key) return res.status(500).json({ error: 'GROQ_API_KEY no configurada en Vercel' });
@@ -40,7 +44,7 @@ export default async function handler(req, res) {
       'Authorization': `Bearer ${key}`,
     },
     body: JSON.stringify({
-      model: 'llama-3.1-8b-instant',
+      model: 'llama-3.3-70b-versatile',
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.2,
       max_tokens: 8192,
