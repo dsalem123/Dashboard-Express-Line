@@ -20,7 +20,7 @@ export default async function handler(req, res) {
       'Authorization': `Bearer ${key}`,
     },
     body: JSON.stringify({
-      model: 'llama-3.3-70b-versatile',
+      model: 'llama-3.1-8b-instant',
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.2,
       max_tokens: 8192,
