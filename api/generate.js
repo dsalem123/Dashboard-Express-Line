@@ -103,7 +103,17 @@ export default async function handler(req, res) {
 3. PROHIBIDO mezclar datos de diferentes períodos o fuentes no proporcionadas.
 4. PROHIBIDO usar los valores de los ejemplos del prompt (XXXX, X,X%) — son placeholders.
 5. Cada párrafo debe referenciar datos REALES de los bloques provistos.
-6. No repitas la misma estructura de oración en párrafos consecutivos.\n\n`;
+6. No repitas la misma estructura de oración en párrafos consecutivos.
+
+FORMATO DE SALIDA — OBLIGATORIO:
+- La primera línea del documento debe ser el título: "BRIEFING SEMANAL OFFSHORE" seguido de una línea en blanco y la fecha en formato "08 de junio de 2026".
+- PROHIBIDO usar # ## ### para títulos. Los títulos de sección van en MAYÚSCULAS, solos en su línea, seguidos de una línea en blanco.
+- Los subtítulos (ej: Estados Unidos, Europa) van en Mayúscula Inicial, solos en su línea, con dos guiones antes: "— Estados Unidos".
+- PROHIBIDO usar * para listas. El Resumen Ejecutivo usa numeración simple: "1.", "2.", etc. El resto del documento son párrafos corridos.
+- Reservá el uso de negrita (**texto**) ÚNICAMENTE para nombres de activos financieros o índices la primera vez que aparecen en cada sección. Máximo 2 negritas por párrafo.
+- Separá cada sección principal con una línea de guiones: "────────────────────────────────"
+- Párrafos de mínimo 4 oraciones, fluidos, sin viñetas ni sub-listas dentro del cuerpo.
+- Tono: documento institucional de banca privada. Sin exclamaciones ni lenguaje coloquial.\n\n`;
 
   const prompt = (antiHallucination + sysPrompt + '\n\n' + marketBlock + newsBlock).slice(0, 30000);
 
