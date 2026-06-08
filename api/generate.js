@@ -7,36 +7,27 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).end();
 
-  const key = process.env.GROQ_API_KEY;
-  if (!key) return res.status(500).json({ error: 'GROQ_API_KEY no configurada en Vercel' });
-
   const { prompt } = req.body || {};
   if (!prompt) return res.status(400).json({ error: 'prompt requerido' });
 
-  const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+  const r = await fetch('https://text.pollinations.ai/', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${key}`,
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'llama-3.3-70b-versatile',
       messages: [{ role: 'user', content: prompt }],
-      temperature: 0.2,
-      max_tokens: 8192,
+      model: 'openai',
+      seed: 42,
+      private: true,
     }),
     signal: AbortSignal.timeout(55000),
   });
 
   if (!r.ok) {
     const err = await r.text();
-    return res.status(r.status).json({ error: `Groq error ${r.status}: ${err}` });
+    return res.status(r.status).json({ error: `Error ${r.status}: ${err}` });
   }
 
-  const data  = await r.json();
-  const text  = data?.choices?.[0]?.message?.content || '';
-  const usage = data?.usage || {};
-
+  const text = await r.text();
   res.setHeader('Cache-Control', 'no-store');
-  res.json({ report: text, tokens: { input: usage.prompt_tokens, output: usage.completion_tokens } });
+  res.json({ report: text });
 }
