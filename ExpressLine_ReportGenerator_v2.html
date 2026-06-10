@@ -100,8 +100,9 @@
 
   <div class="card">
     <h2>Datos del Reporte</h2>
-    <div class="grid3" style="grid-template-columns:1fr;">
-      <div class="fg"><label>Fecha de Datos</label><input id="fd" placeholder="Ej: 11 de Marzo, 2026"><small style="color:var(--vg);font-size:10px;margin-top:4px;display:block;">El cliente y período se detectan automáticamente del archivo de Balances</small></div>
+    <div class="grid3" style="grid-template-columns:1fr 1fr;">
+      <div class="fg"><label>Nombre del Cliente</label><input id="cn-manual" placeholder="Ej: ARVE Holdings Ltd"><small style="color:var(--vg);font-size:10px;margin-top:4px;display:block;">Opcional — reemplaza la detección automática</small></div>
+      <div class="fg"><label>Fecha de Datos</label><input id="fd" placeholder="Ej: 11 de Marzo, 2026"><small style="color:var(--vg);font-size:10px;margin-top:4px;display:block;">Período detectado automáticamente del archivo de Balances</small></div>
     </div>
   </div>
 
@@ -168,8 +169,9 @@
 
     <div class="card">
       <h2>Datos del Reporte</h2>
-      <div class="grid3" style="grid-template-columns:1fr;">
-        <div class="fg"><label>Fecha de Datos</label><input id="fd2" placeholder="Ej: 11 de Marzo, 2026"><small style="color:var(--vg);font-size:10px;margin-top:4px;display:block;">El cliente y período se detectan automáticamente del archivo de Posiciones</small></div>
+      <div class="grid3" style="grid-template-columns:1fr 1fr;">
+        <div class="fg"><label>Nombre del Cliente</label><input id="cn-manual2" placeholder="Ej: ARVE Holdings Ltd"><small style="color:var(--vg);font-size:10px;margin-top:4px;display:block;">Opcional — reemplaza la detección automática</small></div>
+        <div class="fg"><label>Fecha de Datos</label><input id="fd2" placeholder="Ej: 11 de Marzo, 2026"><small style="color:var(--vg);font-size:10px;margin-top:4px;display:block;">Período detectado automáticamente del archivo de Posiciones</small></div>
       </div>
     </div>
 
@@ -735,6 +737,8 @@ function gen() {
       }
       if (!autoclient || autoclient === 'Cliente') autoclient = cn;
       if (!autoperiod || autoperiod === 'Período') autoperiod = per;
+      var cnManual = (document.getElementById('cn-manual').value || '').trim();
+      if (cnManual) autoclient = cnManual;
       const posItems = parsePosiciones();
       const bal      = parseBalances();
       const res      = parseResultados();
@@ -1246,6 +1250,9 @@ function genSimple() {
           }
         }
       }
+
+      var cnManual2 = (document.getElementById('cn-manual2').value || '').trim();
+      if (cnManual2) autoclient = cnManual2;
 
       var logoEl2     = document.getElementById('app-logo');
       var logoSrc     = logoEl2 ? logoEl2.src : '';
