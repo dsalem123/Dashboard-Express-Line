@@ -911,38 +911,22 @@ function buildHTML(cn, per, fd, posItems, bal, res, precios, sem, logoSrc, darkL
   if (sem && sem.full) {
     var FIXED = ['Lo Mas Relevante de la Semana','Mercados Globales','Geopolítica Global','Estados Unidos y Mercados Emergentes'];
     var buckets = ['','','',''];
+    // Match only when the WHOLE line is a section title (prevents matching "Estados Unidos" inside a sentence)
     var detectBucketSem = function(t) {
-      var l = t.toLowerCase();
-      if (l.indexOf('relevante') >= 0) return 0;
-      if (l.indexOf('mercados globales') >= 0) return 1;
-      if (l.indexOf('geopol') >= 0) return 2;
-      if (l.indexOf('estados unidos') >= 0) return 3;
+      var l = t.toLowerCase().replace(/[:\s]+$/, '').trim();
+      if (/^lo m[aá]s relevante(\s+de\s+la\s+semana)?$/.test(l)) return 0;
+      if (/^mercados globales$/.test(l)) return 1;
+      if (/^geopol[ií]tica(\s+(global|y\s+commodities))?$/.test(l)) return 2;
+      if (/^estados unidos(\s+y\s+mercados\s+emergentes)?$/.test(l)) return 3;
       return -1;
-    }
-    var hRx = /(Lo M[aá]s Relevante(?:\s+de\s+la\s+Semana)?|Mercados Globales|Geopol[ií]tica\s+(?:Global|y\s+Commodities)|Estados Unidos(?:\s+y\s+Mercados\s+Emergentes)?)\s*:?/g;
-    var fullText = sem.full.trim();
-    var tokens = [];
-    var lastIdx = 0;
-    var mH;
-    while ((mH = hRx.exec(fullText)) !== null) {
-      if (mH.index > lastIdx) tokens.push({type:'content', text:fullText.slice(lastIdx, mH.index).trim()});
-      tokens.push({type:'header', text:mH[1].trim()});
-      lastIdx = mH.index + mH[0].length;
-    }
-    if (lastIdx < fullText.length) tokens.push({type:'content', text:fullText.slice(lastIdx).trim()});
+    };
     var curB = -1;
-    var subRx = /^(EE\.UU\.|Internacionales|Europa|Asia|Mercados Emergentes|Econom[ií]a EE\.UU\.|En s[ií]ntesis)\s*:?/i;
-    tokens.forEach(function(tok) {
-      if (tok.type === 'header') {
-        var b = detectBucketSem(tok.text);
-        if (b >= 0) curB = b;
-      } else if (tok.text && curB >= 0) {
-        tok.text.split('\n').forEach(function(line) {
-          var l = line.trim();
-          if (!l) return;
-          buckets[curB] += l.replace(subRx, '').trim() + ' ';
-        });
-      }
+    sem.full.split('\n').forEach(function(line) {
+      var l = line.trim();
+      if (!l) return;
+      var b = detectBucketSem(l);
+      if (b >= 0) { curB = b; }
+      else if (curB >= 0) { buckets[curB] += l + ' '; }
     });
     semHTML += '<div class="ib"><h4>' + FIXED[0] + '</h4><p>' + (buckets[0].trim()||'Sin datos.') + '</p></div>';
     semHTML += '<h3 class="ss">' + FIXED[1] + '</h3><p>' + (buckets[1].trim()||'Sin datos.') + '</p>';
@@ -1368,37 +1352,20 @@ function buildSimpleHTML(cn, per, fd, posItems, precios, sem, logoSrc, totalMV, 
     var FIXED2 = ['Lo Mas Relevante de la Semana','Mercados Globales','Geopolítica Global','Estados Unidos y Mercados Emergentes'];
     var buckets2 = ['','','',''];
     var detectBucketSem2 = function(t) {
-      var l = t.toLowerCase();
-      if (l.indexOf('relevante') >= 0) return 0;
-      if (l.indexOf('mercados globales') >= 0) return 1;
-      if (l.indexOf('geopol') >= 0) return 2;
-      if (l.indexOf('estados unidos') >= 0) return 3;
+      var l = t.toLowerCase().replace(/[:\s]+$/, '').trim();
+      if (/^lo m[aá]s relevante(\s+de\s+la\s+semana)?$/.test(l)) return 0;
+      if (/^mercados globales$/.test(l)) return 1;
+      if (/^geopol[ií]tica(\s+(global|y\s+commodities))?$/.test(l)) return 2;
+      if (/^estados unidos(\s+y\s+mercados\s+emergentes)?$/.test(l)) return 3;
       return -1;
-    }
-    var hRx2 = /(Lo M[aá]s Relevante(?:\s+de\s+la\s+Semana)?|Mercados Globales|Geopol[ií]tica\s+(?:Global|y\s+Commodities)|Estados Unidos(?:\s+y\s+Mercados\s+Emergentes)?)\s*:?/g;
-    var fullText2 = sem.full.trim();
-    var tokens2 = [];
-    var lastIdx2 = 0;
-    var mH2;
-    while ((mH2 = hRx2.exec(fullText2)) !== null) {
-      if (mH2.index > lastIdx2) tokens2.push({type:'content', text:fullText2.slice(lastIdx2, mH2.index).trim()});
-      tokens2.push({type:'header', text:mH2[1].trim()});
-      lastIdx2 = mH2.index + mH2[0].length;
-    }
-    if (lastIdx2 < fullText2.length) tokens2.push({type:'content', text:fullText2.slice(lastIdx2).trim()});
+    };
     var curB2 = -1;
-    var subRx2 = /^(EE\.UU\.|Internacionales|Europa|Asia|Mercados Emergentes|Econom[ií]a EE\.UU\.|En s[ií]ntesis)\s*:?/i;
-    tokens2.forEach(function(tok) {
-      if (tok.type === 'header') {
-        var b = detectBucketSem2(tok.text);
-        if (b >= 0) curB2 = b;
-      } else if (tok.text && curB2 >= 0) {
-        tok.text.split('\n').forEach(function(line) {
-          var l = line.trim();
-          if (!l) return;
-          buckets2[curB2] += l.replace(subRx2, '').trim() + ' ';
-        });
-      }
+    sem.full.split('\n').forEach(function(line) {
+      var l = line.trim();
+      if (!l) return;
+      var b = detectBucketSem2(l);
+      if (b >= 0) { curB2 = b; }
+      else if (curB2 >= 0) { buckets2[curB2] += l + ' '; }
     });
     semHTML += '<div class="ib"><h4>' + FIXED2[0] + '</h4><p>' + (buckets2[0].trim()||'Sin datos.') + '</p></div>';
     semHTML += '<h3 class="ss">' + FIXED2[1] + '</h3><p>' + (buckets2[1].trim()||'Sin datos.') + '</p>';
