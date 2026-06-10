@@ -306,15 +306,15 @@ function parsePosiciones() {
   const rows = D.pos.sheets[D.pos.names[0]];
   var hIdx = -1;
   for (var i = 0; i < rows.length; i++) {
-    if (rows[i] && rows[i].some(function(c) { return c && (String(c).indexOf('Security Description') >= 0 || String(c).indexOf('DESCRIPTION') >= 0); })) {
+    if (rows[i] && rows[i].some(function(c) { return c && (String(c).indexOf('Security Description') >= 0 || String(c).toUpperCase().indexOf('DESCRIPTION') >= 0); })) {
       hIdx = i; break;
     }
   }
   if (hIdx < 0) hIdx = 6;
   const h = rows[hIdx].map(function(c) { return String(c || '').trim(); });
-  const iDesc   = h.findIndex(function(c) { return c.indexOf('Security Description') >= 0 || c.indexOf('DESCRIPTION') >= 0; });
+  const iDesc   = h.findIndex(function(c) { return c.indexOf('Security Description') >= 0 || c.toUpperCase().indexOf('DESCRIPTION') >= 0; });
   const iType   = h.findIndex(function(c) { return c.indexOf('Security Type') >= 0; });
-  const iSymbol = h.findIndex(function(c) { return c === 'SYMBOL'; });
+  const iSymbol = h.findIndex(function(c) { return c.toUpperCase() === 'SYMBOL'; });
   const iMV     = h.findIndex(function(c) { return c.indexOf('Market Value (USDE)') >= 0 || c.indexOf('Market Value (Position') >= 0 || (c.indexOf('POSITION VALUE') >= 0 && c.indexOf('USDE') >= 0); });
   var iMVfinal  = iMV >= 0 ? iMV : h.findIndex(function(c) { return c.indexOf('POSITION VALUE') >= 0; });
 
