@@ -919,7 +919,7 @@ function buildHTML(cn, per, fd, posItems, bal, res, precios, sem, logoSrc, darkL
       if (l.indexOf('estados unidos') >= 0) return 3;
       return -1;
     }
-    var hRx = /(Lo M[aá]s Relevante(?:\s+de\s+la\s+Semana)?|Mercados Globales|Geopol[ií]tica\s+(?:Global|y\s+Commodities)|Estados Unidos(?:\s+y\s+Mercados\s+Emergentes)?)\s*:/g;
+    var hRx = /(Lo M[aá]s Relevante(?:\s+de\s+la\s+Semana)?|Mercados Globales|Geopol[ií]tica\s+(?:Global|y\s+Commodities)|Estados Unidos(?:\s+y\s+Mercados\s+Emergentes)?)\s*:?/g;
     var fullText = sem.full.trim();
     var tokens = [];
     var lastIdx = 0;
@@ -1375,7 +1375,7 @@ function buildSimpleHTML(cn, per, fd, posItems, precios, sem, logoSrc, totalMV, 
       if (l.indexOf('estados unidos') >= 0) return 3;
       return -1;
     }
-    var hRx2 = /(Lo M[aá]s Relevante(?:\s+de\s+la\s+Semana)?|Mercados Globales|Geopol[ií]tica\s+(?:Global|y\s+Commodities)|Estados Unidos(?:\s+y\s+Mercados\s+Emergentes)?)\s*:/g;
+    var hRx2 = /(Lo M[aá]s Relevante(?:\s+de\s+la\s+Semana)?|Mercados Globales|Geopol[ií]tica\s+(?:Global|y\s+Commodities)|Estados Unidos(?:\s+y\s+Mercados\s+Emergentes)?)\s*:?/g;
     var fullText2 = sem.full.trim();
     var tokens2 = [];
     var lastIdx2 = 0;
