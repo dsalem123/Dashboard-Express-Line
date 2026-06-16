@@ -97,6 +97,10 @@ export default async function handler(req, res) {
   // Fetch market data en paralelo mientras preparamos el prompt
   const marketBlock = await fetchMarketData().catch(() => '');
 
+  const MESES_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  const hoy = new Date();
+  const fechaHoy = `${String(hoy.getUTCDate()).padStart(2,'0')} de ${MESES_ES[hoy.getUTCMonth()]} de ${hoy.getUTCFullYear()}`;
+
   const antiHallucination = `REGLAS ABSOLUTAS — VIOLACIÓN = REPORTE INVÁLIDO:
 1. PROHIBIDO inventar, estimar o extrapolar precios, porcentajes, fechas o nombres que no estén explícitamente en los bloques DATOS DE MERCADO o NOTICIAS RECOPILADAS.
 2. Si un dato no está disponible en los bloques provistos, escribí exactamente: [VERIFICAR].
@@ -107,7 +111,7 @@ export default async function handler(req, res) {
 7. PROHIBIDO caracterizar movimientos con palabras vagas: nunca uses "estable", "leve", "moderado", "ligero" sin acompañarlo del porcentaje exacto. Un -3% es una caída, no una caída "leve". Un -0.5% puede describirse como "marginal" SOLO si incluís el número.
 
 FORMATO DE SALIDA — OBLIGATORIO:
-- La primera línea del documento debe ser el título: "BRIEFING SEMANAL OFFSHORE" seguido de una línea en blanco y la fecha en formato "08 de junio de 2026".
+- La primera línea del documento debe ser el título: "BRIEFING SEMANAL OFFSHORE" seguido de una línea en blanco y la fecha en formato "${fechaHoy}".
 - PROHIBIDO usar # ## ### para títulos. Los títulos de sección van en MAYÚSCULAS, solos en su línea, seguidos de una línea en blanco.
 - Los subtítulos (ej: Estados Unidos, Europa) van en Mayúscula Inicial, solos en su línea, con dos guiones antes: "— Estados Unidos".
 - PROHIBIDO usar * para listas. El Resumen Ejecutivo usa numeración simple: "1.", "2.", etc. El resto del documento son párrafos corridos.
