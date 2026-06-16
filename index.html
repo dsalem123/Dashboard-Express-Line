@@ -2733,8 +2733,11 @@ function renderHedgeyeData(d){
       </div>`
     : '';
 
-  // Secciones estructuradas del episodio
-  const secciones = macro.secciones||[];
+  // Secciones estructuradas del episodio (filtra secciones sin bullets ni resumen)
+  const secciones = (macro.secciones||[]).filter(s=>(s.puntos||[]).length>0||s.resumen);
+  const replayBadge = macro.es_replay
+    ? `<div style="display:inline-flex;align-items:center;gap:6px;background:rgba(107,133,120,.12);border:1px solid rgba(107,133,120,.25);border-radius:4px;padding:4px 10px;font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--vg);margin-bottom:14px;">↺ Episodio de replay / resumen</div>`
+    : '';
   const resumenSection = macro.notas_pendientes
     ? `<div class="empty-state" style="padding:18px 0;">
          <div style="font-size:22px;margin-bottom:8px;">⏳</div>
@@ -2742,17 +2745,19 @@ function renderHedgeyeData(d){
          <div style="font-size:11px;margin-top:4px;opacity:.7;">Hacé click en Actualizar más tarde para verificar</div>
        </div>`
     : secciones.length
-    ? secciones.map(sec=>
+    ? replayBadge + secciones.map(sec=>
         `<div style="margin-bottom:16px;">
           <div style="font-size:10px;font-weight:700;letter-spacing:1px;color:#C9A84C;text-transform:uppercase;margin-bottom:6px;border-left:2px solid #C9A84C;padding-left:8px;">${sec.titulo}</div>
           ${sec.resumen?`<div style="font-size:12px;color:#C8CCBE;line-height:1.5;margin-bottom:6px;padding-left:10px;">${sec.resumen}</div>`:''}
           ${(sec.puntos||[]).slice(0,sec.resumen?1:3).map(p=>`<div class="hg-bullet"><div class="hg-bullet-dot"></div><div>${p}</div></div>`).join('')}
         </div>`
       ).join('')
-    : (macro.bullets&&macro.bullets.length
-        ? `<div style="font-size:10px;font-weight:700;letter-spacing:1.5px;color:#6B8578;text-transform:uppercase;margin-bottom:10px;">Resumen del Episodio</div>`
-          + macro.bullets.map(b=>`<div class="hg-bullet"><div class="hg-bullet-dot"></div><div>${b}</div></div>`).join('')
-        : '');
+    : macro.bullets&&macro.bullets.length
+      ? replayBadge + `<div style="font-size:10px;font-weight:700;letter-spacing:1.5px;color:#6B8578;text-transform:uppercase;margin-bottom:10px;">Resumen del Episodio</div>`
+        + macro.bullets.map(b=>`<div class="hg-bullet"><div class="hg-bullet-dot"></div><div>${b}</div></div>`).join('')
+      : replayBadge
+        ? replayBadge + `<div class="hg-empty">Episodio de replay — el contenido detallado está disponible solo en la grabación</div>`
+        : '';
 
   const macroContent = macro.title
     ? `<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap;">

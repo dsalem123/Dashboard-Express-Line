@@ -110,7 +110,7 @@ with open(CFG, encoding='utf-8') as f:
 data = {
     "updated": datetime.datetime.now().strftime('%Y-%m-%d %H:%M'),
     "bullish": [], "bearish": [],
-    "macro_show": {"title": "", "date": "", "bullets": [], "bullish": [], "bearish": []},
+    "macro_show": {"title": "", "date": "", "bullets": [], "bullish": [], "bearish": [], "es_replay": False},
     "error": None
 }
 
@@ -215,6 +215,8 @@ def parse_macro_sections(html):
 
     def _ok_bullet(t):
         tl = t.lower()
+        if re.match(r'^[,;]\s', t):  # fragmento: continuación de link recortado
+            return False
         return 30 < len(t) < 700 and not any(s in tl for s in SKIP_TEXT)
 
     # ── Formato AI Summary (MAIN SUMMARY h3 + p>strong) ──────────────────────
@@ -549,6 +551,12 @@ try:
         secciones_raw = parse_macro_sections(html_art)
         print(f"Secciones encontradas: {len(secciones_raw)}", flush=True)
 
+        # Detectar episodio de replay / resumen (formato diferente al Macro Show regular)
+        _REPLAY_KW = ['resumidas', 'repetición', 'replay', 'on-demand', 'recap', 'resumen del día']
+        is_replay = any(kw in titulo.lower() for kw in _REPLAY_KW)
+        if is_replay:
+            print(f"INFO: Episodio de replay detectado: '{titulo}'", flush=True)
+
         # Detectar si el articulo solo tiene el livestream (notas no publicadas aun)
         content_div = soup_art.select_one('#content') or soup_art
         all_text = content_div.get_text(separator=' ', strip=True)
@@ -573,6 +581,7 @@ try:
                 "bullish":  macro_bull,
                 "bearish":  macro_bear,
                 "notas_pendientes": is_livestream_only,
+                "es_replay": is_replay,
             }
         }
         with open(RAW, 'w', encoding='utf-8') as f:
@@ -610,6 +619,7 @@ try:
             'resumen_ai':          None,
             'resumen_ejecutivo':   resumen_ejecutivo,
             'notas_pendientes':    is_livestream_only,
+            'es_replay':           is_replay,
         }
         print(f"Macro: '{data['macro_show']['title']}'", flush=True)
         print(f"Macro Bull tickers: {macro_bull}", flush=True)
