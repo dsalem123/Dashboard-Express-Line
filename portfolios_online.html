@@ -715,7 +715,7 @@ function importBalances(input){
   reader.readAsArrayBuffer(file); input.value='';
 }
 
-function _normHdr(v){return String(v==null?'':v).trim().toLowerCase();}
+function _normHdr(v){return String(v==null?'':v).replace(/[\n\r]+/g,' ').replace(/\s+/g,' ').trim().toLowerCase();}
 function _makeCol(hdr){
   return function(k){
     const nk=_normHdr(k);
@@ -725,18 +725,55 @@ function _makeCol(hdr){
   };
 }
 function parsePositions(rows){
-  let hi=-1;
-  for(let i=0;i<rows.length;i++){if(rows[i]&&rows[i].some(c=>_normHdr(c)==='security description')){hi=i;break;}}
+  const pN=v=>{const n=parseFloat(String(v==null?'':v).replace(/[,*$]/g,''));return isNaN(n)?null:n;};
+  // Detectar fila de header
+  let hi=-1, isPershing=false;
+  for(let i=0;i<Math.min(rows.length,25);i++){
+    const r=rows[i]; if(!r) continue;
+    const up=r.map(v=>_normHdr(v));
+    // Pershing NetX360: header con DESCRIPTION + CUSIP + SYMBOL (sin "Security")
+    if(up.includes('description')&&up.includes('cusip')&&up.includes('symbol')&&!up.some(h=>h.includes('security description'))){
+      hi=i; isPershing=true; break;
+    }
+    // Formato viejo: "Security Description"
+    if(up.some(h=>h==='security description')){hi=i; break;}
+  }
   if(hi<0) return [];
-  const hdr=rows[hi], col=_makeCol(hdr), out=[];
+  const hdr=rows[hi].map(v=>_normHdr(v));
+  const ci=k=>{const nk=_normHdr(k);let idx=hdr.indexOf(nk);if(idx<0){const b=nk.split('(')[0].trim();idx=hdr.findIndex(h=>h.startsWith(b)&&b.length>4);}return idx;};
+  if(isPershing){
+    // Pershing: SYMBOL|CUSIP|ISIN|SEDOL|DESCRIPTION|TRADE DATE QUANTITY|MARKET PRICE...|...|POSITION VALUE (USDE)
+    const colSym=hdr.indexOf('symbol'), colCusip=hdr.indexOf('cusip'), colIsin=hdr.indexOf('isin');
+    const colDesc=hdr.indexOf('description');
+    const colQty=hdr.findIndex(h=>h.includes('trade date quantity')||h==='quantity');
+    const colPrice=hdr.findIndex(h=>h.includes('market price'));
+    const colMv=hdr.findIndex(h=>h.includes('position value')&&h.includes('usde'));
+    const out=[];
+    for(let i=hi+1;i<rows.length;i++){
+      const r=rows[i]; if(!r) continue;
+      const desc=String(r[colDesc]||'').trim();
+      if(!desc||/disclaimer|market value calc|real.time|data delay|all market/i.test(desc)) continue;
+      const qty=pN(r[colQty])||0;
+      const price=pN(r[colPrice]);
+      const mv=colMv>=0?pN(r[colMv]):null;
+      const cusip=String(r[colCusip]||'').trim()||null;
+      const isin=String(r[colIsin]||'').trim()||null;
+      const sym=String(r[colSym]||'').trim()||null;
+      out.push({isin,cusip,symbol:sym,type:'Other',description:desc,quantity:qty,unitCost:null,totalCost:null,lastPrice:price,marketValue:mv!=null?mv:(price&&qty?price*qty:0),unrealizedGain:null,unrealizedGainPct:null});
+    }
+    return out;
+  }
+  // Formato viejo (Security Description)
+  const col=_makeCol(rows[hi]);
+  const out=[];
   for(let i=hi+1;i<rows.length;i++){
     const r=rows[i]; if(!r) continue;
     const desc=String(r[col('Security Description')]||'').trim();
     if(!desc||desc.startsWith('Disclaimer')||desc.startsWith('All Market')) continue;
     const qtyCol=col('Total Quantity')>=0?'Total Quantity':'Quantity';
     const mvCol=col('Market Value (USDE)')>=0?'Market Value (USDE)':col('Position Value (USDE)')>=0?'Position Value (USDE)':col('Market Value')>=0?'Market Value':'Market Value (USDE)';
-    const qty=parseFloat(r[col(qtyCol)])||0;
-    const mv=parseFloat(r[col(mvCol)])||0;
+    const qty=pN(r[col(qtyCol)])||0;
+    const mv=pN(r[col(mvCol)])||0;
     const isinV=r[col('ISIN')];const cusipV=r[col('CUSIP')];const symV=r[col('Symbol')]||r[col('Security Symbol')];const typeV=r[col('Security Type')]||r[col('Asset Type')]||'Other';
     out.push({isin:isinV||null,cusip:cusipV||null,symbol:symV||null,type:typeV,description:desc,quantity:qty,unitCost:null,totalCost:null,lastPrice:mv&&qty?mv/qty:null,marketValue:mv,unrealizedGain:null,unrealizedGainPct:null});
   }
@@ -863,67 +900,124 @@ function ncLoadFile(type, input){
 }
 
 function parseUGL(rows){
-  // Extraer total del encabezado — soporta "/" o "\", formato (X) para negativos, y celda partida (label en A, valor en B)
-  let totalGain=null;
-  for(let i=0;i<20;i++){
+  const pN=v=>{if(v==null)return null;const s=String(v).replace(/[,*$\s]/g,'');if(/^(n\/a|provide|-)$/i.test(s)||s==='')return null;const n=parseFloat(s);return isNaN(n)?null:n;};
+  let totalGain=null, isPershing=false, hi=-1;
+  // Detectar formato y extraer total
+  for(let i=0;i<Math.min(rows.length,15);i++){
     const r=rows[i]; if(!r) continue;
-    const cell=String(r[0]||'')+' '+String(r[1]!=null?r[1]:'');
-    if(!/Net Unrealized Gain[\\\/]loss/i.test(cell)) continue;
-    let m=cell.match(/\((\d[\d,\.]*)\)/); // formato contable (X.XX) = negativo
-    if(m){totalGain=-parseFloat(m[1].replace(/,/g,''));break;}
-    m=cell.match(/:\s*([-]?\d[\d,\.]*)/); // formato estándar -X.XX o X.XX
-    if(m){totalGain=parseFloat(m[1].replace(/,/g,''));break;}
-    break;
+    // Pershing: "Net Unrealized G/L :" en alguna columna (no necesariamente col 0)
+    for(let ci=0;ci<r.length-1;ci++){
+      if(typeof r[ci]==='string'&&/net unrealized g\/l/i.test(r[ci])){
+        totalGain=pN(r[ci+1]); isPershing=true; break;
+      }
+    }
+    // Formato viejo: "Net Unrealized Gain/loss" en col 0
+    if(!isPershing){
+      const cell=String(r[0]||'')+' '+String(r[1]!=null?r[1]:'');
+      if(/Net Unrealized Gain[\/\\]loss/i.test(cell)){
+        let m=cell.match(/\((\d[\d,\.]*)\)/);
+        if(m){totalGain=-parseFloat(m[1].replace(/,/g,''));}
+        else{m=cell.match(/:\s*([-]?\d[\d,.]*)/);if(m)totalGain=parseFloat(m[1].replace(/,/g,''));}
+      }
+    }
+    if(isPershing&&totalGain!=null) break;
   }
-  let hi=-1;
+  // Buscar header
   for(let i=0;i<rows.length;i++){
-    if(rows[i]&&rows[i].some(c=>_normHdr(c)==='security description')&&rows[i].some(c=>_normHdr(c)==='security identifier')){hi=i;break;}
+    const r=rows[i]; if(!r) continue;
+    if(isPershing&&r.some(c=>_normHdr(c)==='asset category')&&r.some(c=>_normHdr(c)==='cusip')){hi=i;break;}
+    if(!isPershing&&r.some(c=>_normHdr(c)==='security description')&&r.some(c=>_normHdr(c)==='security identifier')){hi=i;break;}
   }
   if(hi<0) return {items:[],totalGain};
-  const hdr=rows[hi], col=_makeCol(hdr), out=[];
-  const pN=v=>{const n=parseFloat(v);return isNaN(n)?null:n;};
-  for(let i=hi+1;i<rows.length;i++){
-    const r=rows[i]; if(!r) continue;
-    const id=String(r[col('Security Identifier')]||'').trim();
-    const desc=String(r[col('Security Description')]||'').trim();
-    if(!id||id==='TOTAL'||!desc||desc.startsWith('Disclaimer')) continue;
-    const unitCost=col('Unit Cost')>=0?pN(r[col('Unit Cost')]):null;
-    const tcCol=col('Current Total Cost')>=0?'Current Total Cost':col('Total Cost')>=0?'Total Cost':'Current Total Cost';
-    const totalCost=pN(r[col(tcCol)])||null;
-    const mv=pN(r[col('Market Value')]);
-    const glCol=col('Gain/Loss')>=0?'Gain/Loss':col('Unrealized Gain/Loss')>=0?'Unrealized Gain/Loss':'Gain/Loss';
-    const glPctCol=col('Gain/Loss %')>=0?'Gain/Loss %':col('Unrealized Gain/Loss %')>=0?'Unrealized Gain/Loss %':'Gain/Loss %';
-    const gain=pN(r[col(glCol)]);
-    const gainPct=pN(r[col(glPctCol)]);
-    if(totalCost!=null||gain!=null) out.push({cusip:id, unitCost, totalCost, marketValue:mv, unrealizedGain:gain, unrealizedGainPct:gainPct});
+  const hdr=rows[hi];
+  const out=[];
+  if(isPershing){
+    const hU=hdr.map(v=>_normHdr(v));
+    const C={desc:hU.indexOf('asset category'),sym:hU.indexOf('symbol'),cusip:hU.indexOf('cusip'),
+      qty:hU.indexOf('quantity'),tc:hU.indexOf('current total cost'),mv:hU.indexOf('market value'),
+      gain:hU.indexOf('unrealized g/l'),gainPct:hU.indexOf('% change')};
+    // Mapeo de categorías Pershing → tipos internos
+    const typeOf=cat=>{const u=(cat||'').toUpperCase();
+      if(/mutual fund/.test(u))return 'Open-end Mutual Funds';
+      if(/etf|exchange.traded/.test(u))return 'Exchange-Traded Funds';
+      if(/corporate bond/.test(u))return 'Corporate Bonds';
+      if(/government bond|sovereign|us treasury|treasury/.test(u))return 'Government Bonds';
+      if(/equit|common stock|preferred/.test(u))return 'Equities';
+      if(/cash|money fund|money market|bank deposit/.test(u))return 'Money Market Funds';
+      return null;};
+    let curType='Other';
+    for(let i=hi+1;i<rows.length;i++){
+      const r=rows[i]; if(!r) continue;
+      const cusip=String(r[C.cusip]||'').trim();
+      const desc=String(r[C.desc]||'').trim();
+      if(!cusip){const t=typeOf(desc);if(t)curType=t;continue;}
+      const qty=pN(r[C.qty]);
+      if(!qty||qty===0) continue;
+      const totalCost=pN(r[C.tc]);
+      const mv=pN(r[C.mv]);
+      const gain=pN(r[C.gain]);
+      const gainPct=pN(r[C.gainPct]);
+      const unitCost=totalCost&&qty?totalCost/qty:null;
+      if(totalCost!=null||gain!=null)
+        out.push({cusip,symbol:String(r[C.sym]||'').trim()||null,description:desc,type:curType,unitCost,totalCost,marketValue:mv,unrealizedGain:gain,unrealizedGainPct:gainPct});
+    }
+  } else {
+    const col=_makeCol(hdr);
+    const pN2=v=>{const n=parseFloat(v);return isNaN(n)?null:n;};
+    for(let i=hi+1;i<rows.length;i++){
+      const r=rows[i]; if(!r) continue;
+      const id=String(r[col('Security Identifier')]||'').trim();
+      const desc=String(r[col('Security Description')]||'').trim();
+      if(!id||id==='TOTAL'||!desc||desc.startsWith('Disclaimer')) continue;
+      const unitCost=col('Unit Cost')>=0?pN2(r[col('Unit Cost')]):null;
+      const tcCol=col('Current Total Cost')>=0?'Current Total Cost':col('Total Cost')>=0?'Total Cost':'Current Total Cost';
+      const totalCost=pN2(r[col(tcCol)])||null;
+      const mv=pN2(r[col('Market Value')]);
+      const glCol=col('Gain/Loss')>=0?'Gain/Loss':'Unrealized Gain/Loss';
+      const glPctCol=col('Gain/Loss %')>=0?'Gain/Loss %':'Unrealized Gain/Loss %';
+      const gain=pN2(r[col(glCol)]);
+      const gainPct=pN2(r[col(glPctCol)]);
+      if(totalCost!=null||gain!=null) out.push({cusip:id,unitCost,totalCost,marketValue:mv,unrealizedGain:gain,unrealizedGainPct:gainPct});
+    }
   }
   return {items:out, totalGain};
 }
 
 function parseBalances(rows){
-  const pN=v=>{const n=parseFloat(String(v||'').replace(/[$, ]/g,''));return isNaN(n)?null:n;};
+  const pN=v=>{const n=parseFloat(String(v==null?'':v).replace(/[$, ]/g,''));return isNaN(n)?null:n;};
+  let totalValue=null, cashAvailable=null;
   for(let i=0;i<rows.length;i++){
     const r=rows[i]; if(!r) continue;
-    // Pattern 1: "Total Accounts Value: $X" in cell A
-    if(typeof r[0]==='string'&&/total accounts value/i.test(r[0])){
-      const m=String(r[0]).match(/([\d,\.]+)/g);
-      const vals=(m||[]).map(x=>parseFloat(x.replace(/,/g,''))).filter(x=>x>100);
-      if(vals.length) return {totalValue:vals[vals.length-1]};
+    const label=String(r[0]==null?'':r[0]).trim();
+    // Pershing: "Total Account Value" en col A, número en col B
+    if(/^total account value$/i.test(label)){const v=pN(r[1]);if(v&&v>0)totalValue=v;}
+    if(/^account value$/i.test(label)&&!totalValue){const v=pN(r[1]);if(v&&v>0)totalValue=v;}
+    // Cash: "Cash Management Balance" o "Total Balance" en col A
+    if(/^cash management balance/i.test(label)){const v=pN(r[1]);if(v!=null)cashAvailable=v;}
+    if(/^total balance$/i.test(label)&&cashAvailable==null){const v=pN(r[1]);if(v!=null)cashAvailable=v;}
+    // Formato string "Total Account Value: 2,135,900.84" todo en col A
+    if(/total account[s]? value:/i.test(label)){
+      const m=label.match(/[\d,\.]+/g);
+      const vals=(m||[]).map(x=>parseFloat(x.replace(/,/g,''))).filter(x=>x>1000);
+      if(vals.length&&!totalValue)totalValue=vals[vals.length-1];
     }
-    // Pattern 2: label row "Total Account Value" / "Total Value" with number in adjacent cell
-    if(typeof r[0]==='string'&&/total\s+(account|portfolio|net)\s*(asset|account|portfolio)?\s*value/i.test(r[0])){
-      for(let ci=1;ci<r.length;ci++){const v=pN(r[ci]);if(v&&v>1000)return {totalValue:v, cashAvailable:pN(r[ci+1])||0};}
+    // Formato string "Funds Available to Withdraw: 313,524.77" en col A
+    if(/funds available to withdraw:/i.test(label)&&cashAvailable==null){
+      const m=label.match(/[\d,\.]+/g);
+      const vals=(m||[]).map(x=>parseFloat(x.replace(/,/g,''))).filter(x=>x>=0);
+      if(vals.length)cashAvailable=vals[vals.length-1];
     }
-    // Pattern 3: label in col A, value in col B (Pershing summary style)
-    if(typeof r[0]==='string'&&/total/i.test(r[0])&&typeof r[1]==='number'&&r[1]>10000){
-      return {totalValue:r[1], cashAvailable:0};
+    // Fallback: "Total Account Value" con número en columna adyacente
+    if(!totalValue&&/total\s+account\s+value/i.test(label)){
+      for(let ci=1;ci<r.length;ci++){const v=pN(r[ci]);if(v&&v>10000){totalValue=v;break;}}
     }
-    // Pattern 4: large number in col C (original heuristic, stricter)
-    if(i>2&&r[2]&&typeof r[2]==='number'&&r[2]>10000&&(!r[0]||typeof r[0]==='number')){
-      return {totalValue:r[2], cashAvailable:typeof r[3]==='number'?r[3]:0};
+    // Fallback heurístico: número grande en col C
+    if(!totalValue&&i>2&&typeof r[2]==='number'&&r[2]>10000&&(!r[0]||typeof r[0]==='number')){
+      totalValue=r[2]; if(typeof r[3]==='number')cashAvailable=r[3];
     }
   }
-  return null;
+  if(!totalValue) return null;
+  return {totalValue, cashAvailable:cashAvailable||0};
 }
 
 function parseTransactionsRows(rows){
@@ -998,6 +1092,7 @@ function mergeUGLIntoHoldings(holdings, uglData){
       totalCost:costs.length?dedup(costs):0,
       unrealizedGain:gains.length?dedup(gains):null,
       unitCost:items.find(i=>i.unitCost)?.unitCost||null,
+      type:items[0]?.type||null,
       count:items.length
     };
   });
@@ -1008,10 +1103,10 @@ function mergeUGLIntoHoldings(holdings, uglData){
     if(u){
       if(u.totalCost) h.totalCost=u.totalCost;
       if(u.unrealizedGain!=null) h.unrealizedGain=u.unrealizedGain;
-      // Derive unitCost from totalCost/quantity if not directly available
       if(u.unitCost) h.unitCost=u.unitCost;
       else if(h.totalCost&&h.quantity) h.unitCost=h.totalCost/h.quantity;
       if(h.totalCost&&h.unrealizedGain!=null) h.unrealizedGainPct=(h.unrealizedGain/h.totalCost)*100;
+      if(u.type&&u.type!=='Other'&&h.type==='Other') h.type=u.type;
     }
     return h;
   });
