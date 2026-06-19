@@ -1107,6 +1107,7 @@ function _initSupabase(){
   }catch(e){console.warn('[SB] init:',e);}
 }
 
+var _APP_DATA_KEYS=['pfol_v1','kanban_notes_v1','crm_reuniones','crm_propuestas','kpi-apertura','kpi-facturacion','kpi-aum','kpi-objetivo','kpi-tiempo'];
 async function _sbPush(){
   if(!_sbReady)return;
   try{
@@ -1115,6 +1116,8 @@ async function _sbPush(){
     var lr=leads.map(function(l){return{id:l.id,last_modified:l.lastModified||now,data:l};});
     if(cr.length)await _sb.from('clients').upsert(cr,{onConflict:'id'});
     if(lr.length)await _sb.from('leads').upsert(lr,{onConflict:'id'});
+    var kvRows=_APP_DATA_KEYS.map(function(k){var v=localStorage.getItem(k);return v?{key:k,value:v,last_modified:now}:null;}).filter(Boolean);
+    if(kvRows.length)await _sb.from('app_data').upsert(kvRows,{onConflict:'key'});
   }catch(e){console.warn('[SB] push:',e);}
 }
 
@@ -1124,9 +1127,10 @@ async function _sbPull(silent){
     _sbLastPull=Date.now();
     var res=await Promise.all([
       _sb.from('clients').select('id,last_modified,data').order('id'),
-      _sb.from('leads').select('id,last_modified,data').order('id')
+      _sb.from('leads').select('id,last_modified,data').order('id'),
+      _sb.from('app_data').select('key,value,last_modified')
     ]);
-    var cRes=res[0],lRes=res[1];
+    var cRes=res[0],lRes=res[1],adRes=res[2];
     if(cRes.error||lRes.error){console.warn('[SB] pull err',cRes.error||lRes.error);return false;}
     var changed=false;
     var delCI=new Set(JSON.parse(localStorage.getItem('_deletedClientIds')||'[]'));
@@ -1145,6 +1149,16 @@ async function _sbPull(silent){
       if(!loc){leads.push(Object.assign({},row.data,{id:row.id,lastModified:row.last_modified}));changed=true;}
       else if((row.last_modified||0)>(loc.lastModified||0)){Object.assign(loc,row.data,{id:row.id,lastModified:row.last_modified});changed=true;}
     });
+    if(!adRes.error&&adRes.data){
+      adRes.data.forEach(function(row){
+        var localTs=parseInt(localStorage.getItem('_adts_'+row.key)||'0');
+        if((row.last_modified||0)>localTs){
+          localStorage.setItem(row.key,row.value);
+          localStorage.setItem('_adts_'+row.key,String(row.last_modified));
+          changed=true;
+        }
+      });
+    }
     if(changed){_sbPulling=true;saveToStorage();_sbPulling=false;render();if(!silent)showToast('↓ Datos actualizados');updateSyncStatus();}
     return changed;
   }catch(e){console.warn('[SB] pull:',e);return false;}
@@ -1161,6 +1175,7 @@ function _sbSubscribe(){
     _sb.channel('crm-rt')
       .on('postgres_changes',{event:'*',schema:'public',table:'clients'},function(){_sbPull(true);})
       .on('postgres_changes',{event:'*',schema:'public',table:'leads'},function(){_sbPull(true);})
+      .on('postgres_changes',{event:'*',schema:'public',table:'app_data'},function(){_sbPull(true);})
       .subscribe(function(s){
         console.log('[SB] rt:',s);
         if(s==='SUBSCRIBED'){_sbConnected=true;_sbEverConnected=true;updateSyncStatus();}
@@ -1681,6 +1696,7 @@ window.addEventListener('message',function(ev){
   if(!ev.data) return;
   if(ev.data.type==='pfol_save'){
     try{localStorage.setItem('pfol_v1',ev.data.d);}catch(x){}
+    if(_sbReady)_sbPush();
   }
   if(ev.data.type==='bbg_updated'){
     if(ev.data.prices) try{localStorage.setItem('bbg_prices_v1',JSON.stringify({ts:new Date().toISOString(),prices:ev.data.prices}));}catch(e){}
